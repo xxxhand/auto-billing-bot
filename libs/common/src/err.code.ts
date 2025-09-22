@@ -20,4 +20,10 @@ export const errCodes: CustomDefinition.ICodeStruct[] = [
     httpStatus: 400,
     message: 'Client duplicated',
   },
+  {
+    codeName: errConstants.ERR_INTERNAL_ERROR,
+    code: 1004,
+    httpStatus: 500,
+    message: 'Internal server error',
+  },
 ];

@@ -5,13 +5,22 @@ import { Module, BeforeApplicationShutdown, MiddlewareConsumer, NestModule, OnAp
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { ExampleRepository } from './infra/repositories/example.repository';
+import { SubscriptionRepository } from './infra/repositories/subscription.repository';
+import { ProductRepository } from './infra/repositories/product.repository';
+import { PaymentHistoryRepository } from './infra/repositories/payment-history.repository';
+import { OperationLogRepository } from './infra/repositories/operation-log.repository';
+import { SubscriptionService } from './domain/services/subscription.service';
+import { PaymentService } from './domain/services/payment.service';
+import { SubscriptionApplicationService } from './application/services/subscription-application.service';
+import { PaymentApplicationService } from './application/services/payment-application.service';
 import { AppExceptionFilter } from './app-components/app-exception.filter';
 import { AppTracerMiddleware } from './app-components/app-tracer.middleware';
 import * as jobs from './application/jobs';
-import * as v1Controllers from './application/controllers/v1';
+import { ExampleController } from './application/controllers/exemple.controller';
+import { SubscriptionController } from './application/controllers/subscription.controller';
 @Module({
   imports: [CommonModule, ScheduleModule.forRoot()],
-  controllers: [AppController, ...Array.from(Object.keys(v1Controllers)).map((key) => v1Controllers[key])],
+  controllers: [AppController, ExampleController, SubscriptionController],
   providers: [
     AppService,
     {
@@ -19,6 +28,14 @@ import * as v1Controllers from './application/controllers/v1';
       useClass: AppExceptionFilter,
     },
     ExampleRepository,
+    SubscriptionRepository,
+    ProductRepository,
+    PaymentHistoryRepository,
+    OperationLogRepository,
+    SubscriptionService,
+    PaymentService,
+    SubscriptionApplicationService,
+    PaymentApplicationService,
     ...Array.from(Object.keys(jobs)).map((key) => jobs[key]),
   ],
 })
