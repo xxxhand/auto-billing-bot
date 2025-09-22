@@ -3,10 +3,10 @@ import { CustomResult, CustomHttpOption } from '@xxxhand/app-common';
 import { CommonService, ErrException, errConstants } from '@myapp/common';
 import { Post, Body, Controller, UploadedFile, LoggerService, Get } from '@nestjs/common';
 
-import { ExampleEntity } from '../domain/entities/example.entity';
-import { ExampleRepository } from '../infra/repositories/example.repository';
-import { CreateExampleRequest } from '../domain/value-objects/create-example.request';
-import { SingleUploadFileInterceptor } from '../app-components/single-upload-file.interceptor';
+import { ExampleEntity } from '../../domain/entities/example.entity';
+import { ExampleRepository } from '../../infra/repositories/example.repository';
+import { CreateExampleRequest } from '../../domain/value-objects/create-example.request';
+import { SingleUploadFileInterceptor } from '../../app-components/single-upload-file.interceptor';
 
 @Controller({
   path: 'examples',

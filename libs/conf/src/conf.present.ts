@@ -16,6 +16,7 @@ export interface IConf {
     user: string;
     password: string;
   };
+  dailyBillingCron: string;
 }
 
 export const cmmConf: IConf = {
@@ -36,4 +37,5 @@ export const cmmConf: IConf = {
   defaultLoggerPath: process.env.DEFAULT_LOGGER_PATH,
   localesPath: process.env.LOCALES_PATH,
   fallbackLocale: process.env.FALLBACK_LOCALE,
+  dailyBillingCron: process.env.DAILY_BILLING_EXEC,
 };

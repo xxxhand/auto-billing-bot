@@ -1,15 +1,17 @@
 import { APP_FILTER } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { CommonModule, CommonService } from '@myapp/common';
 import { Module, BeforeApplicationShutdown, MiddlewareConsumer, NestModule, OnApplicationBootstrap } from '@nestjs/common';
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
-import { ExampleController } from './controllers/exemple.controller';
 import { ExampleRepository } from './infra/repositories/example.repository';
 import { AppExceptionFilter } from './app-components/app-exception.filter';
 import { AppTracerMiddleware } from './app-components/app-tracer.middleware';
+import * as jobs from './application/jobs';
+import * as v1Controllers from './application/controllers/v1';
 @Module({
-  imports: [CommonModule],
-  controllers: [AppController, ExampleController],
+  imports: [CommonModule, ScheduleModule.forRoot()],
+  controllers: [AppController, ...Array.from(Object.keys(v1Controllers)).map((key) => v1Controllers[key])],
   providers: [
     AppService,
     {
@@ -17,6 +19,7 @@ import { AppTracerMiddleware } from './app-components/app-tracer.middleware';
       useClass: AppExceptionFilter,
     },
     ExampleRepository,
+    ...Array.from(Object.keys(jobs)).map((key) => jobs[key]),
   ],
 })
 export class AppModule implements NestModule, OnApplicationBootstrap, BeforeApplicationShutdown {
