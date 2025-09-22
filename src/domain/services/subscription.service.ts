@@ -15,6 +15,7 @@ export class SubscriptionService {
    */
   public async createSubscription(userId: string, productId: string, startDate: string, cycleType: BillingCycleType): Promise<Subscription> {
     const subscription = new Subscription();
+    // subscription.id = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`; // 生成唯一ID
     subscription.userId = userId;
     subscription.productId = productId;
     subscription.startDate = startDate;

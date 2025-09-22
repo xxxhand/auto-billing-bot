@@ -1,0 +1,157 @@
+// MongoDB Data Preparation Script for POC Testing
+// Run this script in MongoDB shell or using mongosh
+// Database: ccrc_test1
+
+// Clear existing data (optional - uncomment if needed)
+// db.products.drop();
+// db.subscriptions.drop();
+// db.paymentHistory.drop();
+
+// Insert products
+db.products.insertMany([
+  {
+    "id": "prod_monthly_001",
+    "name": "月費訂閱方案",
+    "cycleType": "monthly",
+    "price": 299
+  },
+  {
+    "id": "prod_yearly_001",
+    "name": "年費訂閱方案",
+    "cycleType": "yearly",
+    "price": 2999
+  },
+  {
+    "id": "prod_monthly_002",
+    "name": "高級月費方案",
+    "cycleType": "monthly",
+    "price": 599
+  }
+]);
+
+// Insert subscriptions
+db.subscriptions.insertMany([
+  {
+    "id": "sub_001",
+    "userId": "user123",
+    "productId": "prod_monthly_001",
+    "startDate": "2025-01-15T10:00:00.000Z",
+    "nextBillingDate": "2025-02-15T10:00:00.000Z",
+    "status": "active",
+    "createdAt": "2025-01-15T10:00:00.000Z"
+  },
+  {
+    "id": "sub_002",
+    "userId": "user456",
+    "productId": "prod_yearly_001",
+    "startDate": "2025-01-01T00:00:00.000Z",
+    "nextBillingDate": "2026-01-01T00:00:00.000Z",
+    "status": "pending",
+    "createdAt": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "sub_003",
+    "userId": "user789",
+    "productId": "prod_monthly_002",
+    "startDate": "2025-01-20T10:00:00.000Z",
+    "nextBillingDate": "2025-02-20T10:00:00.000Z",
+    "status": "cancelled",
+    "createdAt": "2025-01-20T10:00:00.000Z"
+  }
+]);
+
+// Insert payment history
+db.paymentHistory.insertMany([
+  {
+    "id": "pay_001",
+    "subscriptionId": "sub_001",
+    "amount": 299,
+    "status": "success",
+    "createdAt": "2025-01-15T10:00:00.000Z"
+  },
+  {
+    "id": "pay_002",
+    "subscriptionId": "sub_001",
+    "amount": 299,
+    "status": "failed",
+    "failureReason": "insufficient_funds",
+    "createdAt": "2025-02-14T10:00:00.000Z"
+  },
+  {
+    "id": "pay_003",
+    "subscriptionId": "sub_002",
+    "amount": 2999,
+    "status": "success",
+    "createdAt": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "pay_004",
+    "subscriptionId": "sub_003",
+    "amount": 599,
+    "status": "success",
+    "createdAt": "2025-01-20T10:00:00.000Z"
+  }
+]);
+
+// Insert operation logs (optional - for audit trail)
+db.operationLogs.insertMany([
+  {
+    "id": "op_001",
+    "subscriptionId": "sub_001",
+    "action": "subscription_created",
+    "createdAt": "2025-01-15T10:00:00.000Z"
+  },
+  {
+    "id": "op_002",
+    "subscriptionId": "sub_001",
+    "action": "payment_success",
+    "createdAt": "2025-01-15T10:00:00.000Z"
+  },
+  {
+    "id": "op_003",
+    "subscriptionId": "sub_003",
+    "action": "subscription_cancelled",
+    "createdAt": "2025-01-25T10:00:00.000Z"
+  }
+]);
+
+// Verification queries
+print("=== Data Insertion Complete ===");
+print("Products count:", db.products.countDocuments());
+print("Subscriptions count:", db.subscriptions.countDocuments());
+print("Payment History count:", db.paymentHistory.countDocuments());
+print("Operation Logs count:", db.operationLogs.countDocuments());
+
+// Sample queries for testing
+print("\n=== Sample Data Queries ===");
+print("Active subscriptions:", db.subscriptions.countDocuments({status: "active"}));
+print("Pending subscriptions:", db.subscriptions.countDocuments({status: "pending"}));
+print("Cancelled subscriptions:", db.subscriptions.countDocuments({status: "cancelled"}));
+print("Successful payments:", db.paymentHistory.countDocuments({status: "success"}));
+print("Failed payments:", db.paymentHistory.countDocuments({status: "failed"}));
+
+// Find subscription with payment history
+print("\n=== Subscription with Payment History ===");
+db.subscriptions.aggregate([
+  {
+    $lookup: {
+      from: "paymentHistory",
+      localField: "id",
+      foreignField: "subscriptionId",
+      as: "payments"
+    }
+  },
+  {
+    $match: { "payments.0": { $exists: true } }
+  },
+  {
+    $project: {
+      id: 1,
+      userId: 1,
+      productId: 1,
+      status: 1,
+      paymentCount: { $size: "$payments" },
+      lastPayment: { $arrayElemAt: ["$payments", -1] }
+    }
+  }
+]).forEach(doc => printjson(doc));

@@ -1,0 +1,168 @@
+{
+  "info": {
+    "name": "Phase 1 POC - Auto Billing Bot API",
+    "description": "Postman collection for Auto Billing Bot POC API testing. This collection includes all endpoints for subscription management, product queries, payment processing, and manual operations.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "auto-billing-bot-poc"
+  },
+  "item": [
+    {
+      "name": "Create Subscription",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"user123\",\n  \"productId\": \"prod_monthly_001\",\n  \"startDate\": \"2025-01-15T10:00:00.000Z\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/subscriptions",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "subscriptions"
+          ]
+        },
+        "description": "Create a new subscription for a user. The system will automatically calculate the next billing date based on the product's cycle type."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Available Products",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/subscriptions/products?userId=user123",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "subscriptions",
+            "products"
+          ],
+          "query": [
+            {
+              "key": "userId",
+              "value": "user123",
+              "description": "User ID to filter out already subscribed products"
+            }
+          ]
+        },
+        "description": "Retrieve the list of available products that the user hasn't subscribed to yet."
+      },
+      "response": []
+    },
+    {
+      "name": "Process Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"subscriptionId\": \"{{subscription_id}}\",\n  \"amount\": 299\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/subscriptions/payments",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "subscriptions",
+            "payments"
+          ]
+        },
+        "description": "Process a payment for an active subscription. This simulates the billing process with 80% success rate."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Subscription Details",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/subscriptions/{{subscription_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "subscriptions",
+            "{{subscription_id}}"
+          ]
+        },
+        "description": "Retrieve detailed information about a specific subscription, including status and payment history."
+      },
+      "response": []
+    },
+    {
+      "name": "Cancel Subscription",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"operatorId\": \"operator001\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/subscriptions/{{subscription_id}}/cancel",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "subscriptions",
+            "{{subscription_id}}",
+            "cancel"
+          ]
+        },
+        "description": "Cancel an active or pending subscription. Requires operator ID for audit purposes."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/client_service/api/v1",
+      "type": "string",
+      "description": "Base URL for the API endpoints. Adjust port if running on different port."
+    },
+    {
+      "key": "subscription_id",
+      "value": "sub_001",
+      "type": "string",
+      "description": "Sample subscription ID for testing. Replace with actual ID from create subscription response."
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set current timestamp for startDate in create subscription",
+          "if (pm.request.url.path.includes('subscriptions') && pm.request.method === 'POST' && !pm.request.url.path.includes('payments')) {",
+          "    const now = new Date();",
+          "    pm.globals.set('current_timestamp', now.toISOString());",
+          "}"
+        ]
+      }
+    }
+  ]
+}

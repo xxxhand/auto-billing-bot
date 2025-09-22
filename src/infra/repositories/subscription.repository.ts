@@ -1,7 +1,6 @@
 import { DEFAULT_MONGO } from '@myapp/common';
 import { Inject, Injectable } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { ObjectId } from 'mongodb';
 import { CustomDefinition, CustomValidator, CustomMongoClient } from '@xxxhand/app-common';
 import { Subscription } from '../../domain/entities/subscription.entity';
 import { modelNames, ISubscriptionDocument } from '../models/models.definition';
@@ -19,6 +18,7 @@ export class SubscriptionRepository {
     }
 
     const doc = <ISubscriptionDocument>{
+      id: entity.id,
       userId: entity.userId,
       productId: entity.productId,
       startDate: entity.startDate,
@@ -28,15 +28,24 @@ export class SubscriptionRepository {
     };
 
     if (!CustomValidator.nonEmptyString(entity.id)) {
-      // 新增訂閱
+      // 新增訂閱 - 生成ID
+      entity.id = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const doc = <ISubscriptionDocument>{
+        id: entity.id,
+        userId: entity.userId,
+        productId: entity.productId,
+        startDate: entity.startDate,
+        nextBillingDate: entity.nextBillingDate,
+        status: entity.status,
+        createdAt: new Date(entity.createdAt),
+      };
       const col = this.defMongoClient.getCollection(modelNames.SUBSCRIPTIONS);
-      const docRes = await col.insertOne(doc);
-      entity.id = docRes.insertedId.toHexString();
+      await col.insertOne(doc);
       return entity;
     } else {
       // 更新訂閱
       const col = this.defMongoClient.getCollection(modelNames.SUBSCRIPTIONS);
-      const filter = { _id: new ObjectId(entity.id) };
+      const filter = { id: entity.id };
       await col.updateOne(filter, { $set: doc });
       return entity;
     }
@@ -51,24 +60,28 @@ export class SubscriptionRepository {
     }
 
     const col = this.defMongoClient.getCollection(modelNames.SUBSCRIPTIONS);
-    const filter = { _id: new ObjectId(id) };
+    const filter = { id: id };
     const doc = (await col.findOne(filter)) as ISubscriptionDocument;
 
     if (!doc) {
       return undefined;
     }
 
-    const entity = plainToInstance(Subscription, {
-      id: doc._id.toHexString(),
-      userId: doc.userId,
-      productId: doc.productId,
-      startDate: doc.startDate,
-      nextBillingDate: doc.nextBillingDate,
-      status: doc.status,
-      createdAt: doc.createdAt.toISOString(),
-    });
-
-    return entity;
+    try {
+      const entity = plainToInstance(Subscription, {
+        id: doc.id,
+        userId: doc.userId,
+        productId: doc.productId,
+        startDate: doc.startDate,
+        nextBillingDate: doc.nextBillingDate,
+        status: doc.status,
+        createdAt: doc.createdAt.toISOString(),
+      });
+      return entity;
+    } catch (error) {
+      console.error('Error converting document to Subscription entity:', error.stack);
+      return undefined;
+    }
   }
 
   /**

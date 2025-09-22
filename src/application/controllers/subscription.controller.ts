@@ -31,6 +31,7 @@ export class SubscriptionController {
         nextBillingDate: subscription.nextBillingDate,
       });
     } catch (error) {
+      console.error('createSubscription error:', error.stack);
       throw ErrException.newFromCodeName(errConstants.ERR_INTERNAL_ERROR);
     }
   }
@@ -69,7 +70,6 @@ export class SubscriptionController {
       }
 
       const result = await this.paymentAppService.processPayment(body.subscriptionId, body.amount);
-
       return this.commonService.newResultInstance().withResult({
         paymentId: `payment_${Date.now()}`, // 模擬支付ID
         status: result.status,

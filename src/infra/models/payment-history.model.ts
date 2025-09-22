@@ -1,6 +1,8 @@
 import { IBaseModel } from './base-model.interface';
 
 export interface IPaymentHistoryModel extends IBaseModel {
+  /** 支付ID */
+  id: string;
   /** 訂閱ID */
   subscriptionId: string;
   /** 扣款金額 */

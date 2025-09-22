@@ -6,7 +6,6 @@ import { SubscriptionRepository } from '../../infra/repositories/subscription.re
 import { ProductRepository } from '../../infra/repositories/product.repository';
 import { OperationLogRepository } from '../../infra/repositories/operation-log.repository';
 import { OperationLog } from '../../domain/entities/operation-log.entity';
-import { BillingCycleType } from '../../domain/value-objects/billing-cycle.value-object';
 
 @Injectable()
 export class SubscriptionApplicationService {
@@ -71,6 +70,7 @@ export class SubscriptionApplicationService {
 
     // 記錄操作日誌
     const operationLog = new OperationLog();
+    // operationLog.id = `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`; // 生成唯一ID
     operationLog.subscriptionId = subscriptionId;
     operationLog.action = `訂閱被取消，操作者: ${operatorId}`;
     operationLog.createdAt = new Date().toISOString();

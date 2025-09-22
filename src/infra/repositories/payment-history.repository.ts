@@ -1,7 +1,6 @@
 import { DEFAULT_MONGO } from '@myapp/common';
 import { Inject, Injectable } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { ObjectId } from 'mongodb';
 import { CustomDefinition, CustomValidator, CustomMongoClient } from '@xxxhand/app-common';
 import { PaymentHistory } from '../../domain/entities/payment-history.entity';
 import { modelNames, IPaymentHistoryDocument } from '../models/models.definition';
@@ -19,6 +18,7 @@ export class PaymentHistoryRepository {
     }
 
     const doc = <IPaymentHistoryDocument>{
+      id: entity.id,
       subscriptionId: entity.subscriptionId,
       amount: entity.amount,
       status: entity.status,
@@ -26,10 +26,17 @@ export class PaymentHistoryRepository {
     };
 
     if (!CustomValidator.nonEmptyString(entity.id)) {
-      // 新增支付歷史
+      // 新增支付歷史 - 生成ID
+      entity.id = `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const doc = <IPaymentHistoryDocument>{
+        id: entity.id,
+        subscriptionId: entity.subscriptionId,
+        amount: entity.amount,
+        status: entity.status,
+        failureReason: entity.failureReason,
+      };
       const col = this.defMongoClient.getCollection(modelNames.PAYMENT_HISTORY);
-      const docRes = await col.insertOne(doc);
-      entity.id = docRes.insertedId.toHexString();
+      await col.insertOne(doc);
       return entity;
     }
 

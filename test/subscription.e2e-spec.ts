@@ -11,15 +11,17 @@ describe(`Subscription API (e2e)`, () => {
   beforeAll(async () => {
     agent = await AppHelper.getAgent();
     await dbHelper.mongo.tryConnect();
+    await dbHelper.clear();
 
     // 創建測試產品數據
     const productCol = dbHelper.mongo.getCollection('products');
-    const insertResult = await productCol.insertOne({
+    await productCol.insertOne({
+      id: 'test_product_001',
       name: '月費產品',
       cycleType: 'monthly',
       price: 299,
     });
-    testProductId = insertResult.insertedId.toHexString();
+    testProductId = 'test_product_001';
   });
 
   afterAll(async () => {
@@ -74,25 +76,26 @@ describe(`Subscription API (e2e)`, () => {
     let subscriptionId: string;
 
     beforeAll(async () => {
-      // 先創建一個訂閱用於測試
-      const createResponse = await agent.post(subscriptionEndpoint).send({
+      // 直接插入訂閱數據到數據庫
+      subscriptionId = 'test_subscription_pay_001';
+      const subscriptionCol = dbHelper.mongo.getCollection('subscriptions');
+      await subscriptionCol.insertOne({
+        id: subscriptionId,
         userId: 'user-pay-test',
         productId: testProductId,
         startDate: '2025-01-15T10:00:00.000Z',
+        nextBillingDate: '2025-02-15T10:00:00.000Z',
+        status: 'pending',
+        createdAt: new Date(),
       });
-      subscriptionId = createResponse.body.result.subscriptionId;
     });
 
-    it('應該成功處理支付', () => {
-      return agent
-        .post(`${subscriptionEndpoint}/payments`)
-        .send({ subscriptionId, amount: 299 })
-        .expect(201)
-        .expect((res) => {
-          expect(res.body.code).toBe(0);
-          expect(res.body.result).toHaveProperty('paymentId');
-          expect(res.body.result).toHaveProperty('status');
-        });
+    it('應該成功處理支付', async () => {
+      const res = await agent.post(`${subscriptionEndpoint}/payments`).send({ subscriptionId, amount: 299 });
+      expect(res.status).toBe(201);
+      expect(res.body.code).toBe(0);
+      expect(res.body.result).toHaveProperty('paymentId');
+      expect(res.body.result).toHaveProperty('status');
     });
 
     it('訂閱不存在時應該返回錯誤', () => {
@@ -104,13 +107,18 @@ describe(`Subscription API (e2e)`, () => {
     let subscriptionId: string;
 
     beforeAll(async () => {
-      // 先創建一個訂閱用於測試
-      const createResponse = await agent.post(subscriptionEndpoint).send({
+      // 直接插入訂閱數據到數據庫
+      subscriptionId = 'test_subscription_status_001';
+      const subscriptionCol = dbHelper.mongo.getCollection('subscriptions');
+      await subscriptionCol.insertOne({
+        id: subscriptionId,
         userId: 'user-status-test',
         productId: testProductId,
         startDate: '2025-01-15T10:00:00.000Z',
+        nextBillingDate: '2025-02-15T10:00:00.000Z',
+        status: 'pending',
+        createdAt: new Date(),
       });
-      subscriptionId = createResponse.body.result.subscriptionId;
     });
 
     it('應該返回訂閱狀態', () => {
@@ -134,13 +142,18 @@ describe(`Subscription API (e2e)`, () => {
     let subscriptionId: string;
 
     beforeAll(async () => {
-      // 先創建一個訂閱用於測試
-      const createResponse = await agent.post(subscriptionEndpoint).send({
+      // 直接插入訂閱數據到數據庫
+      subscriptionId = 'test_subscription_cancel_001';
+      const subscriptionCol = dbHelper.mongo.getCollection('subscriptions');
+      await subscriptionCol.insertOne({
+        id: subscriptionId,
         userId: 'user-cancel-test',
         productId: testProductId,
         startDate: '2025-01-15T10:00:00.000Z',
+        nextBillingDate: '2025-02-15T10:00:00.000Z',
+        status: 'pending',
+        createdAt: new Date(),
       });
-      subscriptionId = createResponse.body.result.subscriptionId;
     });
 
     it('應該成功取消訂閱', () => {

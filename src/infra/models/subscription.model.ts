@@ -1,6 +1,8 @@
 import { IBaseModel } from './base-model.interface';
 
 export interface ISubscriptionModel extends IBaseModel {
+  /** 訂閱ID */
+  id: string;
   /** 使用者ID */
   userId: string;
   /** 產品ID */

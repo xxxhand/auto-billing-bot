@@ -1,6 +1,5 @@
 import { DEFAULT_MONGO } from '@myapp/common';
 import { Inject, Injectable } from '@nestjs/common';
-import { plainToInstance } from 'class-transformer';
 import { CustomDefinition, CustomValidator, CustomMongoClient } from '@xxxhand/app-common';
 import { OperationLog } from '../../domain/entities/operation-log.entity';
 import { modelNames, IOperationLogDocument } from '../models/models.definition';
@@ -18,15 +17,21 @@ export class OperationLogRepository {
     }
 
     const doc = <IOperationLogDocument>{
+      id: entity.id,
       subscriptionId: entity.subscriptionId,
       action: entity.action,
     };
 
     if (!CustomValidator.nonEmptyString(entity.id)) {
-      // 新增操作日誌
+      // 新增操作日誌 - 生成ID
+      entity.id = `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const doc = <IOperationLogDocument>{
+        id: entity.id,
+        subscriptionId: entity.subscriptionId,
+        action: entity.action,
+      };
       const col = this.defMongoClient.getCollection(modelNames.OPERATION_LOGS);
-      const docRes = await col.insertOne(doc);
-      entity.id = docRes.insertedId.toHexString();
+      await col.insertOne(doc);
       return entity;
     }
 
