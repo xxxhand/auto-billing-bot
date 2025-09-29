@@ -50,16 +50,7 @@ export class Coupon extends BaseEntity {
   @IsString({ each: true })
   usedBy: string[];
 
-  constructor(
-    id: string,
-    code: string,
-    type: DiscountType,
-    value: number,
-    priority: CouponPriority,
-    validFrom: Date,
-    validUntil: Date,
-    usageLimit?: number,
-  ) {
+  constructor(id: string, code: string, type: DiscountType, value: number, priority: CouponPriority, validFrom: Date, validUntil: Date, usageLimit?: number) {
     super();
     this.id = id;
     this.code = code;

@@ -62,22 +62,14 @@ describe('CouponService', () => {
         CouponPriority.BASIC,
         new Date(now.getTime() - 86400000), // yesterday
         new Date(now.getTime() + 86400000), // tomorrow
-        100
+        100,
       );
 
       expect(() => service.validateCoupon(coupon)).not.toThrow();
     });
 
     it('should throw error for expired coupon', () => {
-      const coupon = new Coupon(
-        '1',
-        'EXPIRED',
-        DiscountType.PERCENTAGE,
-        10,
-        CouponPriority.BASIC,
-        new Date('2020-01-01'),
-        new Date('2020-12-31'),
-      );
+      const coupon = new Coupon('1', 'EXPIRED', DiscountType.PERCENTAGE, 10, CouponPriority.BASIC, new Date('2020-01-01'), new Date('2020-12-31'));
 
       expect(() => service.validateCoupon(coupon)).toThrow('Coupon has expired');
     });
@@ -85,15 +77,7 @@ describe('CouponService', () => {
     it('should throw error for not yet valid coupon', () => {
       const future = new Date();
       future.setDate(future.getDate() + 1);
-      const coupon = new Coupon(
-        '1',
-        'FUTURE',
-        DiscountType.PERCENTAGE,
-        10,
-        CouponPriority.BASIC,
-        future,
-        new Date(future.getTime() + 86400000),
-      );
+      const coupon = new Coupon('1', 'FUTURE', DiscountType.PERCENTAGE, 10, CouponPriority.BASIC, future, new Date(future.getTime() + 86400000));
 
       expect(() => service.validateCoupon(coupon)).toThrow('Coupon is not yet valid');
     });
@@ -107,7 +91,7 @@ describe('CouponService', () => {
         CouponPriority.BASIC,
         new Date(),
         new Date(Date.now() + 86400000), // tomorrow
-        1
+        1,
       );
       coupon.usedCount = 1;
 

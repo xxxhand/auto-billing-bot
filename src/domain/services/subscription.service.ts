@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Subscription, SubscriptionStatus, BillingCycleType } from '../entities/subscription.entity';
 import { BillingCycle } from '../value-objects/billing-cycle.value-object';
 import { Discount } from '../value-objects/discount.value-object';
+import { ErrException, errConstants } from '@myapp/common';
 
 export interface CreateSubscriptionRequest {
   userId: string;
@@ -77,9 +78,9 @@ export class SubscriptionService {
   }
 
   /**
-   * Suspend a subscription
+   * Change subscription plan (upgrade only: monthly->yearly, quarterly->yearly)
    */
-  suspendSubscription(subscriptionId: string): Subscription {
+  changePlan(subscriptionId: string, newBillingCycle: BillingCycleType): Subscription {
     // TODO: Get subscription from repository
     const subscription = this.getSubscriptionById(subscriptionId);
 
@@ -87,27 +88,38 @@ export class SubscriptionService {
       throw new Error('Subscription not found');
     }
 
-    subscription.suspend();
+    // Validate plan change rules
+    if (!this.isValidPlanChange(subscription.billingCycle, newBillingCycle)) {
+      throw ErrException.newFromCodeName(errConstants.ERR_INVALID_PLAN_CHANGE);
+    }
+
+    // Change the billing cycle
+    subscription.changeBillingCycle(newBillingCycle);
+
     // TODO: Save to repository
+    // TODO: Handle prorated billing if needed
 
     return subscription;
   }
 
   /**
-   * Resume a suspended subscription
+   * Validate if plan change is allowed
    */
-  resumeSubscription(subscriptionId: string): Subscription {
-    // TODO: Get subscription from repository
-    const subscription = this.getSubscriptionById(subscriptionId);
-
-    if (!subscription) {
-      throw new Error('Subscription not found');
+  private isValidPlanChange(currentCycle: BillingCycleType, newCycle: BillingCycleType): boolean {
+    // Only allow upgrades: monthly->yearly, quarterly->yearly
+    if (currentCycle === newCycle) {
+      return false; // Same plan not allowed
     }
 
-    subscription.resume();
-    // TODO: Save to repository
+    if (currentCycle === BillingCycleType.MONTHLY && newCycle === BillingCycleType.YEARLY) {
+      return true;
+    }
 
-    return subscription;
+    if (currentCycle === BillingCycleType.QUARTERLY && newCycle === BillingCycleType.YEARLY) {
+      return true;
+    }
+
+    return false; // All other changes not allowed
   }
 
   /**
@@ -159,7 +171,7 @@ export class SubscriptionService {
     const paymentId = this.generatePaymentId();
 
     // Record billing in subscription
-    subscription.recordBilling(paymentId);
+    subscription.recordBilling();
     // TODO: Save to repository
 
     return {

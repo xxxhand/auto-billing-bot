@@ -5,16 +5,7 @@ describe('Coupon Entity', () => {
   let validCoupon: Coupon;
 
   beforeEach(() => {
-    validCoupon = new Coupon(
-      'coupon-001',
-      'TEST10',
-      DiscountType.PERCENTAGE,
-      10,
-      CouponPriority.BASIC,
-      new Date('2024-01-01'),
-      new Date('2024-12-31'),
-      100,
-    );
+    validCoupon = new Coupon('coupon-001', 'TEST10', DiscountType.PERCENTAGE, 10, CouponPriority.BASIC, new Date('2024-01-01'), new Date('2024-12-31'), 100);
   });
 
   describe('constructor', () => {
@@ -39,30 +30,14 @@ describe('Coupon Entity', () => {
     });
 
     it('should fail validation with invalid id', async () => {
-      const invalidCoupon = new Coupon(
-        '',
-        'TEST10',
-        DiscountType.PERCENTAGE,
-        10,
-        CouponPriority.BASIC,
-        new Date('2024-01-01'),
-        new Date('2024-12-31'),
-      );
+      const invalidCoupon = new Coupon('', 'TEST10', DiscountType.PERCENTAGE, 10, CouponPriority.BASIC, new Date('2024-01-01'), new Date('2024-12-31'));
       const errors = await validate(invalidCoupon);
       expect(errors.length).toBeGreaterThan(0);
       expect(errors[0].constraints).toHaveProperty('isNotEmpty');
     });
 
     it('should fail validation with negative value', async () => {
-      const invalidCoupon = new Coupon(
-        'coupon-001',
-        'TEST10',
-        DiscountType.PERCENTAGE,
-        -10,
-        CouponPriority.BASIC,
-        new Date('2024-01-01'),
-        new Date('2024-12-31'),
-      );
+      const invalidCoupon = new Coupon('coupon-001', 'TEST10', DiscountType.PERCENTAGE, -10, CouponPriority.BASIC, new Date('2024-01-01'), new Date('2024-12-31'));
       const errors = await validate(invalidCoupon);
       expect(errors.length).toBeGreaterThan(0);
     });
@@ -103,15 +78,7 @@ describe('Coupon Entity', () => {
     });
 
     it('should return false when usageLimit is not set', () => {
-      const unlimitedCoupon = new Coupon(
-        'coupon-002',
-        'UNLIMITED',
-        DiscountType.FIXED,
-        50,
-        CouponPriority.BASIC,
-        new Date('2024-01-01'),
-        new Date('2024-12-31'),
-      );
+      const unlimitedCoupon = new Coupon('coupon-002', 'UNLIMITED', DiscountType.FIXED, 50, CouponPriority.BASIC, new Date('2024-01-01'), new Date('2024-12-31'));
       unlimitedCoupon.usedCount = 1000;
       expect(unlimitedCoupon.isUsageLimitReached()).toBe(false);
     });
@@ -148,44 +115,20 @@ describe('Coupon Entity', () => {
 
   describe('calculateDiscount', () => {
     it('should calculate percentage discount correctly', () => {
-      const percentageCoupon = new Coupon(
-        'coupon-001',
-        'PERCENT10',
-        DiscountType.PERCENTAGE,
-        10,
-        CouponPriority.BASIC,
-        new Date('2024-01-01'),
-        new Date('2024-12-31'),
-      );
+      const percentageCoupon = new Coupon('coupon-001', 'PERCENT10', DiscountType.PERCENTAGE, 10, CouponPriority.BASIC, new Date('2024-01-01'), new Date('2024-12-31'));
 
       expect(percentageCoupon.calculateDiscount(100)).toBe(10);
       expect(percentageCoupon.calculateDiscount(50)).toBe(5);
     });
 
     it('should not exceed original amount for percentage discount', () => {
-      const percentageCoupon = new Coupon(
-        'coupon-001',
-        'PERCENT150',
-        DiscountType.PERCENTAGE,
-        150,
-        CouponPriority.BASIC,
-        new Date('2024-01-01'),
-        new Date('2024-12-31'),
-      );
+      const percentageCoupon = new Coupon('coupon-001', 'PERCENT150', DiscountType.PERCENTAGE, 150, CouponPriority.BASIC, new Date('2024-01-01'), new Date('2024-12-31'));
 
       expect(percentageCoupon.calculateDiscount(100)).toBe(100);
     });
 
     it('should calculate fixed discount correctly', () => {
-      const fixedCoupon = new Coupon(
-        'coupon-002',
-        'FIXED50',
-        DiscountType.FIXED,
-        50,
-        CouponPriority.BASIC,
-        new Date('2024-01-01'),
-        new Date('2024-12-31'),
-      );
+      const fixedCoupon = new Coupon('coupon-002', 'FIXED50', DiscountType.FIXED, 50, CouponPriority.BASIC, new Date('2024-01-01'), new Date('2024-12-31'));
 
       expect(fixedCoupon.calculateDiscount(100)).toBe(50);
       expect(fixedCoupon.calculateDiscount(30)).toBe(30);

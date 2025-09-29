@@ -5,10 +5,14 @@ import { Module, BeforeApplicationShutdown, MiddlewareConsumer, NestModule, OnAp
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { ExampleRepository } from './infra/repositories/example.repository';
+import { SubscriptionRepository } from './infra/repositories/subscription.repository';
 import { AppExceptionFilter } from './app-components/app-exception.filter';
 import { AppTracerMiddleware } from './app-components/app-tracer.middleware';
 import * as jobs from './application/jobs';
 import * as v1Controllers from './application/controllers/v1';
+import { SubscriptionApplicationService } from './application/services/subscription-application.service';
+import { SubscriptionService } from './domain/services/subscription.service';
+import { CouponService } from './domain/services/coupon.service';
 @Module({
   imports: [CommonModule, ScheduleModule.forRoot()],
   controllers: [AppController, ...Array.from(Object.keys(v1Controllers)).map((key) => v1Controllers[key])],
@@ -19,6 +23,10 @@ import * as v1Controllers from './application/controllers/v1';
       useClass: AppExceptionFilter,
     },
     ExampleRepository,
+    SubscriptionRepository,
+    SubscriptionApplicationService,
+    SubscriptionService,
+    CouponService,
     ...Array.from(Object.keys(jobs)).map((key) => jobs[key]),
   ],
 })

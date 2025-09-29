@@ -20,4 +20,10 @@ export const errCodes: CustomDefinition.ICodeStruct[] = [
     httpStatus: 400,
     message: 'Client duplicated',
   },
+  {
+    codeName: errConstants.ERR_INVALID_PLAN_CHANGE,
+    code: 2001,
+    httpStatus: 400,
+    message: 'Invalid plan change: only monthly to yearly or quarterly to yearly upgrades are allowed',
+  },
 ];

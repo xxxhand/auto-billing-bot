@@ -2,9 +2,20 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SubscriptionService, CreateSubscriptionRequest } from './subscription.service';
 import { Subscription, SubscriptionStatus, BillingCycleType } from '../entities/subscription.entity';
 import { Discount, DiscountType } from '../value-objects/discount.value-object';
+import { ErrException, errConstants } from '@myapp/common';
+import { errCodes } from '../../../libs/common/src/err.code';
 
 describe('SubscriptionService', () => {
   let service: SubscriptionService;
+
+  beforeAll(() => {
+    // Register error codes for testing (only once)
+    try {
+      ErrException.addCodes(errCodes);
+    } catch (error) {
+      // Ignore duplicate registration errors
+    }
+  });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -61,18 +72,6 @@ describe('SubscriptionService', () => {
   describe('cancelSubscription', () => {
     it('should throw error for non-existent subscription', () => {
       expect(() => service.cancelSubscription('non-existent')).toThrow('Subscription not found');
-    });
-  });
-
-  describe('suspendSubscription', () => {
-    it('should throw error for non-existent subscription', () => {
-      expect(() => service.suspendSubscription('non-existent')).toThrow('Subscription not found');
-    });
-  });
-
-  describe('resumeSubscription', () => {
-    it('should throw error for non-existent subscription', () => {
-      expect(() => service.resumeSubscription('non-existent')).toThrow('Subscription not found');
     });
   });
 
@@ -196,6 +195,106 @@ describe('SubscriptionService', () => {
     it('should return empty array', () => {
       const result = service.getSubscriptionsNeedingBilling();
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('changePlan', () => {
+    it('should throw error for non-existent subscription', () => {
+      expect(() => service.changePlan('non-existent', BillingCycleType.YEARLY)).toThrow('Subscription not found');
+    });
+
+    it('should successfully change plan from monthly to yearly', () => {
+      // Create active monthly subscription
+      const subscription = new Subscription('sub-001', 'user-001', 'product-001', BillingCycleType.MONTHLY, new Date('2024-01-01'));
+      subscription.activate();
+
+      // Mock the getSubscriptionById method
+      jest.spyOn(service as any, 'getSubscriptionById').mockReturnValue(subscription);
+
+      const result = service.changePlan('sub-001', BillingCycleType.YEARLY);
+
+      expect(result.billingCycle).toBe(BillingCycleType.YEARLY); // Should change to yearly immediately
+      expect(result.status).toBe(SubscriptionStatus.ACTIVE);
+    });
+
+    it('should successfully change plan from quarterly to yearly', () => {
+      // Create active quarterly subscription
+      const subscription = new Subscription('sub-001', 'user-001', 'product-001', BillingCycleType.QUARTERLY, new Date('2024-01-01'));
+      subscription.activate();
+
+      // Mock the getSubscriptionById method
+      jest.spyOn(service as any, 'getSubscriptionById').mockReturnValue(subscription);
+
+      const result = service.changePlan('sub-001', BillingCycleType.YEARLY);
+
+      expect(result.billingCycle).toBe(BillingCycleType.YEARLY); // Should change to yearly immediately
+    });
+
+    it('should throw InvalidPlanChangeException for yearly to monthly downgrade', () => {
+      // Create active yearly subscription
+      const subscription = new Subscription('sub-001', 'user-001', 'product-001', BillingCycleType.YEARLY, new Date('2024-01-01'));
+      subscription.activate();
+
+      // Mock the getSubscriptionById method
+      jest.spyOn(service as any, 'getSubscriptionById').mockReturnValue(subscription);
+
+      expect(() => service.changePlan('sub-001', BillingCycleType.MONTHLY)).toThrow(ErrException);
+      try {
+        service.changePlan('sub-001', BillingCycleType.MONTHLY);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ErrException);
+        expect((error as ErrException).getCodeName()).toBe(errConstants.ERR_INVALID_PLAN_CHANGE);
+      }
+    });
+
+    it('should throw InvalidPlanChangeException for quarterly to monthly downgrade', () => {
+      // Create active quarterly subscription
+      const subscription = new Subscription('sub-001', 'user-001', 'product-001', BillingCycleType.QUARTERLY, new Date('2024-01-01'));
+      subscription.activate();
+
+      // Mock the getSubscriptionById method
+      jest.spyOn(service as any, 'getSubscriptionById').mockReturnValue(subscription);
+
+      expect(() => service.changePlan('sub-001', BillingCycleType.MONTHLY)).toThrow(ErrException);
+      try {
+        service.changePlan('sub-001', BillingCycleType.MONTHLY);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ErrException);
+        expect((error as ErrException).getCodeName()).toBe(errConstants.ERR_INVALID_PLAN_CHANGE);
+      }
+    });
+
+    it('should throw InvalidPlanChangeException for weekly to monthly change', () => {
+      // Create active weekly subscription
+      const subscription = new Subscription('sub-001', 'user-001', 'product-001', BillingCycleType.WEEKLY, new Date('2024-01-01'));
+      subscription.activate();
+
+      // Mock the getSubscriptionById method
+      jest.spyOn(service as any, 'getSubscriptionById').mockReturnValue(subscription);
+
+      expect(() => service.changePlan('sub-001', BillingCycleType.MONTHLY)).toThrow(ErrException);
+      try {
+        service.changePlan('sub-001', BillingCycleType.MONTHLY);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ErrException);
+        expect((error as ErrException).getCodeName()).toBe(errConstants.ERR_INVALID_PLAN_CHANGE);
+      }
+    });
+
+    it('should apply pending plan change during billing', () => {
+      // Create active monthly subscription with pending yearly change
+      const subscription = new Subscription('sub-001', 'user-001', 'product-001', BillingCycleType.MONTHLY, new Date('2024-01-01'));
+      subscription.activate();
+      subscription.changeBillingCycle(BillingCycleType.YEARLY); // Set pending change
+
+      // Mock the getSubscriptionById method
+      jest.spyOn(service as any, 'getSubscriptionById').mockReturnValue(subscription);
+
+      // Process billing
+      const result = service.processBilling('sub-001', 100);
+
+      expect(result.success).toBe(true);
+      expect(subscription.billingCycle).toBe(BillingCycleType.YEARLY); // Should now be yearly
     });
   });
 });

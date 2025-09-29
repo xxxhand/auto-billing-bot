@@ -17,7 +17,6 @@ describe('Subscription Entity', () => {
       expect(validSubscription.billingCycle).toBe(BillingCycleType.MONTHLY);
       expect(validSubscription.startDate).toEqual(new Date('2024-01-01'));
       expect(validSubscription.renewalCount).toBe(0);
-      expect(validSubscription.billingHistory).toEqual([]);
       expect(validSubscription.nextBillingDate).toBeDefined();
     });
 
@@ -70,28 +69,6 @@ describe('Subscription Entity', () => {
       validSubscription.cancel();
       expect(() => validSubscription.cancel()).toThrow('Subscription is already cancelled');
     });
-
-    it('should suspend active subscription', () => {
-      validSubscription.activate();
-      validSubscription.suspend();
-      expect(validSubscription.status).toBe(SubscriptionStatus.SUSPENDED);
-    });
-
-    it('should throw error when suspending non-active subscription', () => {
-      expect(() => validSubscription.suspend()).toThrow('Only active subscriptions can be suspended');
-    });
-
-    it('should resume suspended subscription', () => {
-      validSubscription.activate();
-      validSubscription.suspend();
-      validSubscription.resume();
-      expect(validSubscription.status).toBe(SubscriptionStatus.ACTIVE);
-    });
-
-    it('should throw error when resuming non-suspended subscription', () => {
-      validSubscription.activate();
-      expect(() => validSubscription.resume()).toThrow('Only suspended subscriptions can be resumed');
-    });
   });
 
   describe('business methods', () => {
@@ -118,15 +95,11 @@ describe('Subscription Entity', () => {
     });
 
     it('should record billing correctly', () => {
-      const paymentId = 'payment-001';
       const initialRenewalCount = validSubscription.renewalCount;
-      const initialHistoryLength = validSubscription.billingHistory.length;
 
-      validSubscription.recordBilling(paymentId);
+      validSubscription.recordBilling();
 
       expect(validSubscription.renewalCount).toBe(initialRenewalCount + 1);
-      expect(validSubscription.billingHistory.length).toBe(initialHistoryLength + 1);
-      expect(validSubscription.billingHistory).toContain(paymentId);
       expect(validSubscription.lastBillingDate).toBeDefined();
       expect(validSubscription.nextBillingDate).toBeDefined();
     });

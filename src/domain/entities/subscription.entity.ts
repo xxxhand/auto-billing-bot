@@ -1,12 +1,11 @@
-import { IsString, IsDate, IsEnum, IsNumber, IsOptional, IsArray, Min, IsNotEmpty } from 'class-validator';
+import { IsString, IsDate, IsEnum, IsNumber, IsOptional, Min, IsNotEmpty } from 'class-validator';
 import { BaseEntity } from './base-entity.abstract';
 
 export enum SubscriptionStatus {
-  PENDING = 'pending',     // 待生效
-  ACTIVE = 'active',       // 已生效
+  PENDING = 'pending', // 待生效
+  ACTIVE = 'active', // 已生效
   CANCELLED = 'cancelled', // 已取消
-  SUSPENDED = 'suspended', // 已暫停
-  EXPIRED = 'expired',     // 已過期
+  GRACE_PERIOD = 'grace_period', // 寬限期
 }
 
 export enum BillingCycleType {
@@ -53,13 +52,11 @@ export class Subscription extends BaseEntity {
   lastBillingDate?: Date;
 
   @IsOptional()
-  @IsNumber()
-  @Min(0)
-  gracePeriodDays?: number;
+  @IsDate()
+  gracePeriodEndDate?: Date;
 
-  @IsArray()
-  @IsString({ each: true })
-  billingHistory: string[]; // Payment history IDs
+  @IsOptional()
+  couponApplied?: { code: string; periods: number };
 
   constructor(
     id: string,
@@ -77,7 +74,6 @@ export class Subscription extends BaseEntity {
     this.startDate = startDate;
     this.billingCycle = billingCycle;
     this.renewalCount = 0;
-    this.billingHistory = [];
     this.nextBillingDate = this.calculateNextBillingDate(startDate);
   }
 
@@ -103,23 +99,20 @@ export class Subscription extends BaseEntity {
   }
 
   /**
-   * Suspend the subscription
+   * Change billing cycle (for plan upgrades) - takes effect next billing cycle
    */
-  suspend(): void {
-    if (this.status !== SubscriptionStatus.ACTIVE) {
-      throw new Error('Only active subscriptions can be suspended');
-    }
-    this.status = SubscriptionStatus.SUSPENDED;
-  }
+  changeBillingCycle(newBillingCycle: BillingCycleType): void {
+    // Validate plan change according to spec: only allow upgrading to longer cycles
+    const cycleOrder = [BillingCycleType.WEEKLY, BillingCycleType.MONTHLY, BillingCycleType.QUARTERLY, BillingCycleType.YEARLY];
+    const currentIndex = cycleOrder.indexOf(this.billingCycle);
+    const newIndex = cycleOrder.indexOf(newBillingCycle);
 
-  /**
-   * Resume the subscription from suspended state
-   */
-  resume(): void {
-    if (this.status !== SubscriptionStatus.SUSPENDED) {
-      throw new Error('Only suspended subscriptions can be resumed');
+    if (newIndex <= currentIndex) {
+      throw new Error('Invalid plan change: can only upgrade to longer billing cycles');
     }
-    this.status = SubscriptionStatus.ACTIVE;
+
+    this.billingCycle = newBillingCycle;
+    this.nextBillingDate = this.calculateNextBillingDate(new Date());
   }
 
   /**
@@ -149,8 +142,7 @@ export class Subscription extends BaseEntity {
   /**
    * Record a successful billing
    */
-  recordBilling(paymentId: string): void {
-    this.billingHistory.push(paymentId);
+  recordBilling(): void {
     this.lastBillingDate = new Date();
     this.nextBillingDate = this.calculateNextBillingDate(this.lastBillingDate);
     this.renewalCount++;

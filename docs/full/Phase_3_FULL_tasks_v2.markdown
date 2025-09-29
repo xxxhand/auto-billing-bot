@@ -80,19 +80,34 @@
 ### 3. 訂閱管理模組
 | 任務 ID | 任務描述 | 負責角色 | 預估時間 | 優先級 | 依賴 |
 |---------|----------|----------|----------|--------|------|
-| SUB-001 | 撰寫 `subscription` 實體單元測試（`id`, `userId`, `productId`, `billingCycle`, `startDate`, `nextBillingDate`, `couponApplied`, `renewalCount`, `status`, `gracePeriodEndDate`） | QA | 1 天 | 高 | 無 |
-| SUB-002 | 實現 `subscription` 實體，包含資料驗證 | BE | 1 天 | 高 | SUB-001 |
-| SUB-003 | 撰寫 `billingCycle` 值物件單元測試（週期驗證） | QA | 1 天 | 高 | SUB-001 |
-| SUB-004 | 實現 `billingCycle` 值物件（`weekly`, `monthly`, `quarterly`, `yearly`） | BE | 1 天 | 高 | SUB-003 |
-| SUB-005 | 撰寫 `subscriptionService` 單元測試（狀態流轉、方案轉換） | QA | 2 天 | 高 | SUB-001, SUB-003 |
-| SUB-006 | 實現 `subscriptionService`，包含狀態流轉（`pending → active → cancelled/gracePeriod`） | BE | 2 天 | 高 | SUB-005 |
+| SUB-001 | 撰寫 `subscription` 實體單元測試（`id`, `userId`, `productId`, `billingCycle`, `startDate`, `nextBillingDate`, `couponApplied`, `renewalCount`, `status`, `gracePeriodEndDate`） | QA | 1 天 | 高 | 無 | ✓ |
+| SUB-002 | 實現 `subscription` 實體，包含資料驗證 | BE | 1 天 | 高 | SUB-001 | ✓ |
+| SUB-003 | 撰寫 `billingCycle` 值物件單元測試（週期驗證） | QA | 1 天 | 高 | SUB-001 | ✓ |
+| SUB-004 | 實現 `billingCycle` 值物件（`weekly`, `monthly`, `quarterly`, `yearly`） | BE | 1 天 | 高 | SUB-003 | ✓ |
+| SUB-005 | 撰寫 `subscriptionService` 單元測試（狀態流轉、方案轉換） | QA | 2 天 | 高 | SUB-001, SUB-003 | ✓ |
+| SUB-006 | 實現 `subscriptionService`，包含狀態流轉（`pending → active → cancelled/gracePeriod`） | BE | 2 天 | 高 | SUB-005 | ✓ |
 | SUB-007 | 撰寫方案轉換測試（短期轉長期，拋出 `invalidPlanChangeException`） | QA | 1 天 | 高 | SUB-005 |
 | SUB-008 | 實現方案轉換邏輯（僅支援月→年、季→年，下一週期生效） | BE | 2 天 | 高 | SUB-007 |
 | SUB-009 | 撰寫 `subscriptionApplicationService` 單元測試（API 業務流程） | QA | 1 天 | 中 | SUB-005 |
 | SUB-010 | 實現 `subscriptionApplicationService`，處理 API 請求 | BE | 1 天 | 中 | SUB-009 |
 | SUB-011 | 撰寫整合測試（訂閱創建、方案轉換 API） | QA | 2 天 | 中 | SUB-006, SUB-008, API-001 |
 
-### 4. 支付模組
+**開發狀態更新 (2025年9月29日)**:
+- ✅ SUB-009: 已完成 - SubscriptionApplicationService 單元測試
+- ✅ SUB-010: 已完成 - SubscriptionApplicationService 實現
+- 🔄 SUB-011: 進行中 - 整合測試實現
+  - 問題: 整合測試返回 500 Internal Server Error 而非預期的 HTTP 狀態碼
+  - 原因: 實體欄位與資料結構不一致，已調整為符合規格
+  - 已解決: 
+    - 更新 Subscription 實體欄位（移除 pendingPlanChange, billingHistory, gracePeriodDays；添加 couponApplied, gracePeriodEndDate）
+    - 更新 SubscriptionStatus 枚舉（移除 SUSPENDED, EXPIRED；添加 GRACE_PERIOD）
+    - 更新 SubscriptionRepository 和模型接口
+    - 移除 SubscriptionService 中未使用的 suspendSubscription 和 resumeSubscription 方法
+    - 更新相關測試文件
+  - 待解決:
+    - 修復整合測試中的依賴注入問題
+    - 控制器返回 HTTP 201 狀態碼（當前返回 200）
+    - 驗證所有 API 端點正常工作
 | 任務 ID | 任務描述 | 負責角色 | 預估時間 | 優先級 | 依賴 |
 |---------|----------|----------|----------|--------|------|
 | PAY-001 | 撰寫 `paymentResult` 值物件單元測試（`success`, `reason`, `retryCount`） | QA | 1 天 | 高 | 無 |
