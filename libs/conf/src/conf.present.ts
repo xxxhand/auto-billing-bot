@@ -17,6 +17,9 @@ export interface IConf {
     password: string;
   };
   dailyBillingCron: string;
+  jwtSecret: string;
+  redisUrl: string;
+  aesEncryptionKey: string;
 }
 
 export const cmmConf: IConf = {
@@ -38,4 +41,7 @@ export const cmmConf: IConf = {
   localesPath: process.env.LOCALES_PATH,
   fallbackLocale: process.env.FALLBACK_LOCALE,
   dailyBillingCron: process.env.DAILY_BILLING_EXEC,
+  jwtSecret: process.env.JWT_SECRET,
+  redisUrl: process.env.REDIS_URL,
+  aesEncryptionKey: process.env.AES_ENCRYPTION_KEY,
 };
