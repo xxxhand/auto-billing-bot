@@ -17,7 +17,10 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "migrate:phase3": "node scripts/migrate-phase3.js",
+    "seed:phase3": "node scripts/seed-phase3.js",
+    "redis:health": "node -e \"const Redis = require('ioredis'); const client = new Redis(process.env.REDIS_URL || 'redis://localhost:6379'); client.ping().then(() => { console.log('Redis is healthy'); process.exit(0); }).catch(() => { console.log('Redis is not healthy'); process.exit(1); });\""
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

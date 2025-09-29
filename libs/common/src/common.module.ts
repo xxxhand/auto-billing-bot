@@ -4,9 +4,10 @@ import { ConfModule, ConfService } from '@myapp/conf';
 import { errCodes } from './err.code';
 import { ErrException } from './err.exception';
 import { CommonService } from './common.service';
-import { DEFAULT_MONGO, DEFAULT_TRANSLATE, DEFAULT_HTTP_CLIENT } from './common.const';
+import { DEFAULT_MONGO, DEFAULT_TRANSLATE, DEFAULT_HTTP_CLIENT, DEFAULT_REDIS } from './common.const';
 import { EasyTranslateService } from './components/easy-translate.service';
 import { AsyncLocalStorageProvider } from './clients/async-local-storage.provider';
+import * as Redis from 'ioredis';
 
 @Global()
 @Module({
@@ -45,9 +46,18 @@ import { AsyncLocalStorageProvider } from './clients/async-local-storage.provide
       provide: DEFAULT_HTTP_CLIENT,
       useClass: CustomHttpClient,
     },
+    {
+      provide: DEFAULT_REDIS,
+      useFactory: async (confService: ConfService): Promise<Redis.Redis> => {
+        const redisUrl = confService.getConf().redisUrl;
+        const client = new (Redis as any)(redisUrl);
+        return client;
+      },
+      inject: [ConfService],
+    },
     AsyncLocalStorageProvider,
   ],
-  exports: [CommonService, DEFAULT_MONGO, DEFAULT_HTTP_CLIENT],
+  exports: [CommonService, DEFAULT_MONGO, DEFAULT_HTTP_CLIENT, DEFAULT_REDIS],
 })
 export class CommonModule implements OnModuleInit {
   onModuleInit() {
