@@ -16,7 +16,7 @@ import { AsyncLocalStorageProvider } from './clients/async-local-storage.provide
     ConfService,
     {
       provide: DEFAULT_MONGO,
-      useFactory: async (confService: ConfService): Promise<CustomMongoClient> => {
+      useFactory: (confService: ConfService): CustomMongoClient => {
         const uri = confService.getConf().defaultMongo.uri;
         const opt: CustomDefinition.IMongoOptions = {
           minPoolSize: confService.getConf().defaultMongo.minPoolSize,
@@ -27,6 +27,7 @@ import { AsyncLocalStorageProvider } from './clients/async-local-storage.provide
           pass: confService.getConf().defaultMongo.password,
         };
         const client = new CustomMongoClient(uri, opt);
+        // 非同步連接，但不等待
         client.tryConnect().catch((ex) => console.error(ex));
         return client;
       },

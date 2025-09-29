@@ -1,0 +1,335 @@
+// MongoDB Test Data for Auto Billing Bot MVP
+// Use these documents to populate your MongoDB collections for testing
+// Run these commands in MongoDB shell or use mongoimport
+
+// ==========================================
+// PRODUCTS COLLECTION
+// ==========================================
+db.Products.insertMany([
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439011"),
+    "name": "Basic Monthly Plan",
+    "cycleType": "monthly",
+    "price": 29.99,
+    "discountPercentage": 0,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439012"),
+    "name": "Premium Monthly Plan",
+    "cycleType": "monthly",
+    "price": 49.99,
+    "discountPercentage": 0,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439013"),
+    "name": "Basic Yearly Plan",
+    "cycleType": "yearly",
+    "price": 299.99,
+    "discountPercentage": 20,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439014"),
+    "name": "Premium Yearly Plan",
+    "cycleType": "yearly",
+    "price": 499.99,
+    "discountPercentage": 25,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]);
+
+// ==========================================
+// COUPONS COLLECTION
+// ==========================================
+db.Coupons.insertMany([
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439021"),
+    "code": "WELCOME10",
+    "discountPercentage": 10,
+    "usedBy": [],
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439022"),
+    "code": "LOYALTY20",
+    "discountPercentage": 20,
+    "usedBy": ["user-001"],
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439023"),
+    "code": "BLACKFRIDAY50",
+    "discountPercentage": 50,
+    "usedBy": [],
+    "createdAt": "2024-11-25T00:00:00.000Z",
+    "updatedAt": "2024-11-25T00:00:00.000Z"
+  }
+]);
+
+// ==========================================
+// SUBSCRIPTIONS COLLECTION
+// ==========================================
+db.Subscriptions.insertMany([
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439031"),
+    "userId": "user-001",
+    "productId": "507f1f77bcf86cd799439011",
+    "startDate": "2024-01-15T00:00:00.000Z",
+    "nextBillingDate": "2024-02-15T00:00:00.000Z",
+    "status": "active",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "renewalCount": 1,
+    "couponCode": "WELCOME10",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439032"),
+    "userId": "user-002",
+    "productId": "507f1f77bcf86cd799439012",
+    "startDate": "2024-02-01T00:00:00.000Z",
+    "nextBillingDate": "2024-03-01T00:00:00.000Z",
+    "status": "active",
+    "createdAt": "2024-02-01T00:00:00.000Z",
+    "renewalCount": 0,
+    "updatedAt": "2024-02-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439033"),
+    "userId": "user-003",
+    "productId": "507f1f77bcf86cd799439013",
+    "startDate": "2024-01-01T00:00:00.000Z",
+    "nextBillingDate": "2025-01-01T00:00:00.000Z",
+    "status": "active",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "renewalCount": 0,
+    "couponCode": "LOYALTY20",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439034"),
+    "userId": "user-004",
+    "productId": "507f1f77bcf86cd799439011",
+    "startDate": "2024-03-01T00:00:00.000Z",
+    "nextBillingDate": "2024-04-01T00:00:00.000Z",
+    "status": "cancelled",
+    "createdAt": "2024-03-01T00:00:00.000Z",
+    "renewalCount": 0,
+    "updatedAt": "2024-03-15T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439035"),
+    "userId": "user-005",
+    "productId": "507f1f77bcf86cd799439014",
+    "startDate": "2024-06-01T00:00:00.000Z",
+    "nextBillingDate": "2025-06-01T00:00:00.000Z",
+    "status": "grace_period",
+    "createdAt": "2024-06-01T00:00:00.000Z",
+    "renewalCount": 0,
+    "updatedAt": "2024-06-15T00:00:00.000Z"
+  }
+]);
+
+// ==========================================
+// PAYMENT_HISTORIES COLLECTION
+// ==========================================
+db.PaymentHistories.insertMany([
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439041"),
+    "subscriptionId": "507f1f77bcf86cd799439031",
+    "amount": 26.99,
+    "status": "success",
+    "retryCount": 0,
+    "isManual": false,
+    "isAuto": true,
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439042"),
+    "subscriptionId": "507f1f77bcf86cd799439031",
+    "amount": 26.99,
+    "status": "success",
+    "retryCount": 0,
+    "isManual": false,
+    "isAuto": true,
+    "createdAt": "2024-02-15T00:00:00.000Z",
+    "updatedAt": "2024-02-15T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439043"),
+    "subscriptionId": "507f1f77bcf86cd799439032",
+    "amount": 49.99,
+    "status": "success",
+    "retryCount": 0,
+    "isManual": false,
+    "isAuto": true,
+    "createdAt": "2024-02-01T00:00:00.000Z",
+    "updatedAt": "2024-02-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439044"),
+    "subscriptionId": "507f1f77bcf86cd799439033",
+    "amount": 239.99,
+    "status": "success",
+    "retryCount": 0,
+    "isManual": false,
+    "isAuto": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439045"),
+    "subscriptionId": "507f1f77bcf86cd799439034",
+    "amount": 29.99,
+    "status": "failed",
+    "failureReason": "Insufficient funds",
+    "retryCount": 3,
+    "isManual": false,
+    "isAuto": true,
+    "createdAt": "2024-03-01T00:00:00.000Z",
+    "updatedAt": "2024-03-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439046"),
+    "subscriptionId": "507f1f77bcf86cd799439034",
+    "amount": 29.99,
+    "status": "success",
+    "retryCount": 0,
+    "isManual": true,
+    "isAuto": false,
+    "createdAt": "2024-03-10T00:00:00.000Z",
+    "updatedAt": "2024-03-10T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439047"),
+    "subscriptionId": "507f1f77bcf86cd799439035",
+    "amount": 374.99,
+    "status": "failed",
+    "failureReason": "Payment method expired",
+    "retryCount": 2,
+    "isManual": false,
+    "isAuto": true,
+    "createdAt": "2024-06-01T00:00:00.000Z",
+    "updatedAt": "2024-06-01T00:00:00.000Z"
+  }
+]);
+
+// ==========================================
+// OPERATION_LOGS COLLECTION
+// ==========================================
+db.OperationLogs.insertMany([
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439051"),
+    "subscriptionId": "507f1f77bcf86cd799439031",
+    "action": "subscription_created",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439052"),
+    "subscriptionId": "507f1f77bcf86cd799439031",
+    "action": "payment_success",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439053"),
+    "subscriptionId": "507f1f77bcf86cd799439031",
+    "action": "subscription_renewed",
+    "createdAt": "2024-02-15T00:00:00.000Z",
+    "updatedAt": "2024-02-15T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439054"),
+    "subscriptionId": "507f1f77bcf86cd799439032",
+    "action": "subscription_created",
+    "createdAt": "2024-02-01T00:00:00.000Z",
+    "updatedAt": "2024-02-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439055"),
+    "subscriptionId": "507f1f77bcf86cd799439034",
+    "action": "subscription_created",
+    "createdAt": "2024-03-01T00:00:00.000Z",
+    "updatedAt": "2024-03-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439056"),
+    "subscriptionId": "507f1f77bcf86cd799439034",
+    "action": "payment_failed",
+    "createdAt": "2024-03-01T00:00:00.000Z",
+    "updatedAt": "2024-03-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439057"),
+    "subscriptionId": "507f1f77bcf86cd799439034",
+    "action": "payment_manual_success",
+    "createdAt": "2024-03-10T00:00:00.000Z",
+    "updatedAt": "2024-03-10T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439058"),
+    "subscriptionId": "507f1f77bcf86cd799439034",
+    "action": "subscription_cancelled",
+    "createdAt": "2024-03-15T00:00:00.000Z",
+    "updatedAt": "2024-03-15T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439059"),
+    "subscriptionId": "507f1f77bcf86cd799439035",
+    "action": "subscription_created",
+    "createdAt": "2024-06-01T00:00:00.000Z",
+    "updatedAt": "2024-06-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439060"),
+    "subscriptionId": "507f1f77bcf86cd799439035",
+    "action": "payment_failed",
+    "createdAt": "2024-06-01T00:00:00.000Z",
+    "updatedAt": "2024-06-01T00:00:00.000Z"
+  }
+]);
+
+// ==========================================
+// USAGE INSTRUCTIONS
+// ==========================================
+
+// 1. Connect to your MongoDB instance
+// mongosh "mongodb://localhost:27017/auto-billing-bot"
+
+// 2. Switch to the database
+// use auto-billing-bot
+
+// 3. Copy and paste the insertMany commands above
+
+// 4. Verify data insertion
+// db.products.countDocuments()
+// db.subscriptions.countDocuments()
+// db.payment_histories.countDocuments()
+// db.coupons.countDocuments()
+// db.operation_logs.countDocuments()
+
+// 5. Alternative: Save this file as prepare_data.js and run:
+// mongo auto-billing-bot prepare_data.js
+
+// ==========================================
+// TEST SCENARIOS COVERED
+// ==========================================
+
+// 1. Basic subscription lifecycle (user-001)
+// 2. Premium subscription (user-002)
+// 3. Yearly subscription with discount (user-003)
+// 4. Cancelled subscription with failed payment (user-004)
+// 5. Grace period subscription (user-005)
+// 6. Coupon usage scenarios
+// 7. Manual vs automatic payments
+// 8. Payment retry scenarios
+// 9. Operation logging for all actions

@@ -1,0 +1,185 @@
+{
+  "info": {
+    "name": "Auto Billing Bot API - MVP",
+    "description": "Postman collection for testing Auto Billing Bot subscription and payment APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "apiVersion",
+      "value": "v1",
+      "type": "string"
+    },
+    {
+      "key": "subscriptionId",
+      "value": "",
+      "type": "string",
+      "description": "Store the subscription ID from create response for subsequent requests"
+    }
+  ],
+  "item": [
+    {
+      "name": "Subscription Management",
+      "item": [
+        {
+          "name": "Create Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user-001\",\n  \"productId\": \"prod-basic-monthly\",\n  \"couponCode\": \"WELCOME10\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/subscriptions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "subscriptions"]
+            },
+            "description": "Create a new subscription with initial payment processing"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/subscriptions/user/user-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "subscriptions", "user", "user-001"]
+            },
+            "description": "Get all subscriptions for a specific user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subscription Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/subscriptions/{{subscriptionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "subscriptions", "{{subscriptionId}}"]
+            },
+            "description": "Get details of a specific subscription"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user-001\",\n  \"requestRefund\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/subscriptions/{{subscriptionId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "subscriptions", "{{subscriptionId}}", "cancel"]
+            },
+            "description": "Cancel a subscription with optional refund"
+          },
+          "response": []
+        },
+        {
+          "name": "Upgrade Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user-001\",\n  \"newProductId\": \"prod-premium-monthly\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/subscriptions/{{subscriptionId}}/upgrade",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "subscriptions", "{{subscriptionId}}", "upgrade"]
+            },
+            "description": "Upgrade subscription to a new product"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payment Management",
+      "item": [
+        {
+          "name": "Process Manual Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionId\": \"{{subscriptionId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/payments/manual",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "payments", "manual"]
+            },
+            "description": "Process a manual payment for a subscription"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/payments/subscription/{{subscriptionId}}/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "payments", "subscription", "{{subscriptionId}}", "history"]
+            },
+            "description": "Get payment history for a subscription"
+          },
+          "response": []
+        },
+        {
+          "name": "Calculate Next Payment Amount",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/payments/subscription/{{subscriptionId}}/amount",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "payments", "subscription", "{{subscriptionId}}", "amount"]
+            },
+            "description": "Calculate the next payment amount for a subscription"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

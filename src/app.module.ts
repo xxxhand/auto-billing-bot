@@ -9,6 +9,9 @@ import { AppExceptionFilter } from './app-components/app-exception.filter';
 import { AppTracerMiddleware } from './app-components/app-tracer.middleware';
 import * as jobs from './application/jobs';
 import * as v1Controllers from './application/controllers/v1';
+import { SubscriptionApplicationService, PaymentApplicationService } from './application';
+import { SubscriptionService, ProductService, PaymentService, AutoBillingService } from './infra/services';
+import { SubscriptionRepository, ProductRepository, PaymentHistoryRepository, OperationLogRepository, CouponRepository } from './infra/repositories';
 @Module({
   imports: [CommonModule, ScheduleModule.forRoot()],
   controllers: [AppController, ...Array.from(Object.keys(v1Controllers)).map((key) => v1Controllers[key])],
@@ -19,6 +22,20 @@ import * as v1Controllers from './application/controllers/v1';
       useClass: AppExceptionFilter,
     },
     ExampleRepository,
+    // Infrastructure Repositories
+    SubscriptionRepository,
+    ProductRepository,
+    PaymentHistoryRepository,
+    OperationLogRepository,
+    CouponRepository,
+    // Domain Services
+    SubscriptionService,
+    ProductService,
+    PaymentService,
+    AutoBillingService,
+    // Application Services
+    SubscriptionApplicationService,
+    PaymentApplicationService,
     ...Array.from(Object.keys(jobs)).map((key) => jobs[key]),
   ],
 })
