@@ -4,7 +4,20 @@
 
 // ==========================================
 // PRODUCTS COLLECTION
-// ==========================================
+// ===========  {
+    "_id": ObjectId("507f1f77bcf86cd799439054"),
+    "subscriptionId": "507f1f77bcf86cd799439033",
+    "action": "subscription_created",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439061"),
+    "subscriptionId": "507f1f77bcf86cd799439033",
+    "action": "subscription_renewed",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z"
+  },========================
 db.Products.insertMany([
   {
     "_id": ObjectId("507f1f77bcf86cd799439011"),
@@ -60,7 +73,7 @@ db.Coupons.insertMany([
     "_id": ObjectId("507f1f77bcf86cd799439022"),
     "code": "LOYALTY20",
     "discountPercentage": 20,
-    "usedBy": ["user-001"],
+    "usedBy": ["user-003"],
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
   },
@@ -104,12 +117,12 @@ db.Subscriptions.insertMany([
   {
     "_id": ObjectId("507f1f77bcf86cd799439033"),
     "userId": "user-003",
-    "productId": "507f1f77bcf86cd799439013",
+    "productId": "507f1f77bcf86cd799439014",
     "startDate": "2024-01-01T00:00:00.000Z",
     "nextBillingDate": "2025-01-01T00:00:00.000Z",
     "status": "active",
     "createdAt": "2024-01-01T00:00:00.000Z",
-    "renewalCount": 0,
+    "renewalCount": 1,
     "couponCode": "LOYALTY20",
     "updatedAt": "2024-01-01T00:00:00.000Z"
   },
@@ -184,6 +197,17 @@ db.PaymentHistories.insertMany([
     "isAuto": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "_id": ObjectId("507f1f77bcf86cd799439048"),
+    "subscriptionId": "507f1f77bcf86cd799439033",
+    "amount": 374.99,
+    "status": "success",
+    "retryCount": 0,
+    "isManual": false,
+    "isAuto": true,
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z"
   },
   {
     "_id": ObjectId("507f1f77bcf86cd799439045"),
@@ -306,30 +330,46 @@ db.OperationLogs.insertMany([
 // mongosh "mongodb://localhost:27017/auto-billing-bot"
 
 // 2. Switch to the database
-// use auto-billing-bot
+// use ccrc_test_mvp
 
 // 3. Copy and paste the insertMany commands above
 
 // 4. Verify data insertion
-// db.products.countDocuments()
-// db.subscriptions.countDocuments()
-// db.payment_histories.countDocuments()
-// db.coupons.countDocuments()
-// db.operation_logs.countDocuments()
+// db.Products.countDocuments()
+// db.Subscriptions.countDocuments()
+// db.PaymentHistories.countDocuments()
+// db.Coupons.countDocuments()
+// db.OperationLogs.countDocuments()
 
 // 5. Alternative: Save this file as prepare_data.js and run:
-// mongo auto-billing-bot prepare_data.js
+// mongo ccrc_test_mvp prepare_data.js
 
 // ==========================================
 // TEST SCENARIOS COVERED
 // ==========================================
 
 // 1. Basic subscription lifecycle (user-001)
+//    - Basic Monthly Plan with coupon discount (WELCOME10: 10% off)
+//    - Successful initial payment and renewal
 // 2. Premium subscription (user-002)
-// 3. Yearly subscription with discount (user-003)
+//    - Premium Monthly Plan without discount
+//    - Clean subscription flow
+// 3. Yearly subscription with renewal discount (user-003)
+//    - Premium Yearly Plan with coupon discount (LOYALTY20: 20% off)
+//    - Renewal with 25% discount applied
 // 4. Cancelled subscription with failed payment (user-004)
+//    - Basic Monthly Plan, payment failed, manual retry success, then cancelled
 // 5. Grace period subscription (user-005)
+//    - Premium Yearly Plan, payment failed twice, in grace period
 // 6. Coupon usage scenarios
+//    - WELCOME10: unused coupon
+//    - LOYALTY20: used by user-003
+//    - BLACKFRIDAY50: unused coupon
 // 7. Manual vs automatic payments
+//    - Auto payments for successful renewals
+//    - Manual payment for failed payment recovery
 // 8. Payment retry scenarios
+//    - Failed payments with retry counts
+//    - Manual intervention for payment recovery
 // 9. Operation logging for all actions
+//    - Subscription creation, payments, renewals, cancellations

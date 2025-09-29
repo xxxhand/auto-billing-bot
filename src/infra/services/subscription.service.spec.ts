@@ -10,7 +10,6 @@ describe('SubscriptionService', () => {
   let service: SubscriptionService;
   let subscriptionRepository: jest.Mocked<SubscriptionRepository>;
   let productRepository: jest.Mocked<ProductRepository>;
-  let commonService: jest.Mocked<CommonService>;
 
   beforeEach(async () => {
     const mockSubscriptionRepository = {
@@ -55,7 +54,6 @@ describe('SubscriptionService', () => {
     service = module.get<SubscriptionService>(SubscriptionService);
     subscriptionRepository = module.get(SubscriptionRepository);
     productRepository = module.get(ProductRepository);
-    commonService = module.get(CommonService);
   });
 
   it('should be defined', () => {

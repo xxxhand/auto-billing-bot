@@ -16,15 +16,16 @@ Auto Billing Bot 是一個基於 NestJS 框架開發的自動扣款訂閱管理�
 ### 後端框架
 - **NestJS**: v10.0.0 - 企業級 Node.js 框架
 - **TypeScript**: 強型別開發
-- **MongoDB**: NoSQL 資料庫
-- **@nestjs/schedule**: 定時任務調度
+- **MongoDB**: v6.16.0 - NoSQL 資料庫
+- **@nestjs/schedule**: v6.0.1 - 定時任務調度
 
 ### 核心依賴
 - **@xxxhand/app-common**: v0.0.46 - 共用工具庫
-- **class-transformer**: 物件轉換
-- **class-validator**: 資料驗證
-- **date-fns**: 日期處理
-- **dotenv**: 環境變數管理
+- **class-transformer**: v0.5.1 - 物件轉換
+- **class-validator**: v0.14.1 - 資料驗證
+- **date-fns**: v4.1.0 - 日期處理
+- **mongodb**: v6.16.0 - MongoDB 原生驅動
+- **pino**: v9.3.2 - 結構化日誌
 
 ### 開發工具
 - **ESLint**: 代碼品質檢查
@@ -50,7 +51,12 @@ src/
 │   ├── controllers/      # REST API 控制器
 │   ├── services/         # 應用服務
 │   └── jobs/            # 定時任務
-└── app-components/       # 應用組件
+├── app-components/       # 應用組件
+│   ├── app-exception.filter.ts
+│   ├── app-tracer.middleware.ts
+│   ├── app.initial.ts
+│   └── single-upload-file.interceptor.ts
+└── main.ts              # 應用程式入口
 ```
 
 ### 核心模組
@@ -59,9 +65,8 @@ src/
 - **實體 (Entities)**:
   - `Subscription`: 訂閱實體，管理訂閱生命周期
   - `Product`: 產品實體，定義產品資訊
-  - `PaymentHistory`: 支付歷史實體
-  - `OperationLog`: 操作日誌實體
   - `Coupon`: 優惠券實體
+  - `ExampleEntity`: 範例實體
 
 - **值物件 (Value Objects)**:
   - `BillingCycle`: 計費週期值物件
@@ -77,9 +82,10 @@ src/
 - **儲存庫 (Repositories)**:
   - `SubscriptionRepository`: 訂閱資料存取
   - `ProductRepository`: 產品資料存取
+  - `CouponRepository`: 優惠券資料存取
   - `PaymentHistoryRepository`: 支付歷史資料存取
   - `OperationLogRepository`: 操作日誌資料存取
-  - `CouponRepository`: 優惠券資料存取
+  - `ExampleRepository`: 範例資料存取
 
 #### 應用層 (Application Layer)
 - **應用服務 (Application Services)**:
@@ -195,13 +201,13 @@ DEFAULT_MONGO_DB_NAME=ccrc_test1
 ## 項目統計
 
 ### 代碼規模
-- **總檔案數**: ~80+ 個檔案
+- **總檔案數**: ~60 個 TypeScript 檔案
 - **TypeScript 代碼行數**: ~2000+ 行
-- **測試覆蓋率**: 待完善
+- **測試覆蓋率**: ~45%
 
 ### 功能模組
-- **API 端點**: 10+ 個
-- **資料庫集合**: 5 個
+- **API 端點**: 9 個業務相關端點
+- **資料庫集合**: 6 個
 - **定時任務**: 1 個
 - **業務規則**: 15+ 條
 

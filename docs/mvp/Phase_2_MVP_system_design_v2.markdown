@@ -127,7 +127,7 @@ graph TD
     ```jsx
     async function createSubscription(data) {
       try {
-        const response = await axios.post('/client_service/api/subscriptions', data);
+        const response = await axios.post('/api/v1/subscriptions', data);
         return response.data;
       } catch (error) {
         throw new Error(error.response?.data?.message || '訂閱失敗');
@@ -398,144 +398,166 @@ graph TD
 
 ## API 規格
 ### 1. 建立訂閱（支援優惠碼）
-- **端點**：`POST /subscriptions`
+- **端點**：`POST /api/v1/subscriptions`
 - **輸入**：
   ```json
   {
     "userId": "string",
     "productId": "string",
-    "startDate": "2025-01-31",
-    "cycleType": "monthly",
     "couponCode": "string"
   }
   ```
 - **輸出**：
   ```json
   {
-    "subscriptionId": "string",
-    "nextBillingDate": "2025-02-28"
+    "success": true,
+    "result": {
+      "subscriptionId": "string",
+      "paymentStatus": "success"
+    }
   }
   ```
 
 ### 2. 查詢產品列表
-- **端點**：`GET /products?userId={userId}`
-- **輸出**：
-  ```json
-  [
-    {
-      "id": "string",
-      "name": "string",
-      "cycleType": "monthly",
-      "price": 10.00,
-      "discountPercentage": 0.3
-    }
-  ]
-  ```
-
-### 3. 執行扣款（手動或測試自動扣款）
-- **端點**：`POST /payments`
-- **輸入**：
-  ```json
-  {
-    "subscriptionId": "string",
-    "amount": 10.00
-  }
-  ```
+- **端點**：`GET /api/v1/products?userId={userId}`
 - **輸出**：
   ```json
   {
-    "paymentId": "string",
-    "status": "success"
-  }
-  ```
-
-### 4. 查詢訂閱狀態與扣款歷史
-- **端點**：`GET /subscriptions/{subscriptionId}`
-- **輸出**：
-  ```json
-  {
-    "subscriptionId": "string",
-    "userId": "string",
-    "productId": "string",
-    "status": "active",
-    "nextBillingDate": "2025-02-28",
-    "renewalCount": 1,
-    "couponCode": "string",
-    "paymentHistory": [
+    "success": true,
+    "result": [
       {
-        "paymentId": "string",
-        "amount": 10.00,
-        "status": "success",
-        "isAuto": true,
-        "createdAt": "2025-01-31T10:00:00Z"
+        "id": "string",
+        "name": "string",
+        "cycleType": "monthly",
+        "price": 10.00,
+        "discountPercentage": 0.3
       }
     ]
   }
   ```
 
-### 5. 取消訂閱
-- **端點**：`PATCH /subscriptions/{subscriptionId}/cancel`
+### 3. 執行手動扣款
+- **端點**：`POST /api/v1/payments/manual`
 - **輸入**：
   ```json
   {
-    "operatorId": "string"
+    "subscriptionId": "string"
   }
   ```
 - **輸出**：
   ```json
   {
-    "subscriptionId": "string",
-    "status": "cancelled"
+    "success": true,
+    "result": {
+      "status": "success",
+      "retryCount": 0,
+      "isManual": true,
+      "isAuto": false,
+      "failureReason": null
+    }
+  }
+  ```
+
+### 4. 查詢訂閱狀態與扣款歷史
+- **端點**：`GET /api/v1/subscriptions/:id`
+- **輸出**：
+  ```json
+  {
+    "success": true,
+    "result": {
+      "id": "string",
+      "userId": "string",
+      "productId": "string",
+      "status": "active",
+      "nextBillingDate": "2025-02-28T00:00:00.000Z",
+      "renewalCount": 1,
+      "couponCode": "string",
+      "startDate": "2025-01-31T00:00:00.000Z",
+      "createdAt": "2025-01-31T00:00:00.000Z"
+    }
+  }
+  ```
+
+### 5. 取消訂閱
+- **端點**：`PUT /api/v1/subscriptions/:id/cancel`
+- **輸入**：
+  ```json
+  {
+    "userId": "string",
+    "requestRefund": true
+  }
+  ```
+- **輸出**：
+  ```json
+  {
+    "success": true,
+    "result": {
+      "success": true
+    }
   }
   ```
 
 ### 6. 申請退款
-- **端點**：`PATCH /subscriptions/{subscriptionId}/refund`
+- **端點**：`PATCH /api/v1/subscriptions/:id/refund`
 - **輸入**：
   ```json
   {
-    "operatorId": "string"
+    "userId": "string"
   }
   ```
 - **輸出**：
   ```json
   {
-    "subscriptionId": "string",
-    "status": "refunding"
+    "success": true,
+    "result": {
+      "success": true
+    }
   }
   ```
 
-### 7. 手動補款
-- **端點**：`POST /subscriptions/{subscriptionId}/retry-payment`
-- **輸入**：
-  ```json
-  {
-    "operatorId": "string",
-    "amount": 10.00
-  }
-  ```
+### 7. 查詢扣款歷史
+- **端點**：`GET /api/v1/payments/subscription/:subscriptionId/history`
 - **輸出**：
   ```json
   {
-    "paymentId": "string",
-    "status": "success"
+    "success": true,
+    "result": {
+      "paymentHistory": [
+        {
+          "status": "success",
+          "retryCount": 0,
+          "isManual": false,
+          "isAuto": true,
+          "failureReason": null
+        }
+      ]
+    }
   }
   ```
 
-### 8. 方案轉換
-- **端點**：`PATCH /subscriptions/{subscriptionId}/switch`
-- **輸入**：
-  ```json
-  {
-    "newProductId": "string"
-  }
-  ```
+### 9. 查詢用戶訂閱列表
+- **端點**：`GET /api/v1/subscriptions/user/:userId`
 - **輸出**：
   ```json
   {
-    "subscriptionId": "string",
-    "productId": "new-string",
-    "nextBillingDate": "2025-12-31"
+    "success": true,
+    "result": {
+      "subscriptions": [
+        {
+          "id": "string",
+          "userId": "string",
+          "productId": "string",
+          "status": "active",
+          "nextBillingDate": "2025-02-28T00:00:00.000Z",
+          "renewalCount": 1,
+          "couponCode": "string",
+          "startDate": "2025-01-31T00:00:00.000Z",
+          "createdAt": "2025-01-31T00:00:00.000Z"
+        }
+      ],
+      "activeCount": 1,
+      "totalCount": 1
+    }
   }
   ```
 
@@ -585,10 +607,16 @@ graph TD
   - 單一伺服器（Docker 容器），Nginx 提供前端靜態資源並代理後端 API。
   - 環境變數：
     ```env
-    DEFAULT_API_ROUTER_PREFIX=/client_service/api
-    DEFAULT_MONGO_URI=mongodb://localhost:27017/ccrc_test1
-    REFUND_WINDOW_DAYS=7
-    GRACE_PERIOD_DAYS=7
+    PORT=3001
+    DOMAIN=http://localhost:${PORT}
+    DEFAULT_API_ROUTER_PREFIX=/api
+    DEFAULT_UPLOAD_TEMP_DIR=./tmp
+    DEFAULT_UPLOAD_MAX_SIZE=5120000
+    DEFAULT_MONGO_DB_NAME=ccrc_test_mvp
+    DEFAULT_MONGO_URI=mongodb://localhost:27017/${DEFAULT_MONGO_DB_NAME}
+    DEFAULT_LOGGER_PATH=./logs/info.log
+    LOCALES_PATH=./resources/langs
+    DAILY_BILLING_EXEC=0 0 * * *
     ```
 - **自動扣款實現**：
   - 使用 `@nestjs/schedule` 的 `@Cron('0 0 * * *')` 每日 00:00 執行。

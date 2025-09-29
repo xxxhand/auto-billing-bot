@@ -12,6 +12,7 @@
 - 資料庫使用 MongoDB，透過原生 MongoDB Driver 存取。
 - Phase 1 功能（訂閱、產品管理、狀態流轉、模擬支付）已實現。
 - 自動扣款使用 `@nestjs/schedule` 定時任務實現。
+- API 前綴為 `/client_service/api/v1`
 
 **依賴**：Phase 1 POC 功能。
 
@@ -87,12 +88,10 @@ graph TD
   - 應用邏輯：自動扣款時若有優惠碼，套用折扣（但優先級低於續訂優惠）。
 - **API**：
   ```json
-  POST /subscriptions
+  POST /client_service/api/v1/subscriptions
   {
     "userId": "string",
     "productId": "string",
-    "startDate": "2025-01-31",
-    "cycleType": "monthly",
     "couponCode": "string"
   }
   ```
@@ -111,8 +110,9 @@ graph TD
   - 優惠：僅套用新產品的續訂優惠（若 `renewalCount >= 1`），不承接優惠碼。
 - **API**：
   ```json
-  PATCH /subscriptions/{subscriptionId}/switch
+  PUT /client_service/api/v1/subscriptions/{subscriptionId}/upgrade
   {
+    "userId": "string",
     "newProductId": "string"
   }
   ```
@@ -135,14 +135,9 @@ graph TD
   - 流程：取消訂閱，記錄退款記錄，狀態轉為 `refunding`，模擬退款後轉為 `cancelled`。
 - **API**：
   ```json
-  PATCH /subscriptions/{subscriptionId}/refund
+  PATCH /client_service/api/v1/subscriptions/{subscriptionId}/refund
   {
-    "operatorId": "string"
-  }
-  Response:
-  {
-    "subscriptionId": "string",
-    "status": "refunding"
+    "userId": "string"
   }
   ```
 
@@ -156,10 +151,9 @@ graph TD
   - 手動補款：客服透過 API 觸發補款，重試成功後狀態恢復 `active`。
 - **API**：
   ```json
-  POST /subscriptions/{subscriptionId}/retry-payment
+  POST /client_service/api/v1/payments/manual
   {
-    "operatorId": "string",
-    "amount": 10.00
+    "subscriptionId": "string"
   }
   ```
 
@@ -282,14 +276,12 @@ interface Coupon {
 
 ## API 規格
 ### 1. 建立訂閱（支援優惠碼）
-- **端點**：`POST /subscriptions`
+- **端點**：`POST /client_service/api/v1/subscriptions`
 - **輸入**：
   ```json
   {
     "userId": "string",
     "productId": "string",
-    "startDate": "2025-01-31",
-    "cycleType": "monthly",
     "couponCode": "string"
   }
   ```
@@ -297,12 +289,12 @@ interface Coupon {
   ```json
   {
     "subscriptionId": "string",
-    "nextBillingDate": "2025-02-28"
+    "paymentStatus": "success"
   }
   ```
 
 ### 2. 查詢產品列表
-- **端點**：`GET /products?userId={userId}`
+- **端點**：`GET /client_service/api/v1/products?userId={userId}`
 - **輸出**：
   ```json
   [
@@ -316,110 +308,123 @@ interface Coupon {
   ]
   ```
 
-### 3. 執行扣款（手動或測試自動扣款）
-- **端點**：`POST /payments`
+### 3. 執行扣款（手動）
+- **端點**：`POST /client_service/api/v1/payments/manual`
 - **輸入**：
   ```json
   {
-    "subscriptionId": "string",
-    "amount": 10.00
+    "subscriptionId": "string"
   }
   ```
 - **輸出**：
   ```json
   {
-    "paymentId": "string",
-    "status": "success"
+    "status": "success",
+    "retryCount": 0,
+    "isManual": true,
+    "isAuto": false,
+    "failureReason": null
   }
   ```
 
-### 4. 查詢訂閱狀態與扣款歷史
-- **端點**：`GET /subscriptions/{subscriptionId}`
+### 4. 查詢訂閱狀態
+- **端點**：`GET /client_service/api/v1/subscriptions/{subscriptionId}`
 - **輸出**：
   ```json
   {
-    "subscriptionId": "string",
+    "id": "string",
     "userId": "string",
     "productId": "string",
+    "startDate": "2025-01-15T00:00:00.000Z",
+    "nextBillingDate": "2025-02-15T00:00:00.000Z",
     "status": "active",
-    "nextBillingDate": "2025-02-28",
+    "createdAt": "2025-01-15T00:00:00.000Z",
     "renewalCount": 1,
-    "couponCode": "string",
+    "couponCode": "string"
+  }
+  ```
+
+### 5. 查詢用戶訂閱列表
+- **端點**：`GET /client_service/api/v1/subscriptions/user/{userId}`
+- **輸出**：
+  ```json
+  {
+    "subscriptions": [...],
+    "activeCount": 2,
+    "totalCount": 3
+  }
+  ```
+
+### 6. 查詢扣款歷史
+- **端點**：`GET /client_service/api/v1/payments/subscription/{subscriptionId}/history`
+- **輸出**：
+  ```json
+  {
     "paymentHistory": [
       {
-        "paymentId": "string",
-        "amount": 10.00,
         "status": "success",
+        "retryCount": 0,
+        "isManual": false,
         "isAuto": true,
-        "createdAt": "2025-01-31T10:00:00Z"
+        "failureReason": null
       }
     ]
   }
   ```
 
-### 5. 取消訂閱
-- **端點**：`PATCH /subscriptions/{subscriptionId}/cancel`
+### 7. 取消訂閱
+- **端點**：`PUT /client_service/api/v1/subscriptions/{subscriptionId}/cancel`
 - **輸入**：
   ```json
   {
-    "operatorId": "string"
+    "userId": "string",
+    "requestRefund": false
   }
   ```
 - **輸出**：
   ```json
   {
-    "subscriptionId": "string",
-    "status": "cancelled"
+    "success": true
   }
   ```
 
-### 6. 申請退款
-- **端點**：`PATCH /subscriptions/{subscriptionId}/refund`
+### 8. 申請退款
+- **端點**：`PATCH /client_service/api/v1/subscriptions/{subscriptionId}/refund`
 - **輸入**：
   ```json
   {
-    "operatorId": "string"
+    "userId": "string"
   }
   ```
 - **輸出**：
   ```json
   {
-    "subscriptionId": "string",
-    "status": "refunding"
+    "success": true
   }
   ```
 
-### 7. 手動補款
-- **端點**：`POST /subscriptions/{subscriptionId}/retry-payment`
-- **輸入**：
+### 10. 計算下次扣款金額
+- **端點**：`GET /client_service/api/v1/payments/subscription/{subscriptionId}/amount`
+- **輸出**：
   ```json
   {
-    "operatorId": "string",
     "amount": 10.00
   }
   ```
-- **輸出**：
-  ```json
-  {
-    "paymentId": "string",
-    "status": "success"
-  }
-  ```
 
-### 8. 方案轉換
-- **端點**：`PATCH /subscriptions/{subscriptionId}/switch`
+### 9. 方案轉換
+- **端點**：`PUT /client_service/api/v1/subscriptions/{subscriptionId}/upgrade`
 - **輸入**：
   ```json
   {
+    "userId": "string",
     "newProductId": "string"
   }
   ```
 - **輸出**：
   ```json
   {
-    "subscriptionId": "string",
-    "productId": "new-string",
-    "nextBillingDate": "2025-12-31"
+    "success": true
   }
   ```
 
@@ -453,7 +458,13 @@ interface Coupon {
   - 定時任務：NestJS `@nestjs/schedule` 模組。
 - **部署**：
   - 單一伺服器（Docker 容器）。
-  - 環境變數管理 MongoDB 連線字串與全域設定（`REFUND_WINDOW_DAYS`、`GRACE_PERIOD_DAYS`）。
+  - 環境變數：
+    ```env
+    DEFAULT_API_ROUTER_PREFIX=/client_service/api
+    DEFAULT_MONGO_URI=mongodb://localhost:27017/ccrc_test1
+    REFUND_WINDOW_DAYS=7
+    GRACE_PERIOD_DAYS=7
+    ```
 - **測試**：
   - 單元測試：優惠計算、狀態流轉、重試邏輯、自動扣款觸發（使用 Jest）。
   - 整合測試：API 端點與模擬支付。
@@ -476,10 +487,10 @@ interface Coupon {
 ## User Stories 對應
 | Case | As a | I want | So that | 對應功能 |
 |------|------|--------|---------|----------|
-| 5. | 新用戶 | 使用優惠碼獲得折扣 | 我能以低成本開始 | 優惠碼機制 |
-| 6. | 長期訂閱用戶 | 第二次續訂享有折扣 | 我願意繼續訂閱 | 第二次以上續訂優惠 |
-| 7. | 訂閱用戶 | 轉換方案而不退費 | 我能升級方案 | 方案切換支援 |
-| 8. | 訂閱用戶 | 主動取消時退款 | 我有購買保障 | 退款條件與流程 |
-| 9. | 系統管理者 | 依失敗原因重試扣款 | 提升續訂成功率 | 扣款失敗重試與寬限期 |
-| 10. | 客服人員 | 查詢擴展狀態與重試歷史 | 快速協助申訴 | 訂閱狀態與扣款歷史 |
-| 11. | 訂閱用戶 | 系統自動按週期扣款 | 我無需手動續訂 | 自動扣款觸發 |
+| 5. | 新用戶 | 使用優惠碼獲得折扣 | 我能以低成本開始 | POST /client_service/api/v1/subscriptions (支援couponCode) |
+| 6. | 長期訂閱用戶 | 第二次續訂享有折扣 | 我願意繼續訂閱 | 自動扣款時 renewalCount >= 1 套用折扣 |
+| 7. | 訂閱用戶 | 轉換方案而不退費 | 我能升級方案 | PUT /client_service/api/v1/subscriptions/{id}/upgrade |
+| 8. | 訂閱用戶 | 主動取消時退款 | 我有購買保障 | PATCH /client_service/api/v1/subscriptions/{id}/refund |
+| 9. | 系統管理者 | 依失敗原因重試扣款 | 提升續訂成功率 | POST /client_service/api/v1/payments/manual (手動補款) |
+| 10. | 客服人員 | 查詢擴展狀態與重試歷史 | 快速協助申訴 | GET /client_service/api/v1/subscriptions/{id} + GET /client_service/api/v1/payments/subscription/{id}/history |
+| 11. | 訂閱用戶 | 系統自動按週期扣款 | 我無需手動續訂 | AutoBillingService 定時任務 |

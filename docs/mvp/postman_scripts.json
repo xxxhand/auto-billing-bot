@@ -122,6 +122,29 @@
             "description": "Upgrade subscription to a new product"
           },
           "response": []
+        },
+        {
+          "name": "Request Refund",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/subscriptions/{{subscriptionId}}/refund",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "subscriptions", "{{subscriptionId}}", "refund"]
+            },
+            "description": "Request a refund for a subscription"
+          },
+          "response": []
         }
       ]
     },
@@ -176,6 +199,31 @@
               "path": ["api", "{{apiVersion}}", "payments", "subscription", "{{subscriptionId}}", "amount"]
             },
             "description": "Calculate the next payment amount for a subscription"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Product Management",
+      "item": [
+        {
+          "name": "Get Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products?userId=user-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "products"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "user-001"
+                }
+              ]
+            },
+            "description": "Get all available products"
           },
           "response": []
         }

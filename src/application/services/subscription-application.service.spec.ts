@@ -13,7 +13,6 @@ describe('SubscriptionApplicationService', () => {
   let subscriptionService: jest.Mocked<SubscriptionService>;
   let productService: jest.Mocked<ProductService>;
   let paymentService: jest.Mocked<PaymentService>;
-  let commonService: jest.Mocked<CommonService>;
 
   beforeEach(async () => {
     const mockSubscriptionService = {

@@ -23,6 +23,11 @@ export interface UpgradeSubscriptionResult {
   message?: string;
 }
 
+export interface RequestRefundResult {
+  success: boolean;
+  message?: string;
+}
+
 @Injectable()
 export class SubscriptionApplicationService {
   private _logger: LoggerService;
@@ -153,5 +158,34 @@ export class SubscriptionApplicationService {
       activeCount,
       totalCount: subscriptions.length,
     };
+  }
+
+  async requestRefund(userId: string, subscriptionId: string): Promise<RequestRefundResult> {
+    try {
+      this._logger.log(`Requesting refund for subscription ${subscriptionId} by user ${userId}.`);
+
+      // 驗證用戶權限（可選：檢查訂閱是否屬於該用戶）
+      const subscription = await this.subscriptionService.getSubscriptionById(subscriptionId);
+      if (!subscription) {
+        return { success: false, message: 'Subscription not found' };
+      }
+
+      if (subscription.userId !== userId) {
+        return { success: false, message: 'Unauthorized: Subscription does not belong to user' };
+      }
+
+      // 請求退款
+      const success = await this.subscriptionService.requestRefund(subscriptionId);
+
+      if (success) {
+        this._logger.log(`Refund requested successfully for subscription ${subscriptionId}.`);
+        return { success: true };
+      } else {
+        return { success: false, message: 'Failed to request refund' };
+      }
+    } catch (error) {
+      this._logger.error(`Error requesting refund for subscription ${subscriptionId}: ${error.message}`);
+      return { success: false, message: error.message };
+    }
   }
 }

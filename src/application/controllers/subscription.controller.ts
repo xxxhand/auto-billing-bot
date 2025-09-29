@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Body, Param, LoggerService } from '@nestjs/common';
+import { Controller, Post, Get, Put, Patch, Body, Param, LoggerService } from '@nestjs/common';
 import { SubscriptionApplicationService } from '../services/subscription-application.service';
 import { CustomResult } from '@xxxhand/app-common';
 import { CommonService, ErrException } from '@myapp/common';
@@ -74,6 +74,18 @@ export class SubscriptionController {
       return this.commonService.newResultInstance().withResult({ success: true });
     } else {
       throw ErrException.newFromCodeName('ERR_SUBSCRIPTION_UPGRADE_FAILED', [result.message || 'Failed to upgrade subscription']);
+    }
+  }
+
+  @Patch('/:id/refund')
+  async requestRefund(@Param('id') subscriptionId: string, @Body() body: { userId: string }): Promise<CustomResult> {
+    const result = await this.subscriptionAppService.requestRefund(body.userId, subscriptionId);
+
+    if (result.success) {
+      return this.commonService.newResultInstance().withResult({ success: true });
+    } else {
+      this._logger.error(`Failed to request refund for subscription ${subscriptionId} by user ${body.userId}: ${result.message}`);
+      throw ErrException.newFromCodeName('ERR_REFUND_REQUEST_FAILED', [result.message || 'Failed to request refund']);
     }
   }
 }
