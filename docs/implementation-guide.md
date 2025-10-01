@@ -16,6 +16,7 @@ yarn test:cov
 
 - 每當任務完成，務必即時更新 `docs/docs_0_7/billingBot_development_status.markdown`，並暫停後續實作，等待產品負責人審閱與下一步指示。
 - 開始任何任務前，先比對 `docs/docs_0_7/billingBot_v0.7.1_system_design.markdown` 與當前程式碼實作是否一致；若發現差異需先回報並取得指示後再繼續。
+- 完成任務時同步更新 `docs/docs_0_7/billingBot_v0.7.2_tasks.markdown`，確保該任務狀態反映最新進度。
 
 ## 系統藍圖
 

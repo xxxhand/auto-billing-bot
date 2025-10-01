@@ -4,36 +4,44 @@
 **當前階段**：v0.7 規劃啟動  
 **負責人**：GitHub Copilot
 
+## 工作指南
+
+- 每完成一個任務（如 DB-/DDD-/API- 等編號），需立即更新本狀態文件並暫停後續實作，待產品負責人審閱與指示。
+- 開始任何任務前，務必對照 `docs/docs_0_7/billingBot_v0.7.1_system_design.markdown` 與現有程式碼，確認實作方向與設計一致；若發現差異需先回報後再繼續。
+- 完成任務時同步更新 `docs/docs_0_7/billingBot_v0.7.2_tasks.markdown` 的狀態欄位，保持任務清單與進度一致。
+
 ## 📋 當前任務狀態
 
 ### 進行中任務
-- （無）目前僅完成文件整理，尚未展開程式開發
+- （無）目前暫停，等待下一個任務指示
 
 ### 已完成任務 (最近)
+- ✅ DB-002：建立 `products` 集合模型（2025年10月1日）
+- ✅ DB-001：建立 `users` 集合模型（2025年10月1日）
 - ✅ `docs/implementation-guide.md`：更新為 v0.7 實作指南（2025年10月1日）
 
 ### 待處理任務 (優先順序)
-1. 建立資料模型與儲存層（DB-001 ~ DB-011）
+1. 完成剩餘資料模型與儲存層（DB-003 ~ DB-011）
 2. 實作領域層 Subscription/Discount 方法與測試（DDD-001 起）
 3. 設定 Cron + RabbitMQ 流程與測試環境（CRON / QUEUE 任務）
 
 ## 🔧 技術狀態
 
 ### 當前架構
-- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，內容待依 v0.7 任務補齊
+- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊
+- **資料模型**：新增 `users` 模型（userId／tenantId／encryptedData）與 `products` 模型（productId／name／price／cycleType／cycleValue／gracePeriodDays），其餘集合待建立
 - **文件**：v0.7 實作指南完成，提供模組拆解與開發順序
-- **程式碼**：尚未開始 v0.7 功能實作，現有程式仍停留在 POC 範例
 
 ### 遇到的問題與解決方案
-- 尚未進入開發階段；等待各模組實作時再記錄問題
+- 尚無新問題，待後續任務展開時再記錄
 
 ### 環境配置
 - **Node.js**：建議 v18.x（依 `package.json` 與 NestJS 相容版本）
 - **MongoDB / RabbitMQ / Redis**：尚需依 `docker-compose.yml` 或環境設定啟動並驗證，未執行
 
 ## 📊 進度指標
-- **總任務數**：依 `billingBot_v0.7.2_tasks.markdown` 為 28+ 項
-- **已完成**：僅文檔更新（1項）
+- **總任務數**：依 `billingBot_v0.7.2_tasks.markdown` 為 28 項
+- **已完成**：2 項（DB-001、DB-002）
 - **進行中**：0 項
 - **測試覆蓋率**：尚未開始 v0.7 測試
 
