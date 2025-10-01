@@ -1,321 +1,213 @@
-# 自動扣款機器人實現指南
+yarn build
+yarn start:prod
+yarn start:debug
+yarn test
+yarn test:e2e
+yarn test:cov
+# 自動扣款機器人實現指南（v0.7）
 
-## 項目概述
+## 版本背景
 
-自動扣款機器人是基於 NestJS 的應用程式，旨在根據 `requirements_0.5.md` 中指定的需求處理自動訂閱扣款、折扣、重試和退款。此項目目前處於概念驗證 (POC) 階段，實現了基本結構，並包含可擴展以滿足完整需求的示例組件。
+此指南對應 `docs/docs_0_7/requirements_0.7.markdown`、`docs/docs_0_7/billingBot_v0.7.1_spec.markdown` 與 `docs/docs_0_7/billingBot_v0.7.1_system_design.markdown`，提供 v0.7 版實作的整體藍圖與落地步驟。v0.7 聚焦於「可用的訂閱扣款引擎」，涵蓋多週期訂閱、優惠優先權、扣款重試、寬限期、退款、RabbitMQ 任務佇列與 Cron 自動化。未來 v0.8 之後才會處理多租戶與 webhook 等延伸功能。
 
-應用程式遵循領域驅動設計 (DDD) 原則，具有將關注點分離到庫、應用層和基礎設施的模組化架構。
+> **開發守則**：持續遵循 Domain-Driven Design（DDD）與 Test-Driven Development（TDD），所有新邏輯須先定義領域模型與測試，再補齊應用層與基礎設施。
 
-## 架構
+## 工作指南
 
-### 整體結構
+- 每當任務完成，務必即時更新 `docs/docs_0_7/billingBot_development_status.markdown`，並暫停後續實作，等待產品負責人審閱與下一步指示。
+- 開始任何任務前，先比對 `docs/docs_0_7/billingBot_v0.7.1_system_design.markdown` 與當前程式碼實作是否一致；若發現差異需先回報並取得指示後再繼續。
+
+## 系統藍圖
+
+### 整體架構概覽
 
 ```
 auto-billing-bot/
-├── docker-compose.yml
-├── Dockerfile
-├── jest-global-setup.ts
-├── logrotate.conf
-├── nest-cli.json
-├── package.json
-├── README.md
-├── run-compose.sh
-├── tsconfig.build.json
-├── tsconfig.json
 ├── docs/
-│   ├── requirements_0.5.md
-│   ├── poc/
-│   │   ├── Phase_1_POC_requirements_v1.md
-│   │   ├── Phase_1_POC_spec.markdown
-│   │   ├── Phase_1_POC_system_design.markdown
-│   │   └── Phase_1_POC_tasks.markdown
-│   └── implementation-guide.md
+│   ├── docs_0_7/
+│   │   ├── requirements_0.7.markdown
+│   │   ├── billingBot_v0.7.1_spec.markdown
+│   │   ├── billingBot_v0.7.1_system_design.markdown
+│   │   └── billingBot_v0.7.2_tasks.markdown
+│   └── implementation-guide.md ← 本文件
 ├── libs/
-│   ├── common/
-│   │   ├── tsconfig.lib.json
-│   │   └── src/
-│   │       ├── common.const.ts
-│   │       ├── common.module.ts
-│   │       ├── common.service.ts
-│   │       ├── err.code.ts
-│   │       ├── err.const.ts
-│   │       ├── err.exception.ts
-│   │       ├── index.ts
-│   │       ├── clients/
-│   │       │   └── async-local-storage.provider.ts
-│   │       └── components/
-│   │           ├── default-logger.service.ts
-│   │           ├── easy-translate.service.ts
-│   │           └── file.transport.ts
-│   │       └── interfaces/
-│   │           └── translations.interface.ts
-│   └── conf/
-│       ├── tsconfig.lib.json
-│       └── src/
-│           ├── conf.module.ts
-│           ├── conf.present.ts
-│           ├── conf.service.spec.ts
-│           └── conf.service.ts
-│           └── index.ts
-├── logs/
-├── resources/
-│   └── langs/
-│       ├── dev.json
-│       └── zh-tw.json
+│   ├── common/        # 共享工具：日誌、錯誤、客戶端、翻譯
+│   └── conf/          # 統一設定存取
 ├── src/
-│   ├── app.controller.spec.ts
-│   ├── app.controller.ts
-│   ├── app.module.ts
-│   ├── app.service.ts
-│   ├── main.ts
-│   ├── app-components/
-│   │   ├── app-exception.filter.ts
-│   │   ├── app-tracer.middleware.ts
-│   │   ├── app.initial.ts
-│   │   └── single-upload-file.interceptor.ts
-│   ├── application/
-│   │   ├── controllers/
-│   │   │   ├── exemple.controller.ts
-│   │   │   └── v1.ts
-│   │   └── jobs/
-│   │       ├── daily-billing.ts
-│   │       └── index.ts
-│   ├── domain/
-│   │   ├── entities/
-│   │   │   ├── base-entity.abstract.ts
-│   │   │   └── example.entity.ts
-│   │   └── value-objects/
-│   │       └── create-example.request.ts
-│   ├── infra/
-│   │   ├── models/
-│   │   │   ├── base-model.interface.ts
-│   │   │   ├── example.model.ts
-│   │   │   └── models.definition.ts
-│   │   └── repositories/
-│   │       └── example.repository.ts
-│   └── test/
-│       ├── app.e2e-spec.ts
-│       ├── get-v1-examples.e2e-spec.ts
-│       ├── post-v1-examples-upload.e2e-spec.ts
-│       ├── post-v1-examples.e2e-spec.ts
-│       └── __helpers__/
-│           ├── app.helper.ts
-│           ├── e2e-global-setup.ts
-│           └── mongo.helper.ts
-│       └── __upload-files__/
-├── test/
-└── tmp/
+│   ├── app-components/  # Filter、Middleware、Interceptor 等橫切關注
+│   ├── application/     # Controllers、Jobs、Use-cases
+│   ├── domain/          # Entities、Value Objects、Domain Services
+│   ├── infra/           # Repositories、ORM/ODM 模型、外部驅動整合
+│   └── main.ts 等入口
+├── test/                # e2e 測試與測試工具
+└── resources/, logs/, tmp/...
 ```
 
-- **libs/**: 共享庫，用於通用功能和配置。
-  - **common/**: 提供全局服務，如 MongoDB 客戶端、HTTP 客戶端、日誌記錄、翻譯和錯誤處理。
-  - **conf/**: 集中式配置管理，使用環境變數。
+- **後端框架**：NestJS + TypeScript
+- **資料庫**：MongoDB（聚焦訂閱、產品、優惠與扣款紀錄）
+- **任務佇列**：RabbitMQ（扣款重試、延遲任務）
+- **排程**：@nestjs/schedule Cron job 每小時掃描訂閱
+- **支付**：抽象 payment gateway，先以 mock 實作（成功 / 可重試 / 不可重試）
+- **監控**：Prometheus + Grafana（v0.7 僅規劃，實作可延後）
+- **部署**：Docker 為基礎，可對應 AWS ECS / Kubernetes
 
-- **src/**: 主要應用程式代碼。
-  - **app-components/**: 應用程式級組件，如過濾器、中間件和攔截器。
-  - **application/**: 用例層，包含控制器和任務。
-  - **domain/**: 領域實體和值物件。
-  - **infra/**: 基礎設施層，包含倉庫和模型。
+### 核心目標
 
-- **test/**: 使用 Jest 的單元和端到端測試。
+- 依產品週期（monthly、quarterly、yearly、weekly、fixedDays）計算 nextBillingDate
+- 支援優惠組合與優先級，推導折扣後價格
+- Cron job 小時級掃描，將到期訂閱推入 RabbitMQ 進行扣款任務
+- RabbitMQ retryQueue 最多重試 3 次，並支援 7 天寬限期 + 手動補款 API
+- 記錄扣款嘗試、付款紀錄、退款紀錄與操作日誌
+- 為未來多租戶與 webhook 預留欄位與擴展點，但不在 v0.7 交付範圍內
 
-- **docs/**: 文檔，包括需求和此實現指南。
+## 模組拆解
 
-### 關鍵設計模式
+| 模組 | 職責 | 對應程式路徑 | 主要任務 ID |
+| --- | --- | --- | --- |
+| 資料模型 | 建立 MongoDB 集合、索引與 ODM | `src/infra/models`, `src/infra/repositories` | DB-001 ~ DB-011 |
+| 領域層 | Subscription / Discount / PromoCode / PaymentAttempt 等核心邏輯 | `src/domain` | DDD-001 ~ DDD-010 |
+| 應用層 | REST API、Use-case、工作排程 | `src/application/controllers`, `src/application/jobs` | API-001 ~ API-012, CRON-001 ~ CRON-003 |
+| 支付整合 | 抽象支付介面 + mock gateway | `src/domain/services`, `libs/common` | PAY-001 ~ PAY-003 |
+| 任務佇列 | 與 RabbitMQ 互動、重試、寬限期 | `src/application/jobs`, `src/infra` | QUEUE-001 ~ QUEUE-003 |
+| 測試 & 文件 | 單元 / 整合 / API 測試、OpenAPI 文件 | `test/`, `docs/` | TEST-001 ~ TEST-004, DOC-001, DOC-002 |
 
-- **DDD (領域驅動設計)**: 將領域邏輯與基礎設施分離。
-- **倉庫模式**: 資料持久性的抽象。
-- **依賴注入**: 由 NestJS 管理。
-- **策略模式**: 計劃用於計費規則、折扣和重試（如同需求中所述）。
+所有任務細節請對照 `docs/docs_0_7/billingBot_v0.7.2_tasks.markdown`，依建議順序逐步完成。
 
-## 技術棧
+## 開發路線建議
 
-- **框架**: NestJS (用於可擴展服務端應用程式的 Node.js 框架)
-- **語言**: TypeScript
-- **資料庫**: MongoDB (通過自定義 MongoDB 客戶端)
-- **日誌記錄**: Pino
-- **排程**: @nestjs/schedule 用於 cron 任務
-- **驗證**: class-validator 和 class-transformer
-- **HTTP 客戶端**: 用於外部 API 調用的自定義 HTTP 客戶端
-- **測試**: 使用 e2e 測試的 Jest
-- **代碼檢查/格式化**: ESLint 和 Prettier
+1. **資料層奠基**
+  - 依任務表建立 users、products、subscriptions、discounts、promoCodes、paymentAttempts、refunds、billingLogs、config、rules 集合。
+  - 加入必要索引（`nextBillingDate`, `status`, `subscriptionId` 等）以支援 Cron 掃描與報表查詢。
 
-## 主要組件
+2. **領域模組實作（TDD 優先）**
+  - Subscription 聚合根：`calculateNextBillingDate`、`applyDiscount`、`convertToNewCycle`、`handlePaymentFailure`、`renew`。
+  - Discount / PromoCode / PaymentAttempt 等實體或值物件；確保測試覆蓋大小月、閏年、優惠衝突、重試次數等邊界情境。
+  - BillingService、DiscountPriorityService 等領域服務封裝規則。
 
-### 庫 (libs/)
+3. **支付抽象與佇列整合**
+  - 定義 `PaymentGateway` 介面與 mock 實作（成功 / 可重試失敗 / 不可重試失敗）。
+  - 建立 RabbitMQ publisher/consumer；使用延遲 exchange 或死信佇列實現 1 小時重試。
 
-#### 通用模組 (`libs/common/`)
-- **CommonService**: 提供預設日誌記錄器、HTTP 客戶端和結果實例。
-- **錯誤處理**: 集中式錯誤代碼和異常。
-- **客戶端**: MongoDB、HTTP 和 AsyncLocalStorage 提供者。
-- **組件**: 翻譯服務和檔案傳輸。
+4. **應用層 API 與 Cron**
+  - `GET /products`、`POST /subscriptions`、`POST /subscriptions/convert`、`POST /payments/retry` 等主要端點。
+  - Cron job (`0 * * * *`) 讀取 `nextBillingDate <= now` 的訂閱，封包後丟入佇列。
+  - 針對寬限期訂閱的手動補款流程：驗證 `retryCount` 與狀態再觸發支付。
 
-#### 配置模組 (`libs/conf/`)
-- **ConfService**: 從環境變數公開配置。
-- **配置介面**: 定義所有可配置參數（端口、MongoDB 設定、cron 排程等）。
+5. **測試 & 文件**
+  - 單元測試：覆蓋所有領域方法與支付 mock。
+  - 整合測試：Cron + Queue + Payment 重試流程。
+  - 端點測試：Jest e2e 或 Postman collection。
+  - API 文件：以 OpenAPI 3.0 格式輸出。
 
-### 應用層 (src/)
+## 資料模型重點
 
-#### 控制器 (`src/application/controllers/`)
-- **ExampleController**: 示例控制器，演示 CRUD 操作、檔案上傳和 HTTP 調用。
-- API 版本控制 (v1) 和路由。
+| 集合 | 關鍵欄位 | 說明 |
+| --- | --- | --- |
+| `users` | `userId`, `tenantId`, `encryptedData` | 預留多租戶與敏感資訊加密儲存 |
+| `products` | `price`, `cycleType`, `cycleValue`, `gracePeriodDays` | 支援多種週期與產品專屬寬限期 |
+| `subscriptions` | `status`, `nextBillingDate`, `renewalCount`, `remainingDiscountPeriods` | 核心聚合根資料來源 |
+| `discounts` / `promoCodes` | `type`, `value`, `priority`, `usageLimit`, `isSingleUse` | 優惠組合與使用控制 |
+| `paymentAttempts` | `status`, `failureReason`, `retryCount` | 重試邏輯依據 |
+| `refunds` | `amount`, `status` | 取消訂閱與退款流程資料 |
+| `billingLogs` | `eventType`, `details` | 紀錄扣款事件與排錯資訊 |
+| `config` / `rules` | `type`, `conditions`, `actions` | 全域或產品級設定與規則引擎基礎 |
 
-#### 任務 (`src/application/jobs/`)
-- **DailyBillingJob**: 基於 cron 的每日計費執行任務（目前為佔位符）。
+資料結構詳見系統設計書第 4 章。
 
-#### 領域層 (`src/domain/`)
-- **實體**: 如 `ExampleEntity` 擴展 `BaseEntity` 的業務物件。
-- **值物件**: 如 `CreateExampleRequest` 的請求 DTO。
+## 關鍵流程
 
-#### 基礎設施層 (`src/infra/`)
-- **倉庫**: 資料存取層（例如，用於 MongoDB 操作的 `ExampleRepository`）。
-- **模型**: MongoDB 文檔介面和定義。
+### 定時扣款流程（Cron + Queue）
 
-### 應用組件 (`src/app-components/`)
-- **過濾器**: 異常處理 (`AppExceptionFilter`)。
-- **中間件**: 追蹤 (`AppTracerMiddleware`)。
-- **攔截器**: 檔案上傳處理 (`SingleUploadFileInterceptor`)。
+1. Cron 每小時啟動，透過分布式鎖（建議 Redis）避免多實例重複執行。
+2. 查詢 `status=active` 且 `nextBillingDate <= now` 的訂閱。
+3. 對每筆訂閱發佈扣款任務至 RabbitMQ `billingQueue`。
+4. Consumer 取出任務，呼叫 BillingService：
+  - 準備支付 Context（訂閱、產品、優惠、最近一次付款結果）。
+  - 呼叫支付網關。
+  - 成功：更新 `nextBillingDate`、`renewalCount`、重置 `retryCount`，寫入 `billingLogs`。
+  - 失敗：寫入 `paymentAttempts`，依可重試與否決定重入 queue 或進入寬限期，必要時更新 `status=grace`。
 
-## 配置
+### 優惠套用流程
 
-配置通過 `dotenv` 載入的環境變數進行管理。關鍵設定包括：
+1. 使用者於 `POST /subscriptions` 或 `POST /applyPromo` 提供優惠碼。
+2. DiscountPriorityService 依 `priority` 與折抵結果挑選最佳優惠；支援固定金額與百分比。
+3. 更新 `remainingDiscountPeriods`，在續訂時遞減。
 
-- **服務器**: `PORT`, `DOMAIN`
-- **MongoDB**: `DEFAULT_MONGO_URI`, `DEFAULT_MONGO_DB_NAME` 等
-- **上傳**: `DEFAULT_UPLOAD_TEMP_DIR`, `DEFAULT_UPLOAD_MAX_SIZE`
-- **日誌記錄**: `DEFAULT_LOGGER_PATH`
-- **本地化**: `LOCALES_PATH`, `FALLBACK_LOCALE`
-- **排程**: `DAILY_BILLING_EXEC` (每日計費的 cron 表達式)
+### 手動補款 / 寬限期
 
-請參閱 `libs/conf/src/conf.present.ts` 以獲取完整的配置介面。
+1. 寬限期內使用者呼叫 `POST /payments/retry`。
+2. 系統檢查 `retryCount < 3` 且狀態為 `grace`，再發送扣款任務。
+3. 成功後恢復 `status=active` 並刷新 `nextBillingDate`；失敗則更新 `retryCount`。
 
-## 如何運行
+## 技術細節與最佳實務
 
-### 先決條件
-- Node.js (與 NestJS 10 相容的版本)
-- MongoDB
-- Yarn 或 npm
+- **配置管理**：
+  - 新增 RabbitMQ、Redis、支付 API 等環境變數；集中於 `libs/conf`。
+  - Cron 表達式預設 `0 * * * *`，可透過配置覆寫。
 
-### 安裝
-```bash
-yarn install
-```
+- **錯誤分類**：
+  - 支付失敗需區分「可重試」（暫時性錯誤、支付網關中斷）與「不可重試」（卡片拒絕、餘額不足）。
+  - 使用 `libs/common/src/err.code.ts` 定義標準錯誤碼，方便記錄與監控。
 
-### 環境設定
-基於 `libs/conf/src/conf.present.ts` 創建 `.env` 文件，包含所需環境變數。
+- **日誌與觀測性**：
+  - 每次扣款任務需寫入 `billingLogs`，包含訂閱 ID、任務來源（Cron / 手動）、支付結果。
+  - 預留 Prometheus 指標（如 `billing_success_count`、`billing_retry_count`）。
 
-### 運行應用程式
-```bash
-# 帶監視的開發模式
-yarn start:dev
+- **安全**：
+  - 支付相關資料儲存於 `encryptedData`，需使用金鑰管理機制（v0.7 先以環境變數提供）。
+  - API 層導入 JWT（任務 API-012），payload 至少包含 `userId`（未來擴充 `tenantId`）。
 
-# 生產建置
-yarn build
-yarn start:prod
+- **測試策略**：
+  - 單元測試覆蓋所有領域方法（TEST-001）。
+  - 整合測試模擬 Cron + Queue 流程（TEST-003），可使用 in-memory RabbitMQ mock 或測試容器。
+  - API 測試確保主要端點行為（TEST-002），覆蓋成功、無效參數、無效狀態等案例。
 
-# 除錯模式
-yarn start:debug
-```
+## 環境建置與執行
 
-### 運行測試
-```bash
-# 單元測試
-yarn test
+1. **安裝依賴**
+  ```bash
+  yarn install
+  ```
 
-# e2e 測試
-yarn test:e2e
+2. **環境變數**
+  - 依 `libs/conf/src/conf.present.ts` 建立 `.env`。
+  - 新增以下建議設定：
+    - `RABBITMQ_URI`
+    - `BILLING_QUEUE_NAME`
+    - `BILLING_RETRY_EXCHANGE`
+    - `CRON_BILLING_EXPRESSION`（預設 `0 * * * *`）
+    - `PAYMENT_GATEWAY_MODE`（mock / sandbox）
+    - `GRACE_PERIOD_DAYS`
 
-# 測試覆蓋率
-yarn test:cov
-```
+3. **啟動服務**
+  ```bash
+  yarn start:dev
+  ```
+  需要外部 MongoDB、RabbitMQ、（可選）Redis，可透過 `docker-compose.yml` 啟動。
 
-### Docker
-項目包含 `Dockerfile` 和 `docker-compose.yml` 用於容器化部署。
+4. **測試**
+  ```bash
+  yarn test          # 單元測試
+  yarn test:e2e      # e2e / API 測試
+  yarn test:cov      # 覆蓋率
+  ```
 
-## 當前實現狀態
+## 任務檢查清單（節錄）
 
-### 已實現功能
-- 具有 DDD 架構的基本 NestJS 應用程式結構。
-- 使用倉庫模式的 MongoDB 整合。
-- 每日計費的 cron 任務排程（佔位符）。
-- 檔案上傳處理。
-- 錯誤處理和日誌記錄。
-- 國際化支援。
-- 示例 CRUD 操作。
+- [ ] DB-001 ~ DB-011：完成資料集合與索引
+- [ ] DDD-001 ~ DDD-010：領域模型 + 測試
+- [ ] PAY-001 ~ PAY-003：支付抽象與 Mock
+- [ ] CRON-001 ~ CRON-003, QUEUE-001 ~ QUEUE-003：自動化與佇列
+- [ ] API-001 ~ API-012：REST API 端點
+- [ ] TEST-001 ~ TEST-004, DOC-001, DOC-002：測試與文件
 
-### 尚未實現（基於 requirements_0.5.md）
-- **訂閱管理**: 產品列表、訂閱週期、計費邏輯。
-- **折扣和促銷**: 優惠券代碼、促銷優惠、續訂折扣。
-- **方案切換**: 升級/降級訂閱。
-- **退款**: 退款處理和條件。
-- **計費失敗和重試**: 失敗分類、重試邏輯、寬限期。
-- **狀態管理**: 訂閱生命週期狀態。
-- **多租戶**: 租戶隔離和自定義。
-- **合規性**: GDPR 合規性、資料匿名化。
-- **API**: 計費操作的完整 API 端點。
-- **通知/Webhook**: 事件驅動通知。
+完成後請更新 `billingBot_v0.7.2_tasks.markdown` 狀態欄位，以追蹤剩餘工作。
 
-## 擴展點
+## 風險與後續規劃
 
-### 計費邏輯
-- 擴展 `DailyBillingJob` 以實現實際計費計算。
-- 實現不同計費週期（每月、每年等）的策略模式。
-- 為訂閱、產品、付款和交易添加實體。
+- **多租戶與 Webhook**：目前僅預留欄位；後續需在認證與資料層導入租戶隔離，並新增 webhook 發送器。
+- **支付實連**：v0.7 僅 mock；下一階段需整合綠界 / Stripe / PayPal，落實簽章、退款與對帳。
+- **監控與告警**：Prometheus / Grafana 尚未落地，待基礎流程穩定後補齊。
+- **資料安全**：規劃 Key rotation、PII 匿名化與合規審查。
 
-### 折扣和優惠券
-- 為優惠券和促銷創建領域實體。
-- 使用優先級處理實現折扣計算服務。
-- 添加優惠券使用限制和過期的驗證。
-
-### 重試和失敗處理
-- 基於失敗類型開發重試策略。
-- 實現寬限期管理。
-- 添加人工干預工作流程。
-
-### 多租戶
-- 修改倉庫以包含租戶上下文。
-- 更新配置以支援租戶特定設定。
-- 確保租戶間的資料隔離。
-
-### API
-- 擴展訂閱管理、付款處理和報告的控制器。
-- 實現適當的 DTO 和驗證。
-- 添加身份驗證和授權。
-
-### 測試
-- 增加新功能的測試覆蓋率。
-- 為計費工作流程添加整合測試。
-- 實現高容量場景的效能測試。
-
-## 開發指南
-
-### 代碼風格
-- 嚴格使用 TypeScript。
-- 遵循 NestJS 慣例。
-- 使用 ESLint 和 Prettier 確保代碼品質。
-
-### 資料庫
-- 使用 MongoDB 並進行適當索引。
-- 遵循倉庫模式進行資料存取。
-- 確保資料驗證和清理。
-
-### 錯誤處理
-- 使用 `libs/common/src/err.code.ts` 中的集中式錯誤代碼。
-- 使用 Pino 實現適當日誌記錄。
-
-### 安全性
-- 使用 class-validator 實現輸入驗證。
-- 確保敏感資料（付款、PII）的安全處理。
-- 遵循 GDPR 和合規性要求。
-
-## 未來路線圖
-
-1. **階段 1 POC 完成**: 實現核心計費邏輯和基本 API。
-2. **折扣系統**: 添加優惠券和促銷管理。
-3. **重試機制**: 實現失敗處理和重試。
-4. **多租戶**: 添加租戶支援。
-5. **合規性**: 確保 GDPR 合規性和資料安全性。
-6. **通知**: 添加 webhook 和通知系統。
-7. **生產部署**: 優化可擴展性和監控。
-
-詳細需求請參閱 `docs/requirements_0.5.md`。
+保持此指南與需求/設計文件同步更新，確保團隊對系統現況與工作優先順序有一致理解。
