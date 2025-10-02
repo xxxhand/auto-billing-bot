@@ -76,6 +76,8 @@ graph TD
 | userId | string | Yes | - | 用戶唯一識別碼，主鍵 |
 | tenantId | string | Yes | - | 租戶識別碼（未來擴充） |
 | encryptedData | string | Yes | - | 加密後的用戶敏感資料（如支付資訊） |
+| createdAt | date | Yes | - | 創建時間 |
+| updatedAt | date | Yes | - | 變更時間 |
 
 #### products 集合
 | Name | Type | Required | Default Value | Description |
@@ -86,6 +88,8 @@ graph TD
 | cycleType | enum["monthly", "quarterly", "yearly", "weekly", "fixedDays"] | Yes | - | 扣款週期類型 |
 | cycleValue | number | No | null | 固定天數週期（如30天），僅fixedDays時有效 |
 | gracePeriodDays | number | No | 7 | 寬限期天數 |
+| createdAt | date | Yes | - | 創建時間 |
+| updatedAt | date | Yes | - | 變更時間 |
 
 #### subscriptions 集合
 | Name | Type | Required | Default Value | Description |
@@ -99,6 +103,8 @@ graph TD
 | nextBillingDate | date | Yes | - | 下次扣款日期 |
 | renewalCount | number | Yes | 0 | 續訂次數 |
 | remainingDiscountPeriods | number | Yes | 0 | 剩餘優惠期數 |
+| createdAt | date | Yes | - | 創建時間 |
+| updatedAt | date | Yes | - | 變更時間 |
 
 #### discounts 集合
 | Name | Type | Required | Default Value | Description |
@@ -109,6 +115,9 @@ graph TD
 | priority | number | Yes | 0 | 優惠優先級，數字越大優先 |
 | startDate | date | Yes | - | 優惠開始日期 |
 | endDate | date | Yes | - | 優惠結束日期 |
+| createdAt | date | Yes | - | 創建時間 |
+| updatedAt | date | Yes | - | 變更時間 |
+| valid | boolean | Yes | - | 有效否 |
 
 #### promoCodes 集合
 | Name | Type | Required | Default Value | Description |
@@ -118,6 +127,9 @@ graph TD
 | usageLimit | number | No | null | 總使用次數上限（多人共用時有效） |
 | isSingleUse | boolean | Yes | false | 是否僅限單人使用 |
 | usedCount | number | Yes | 0 | 已使用次數 |
+| createdAt | date | Yes | - | 創建時間 |
+| updatedAt | date | Yes | - | 變更時間 |
+| valid | boolean | Yes | - | 有效否 |
 
 #### paymentAttempts 集合
 | Name | Type | Required | Default Value | Description |
@@ -128,6 +140,8 @@ graph TD
 | failureReason | string | No | null | 失敗原因（如"network_error"） |
 | retryCount | number | Yes | 0 | 重試次數 |
 | createdAt | date | Yes | - | 創建時間 |
+| updatedAt | date | Yes | - | 變更時間 |
+| valid | boolean | Yes | - | 有效否 |
 
 #### refunds 集合
 | Name | Type | Required | Default Value | Description |
@@ -137,6 +151,8 @@ graph TD
 | amount | number | Yes | - | 退款金額 |
 | status | enum["pending", "completed", "failed"] | Yes | "pending" | 退款狀態 |
 | createdAt | date | Yes | - | 創建時間 |
+| updatedAt | date | Yes | - | 變更時間 |
+| valid | boolean | Yes | - | 有效否 |
 
 #### billingLogs 集合
 | Name | Type | Required | Default Value | Description |
@@ -146,6 +162,8 @@ graph TD
 | eventType | string | Yes | - | 事件類型（如"payment_attempt"） |
 | details | object | Yes | {} | 事件詳細資料 |
 | createdAt | date | Yes | - | 創建時間 |
+| updatedAt | date | Yes | - | 變更時間 |
+| valid | boolean | Yes | - | 有效否 |
 
 #### config 集合（全域與產品級設定）
 | Name | Type | Required | Default Value | Description |
@@ -155,6 +173,9 @@ graph TD
 | productId | string | No | null | 產品ID（產品級設定時有效） |
 | gracePeriodDays | number | No | 7 | 寬限期天數 |
 | refundPolicy | object | No | {} | 退款政策細節 |
+| createdAt | date | Yes | - | 創建時間 |
+| updatedAt | date | Yes | - | 變更時間 |
+| valid | boolean | Yes | - | 有效否 |
 
 #### rules 集合（規則引擎）
 | Name | Type | Required | Default Value | Description |
@@ -163,6 +184,9 @@ graph TD
 | type | string | Yes | - | 規則類型（如"billing", "discount"） |
 | conditions | object | Yes | {} | 條件邏輯 |
 | actions | object | Yes | {} | 動作邏輯 |
+| createdAt | date | Yes | - | 創建時間 |
+| updatedAt | date | Yes | - | 變更時間 |
+| valid | boolean | Yes | - | 有效否 |
 
 ### 4.2 ERD (Entity-Relationship Diagram)
 使用Mermaid呈現核心資料集合的關係。MongoDB為NoSQL，但模擬ERD以展示聚合與參照關係。
@@ -182,6 +206,9 @@ erDiagram
         string userId PK
         string tenantId
         string encryptedData
+        boolean valid
+        date createdAt
+        date updatedAt
     }
 
     PRODUCTS {
@@ -191,11 +218,14 @@ erDiagram
         enum cycleType
         number cycleValue
         number gracePeriodDays
+        date createdAt
+        date updatedAt
+        boolean valid
     }
 
     SUBSCRIPTIONS {
         string subscriptionId PK
-        string userId FK
+        ObjectId userId FK
         string productId FK
         enum status
         string cycleType
@@ -203,6 +233,9 @@ erDiagram
         date nextBillingDate
         number renewalCount
         number remainingDiscountPeriods
+        date createdAt
+        date updatedAt
+        boolean valid 
     }
 
     DISCOUNTS {
@@ -212,6 +245,9 @@ erDiagram
         number priority
         date startDate
         date endDate
+        date createdAt
+        date updatedAt
+        boolean valid 
     }
 
     PROMO_CODES {
@@ -220,6 +256,9 @@ erDiagram
         number usageLimit
         boolean isSingleUse
         number usedCount
+        date createdAt
+        date updatedAt
+        boolean valid
     }
 
     PAYMENT_ATTEMPTS {
@@ -229,6 +268,8 @@ erDiagram
         string failureReason
         number retryCount
         date createdAt
+        date updatedAt
+        boolean valid
     }
 
     REFUNDS {
@@ -237,6 +278,8 @@ erDiagram
         number amount
         enum status
         date createdAt
+        date updatedAt
+        boolean valid
     }
 
     BILLING_LOGS {
@@ -245,6 +288,8 @@ erDiagram
         string eventType
         object details
         date createdAt
+        date updatedAt
+        boolean valid
     }
 
     CONFIG {
@@ -253,6 +298,9 @@ erDiagram
         string productId FK
         number gracePeriodDays
         object refundPolicy
+        date createdAt
+        date updatedAt
+        boolean valid 
     }
 
     RULES {
@@ -260,6 +308,9 @@ erDiagram
         string type
         object conditions
         object actions
+        date createdAt
+        date updatedAt
+        boolean valid    
     }
 ```
 

@@ -11,11 +11,11 @@
 |--------|------|----------|------|--------|
 | DB-001 | 建立users集合，實現userId、tenantId、encryptedData欄位 | 無 | 已完成 | 4.1 資料表設計 |
 | DB-002 | 建立products集合，實現productId、name、price、cycleType等欄位 | 無 | 已完成 | 4.1 資料表設計 |
-| DB-003 | 建立subscriptions集合，實現subscriptionId、userId、productId、status等欄位 | DB-001, DB-002 | 待處理 | 4.1 資料表設計 |
-| DB-004 | 建立discounts集合，實現discountId、type、value等欄位 | 無 | 待處理 | 4.1 資料表設計 |
-| DB-005 | 建立promoCodes集合，實現code、discountId、usageLimit等欄位 | DB-004 | 待處理 | 4.1 資料表設計 |
-| DB-006 | 建立paymentAttempts集合，實現attemptId、subscriptionId、status等欄位 | DB-003 | 待處理 | 4.1 資料表設計 |
-| DB-007 | 建立refunds集合，實現refundId、subscriptionId、amount等欄位 | DB-003 | 待處理 | 4.1 資料表設計 |
+| DB-003 | 建立subscriptions集合，實現subscriptionId、userId、productId、status等欄位 | DB-001, DB-002 | 已完成 | 4.1 資料表設計 |
+| DB-004 | 建立discounts集合，實現discountId、type、value等欄位 | 無 | 已完成 | 4.1 資料表設計 |
+| DB-005 | 建立promoCodes集合，實現code、discountId、usageLimit等欄位 | DB-004 | 已完成 | 4.1 資料表設計 |
+| DB-006 | 建立paymentAttempts集合，實現attemptId、subscriptionId、status等欄位 | DB-003 | 已完成 | 4.1 資料表設計 |
+| DB-007 | 建立refunds集合，實現refundId、subscriptionId、amount等欄位 | DB-003 | 已完成 | 4.1 資料表設計 |
 | DB-008 | 建立billingLogs集合，實現logId、subscriptionId、eventType等欄位 | DB-003 | 待處理 | 4.1 資料表設計 |
 | DB-009 | 建立config集合，實現configId、type、gracePeriodDays等欄位 | 無 | 待處理 | 4.1 資料表設計 |
 | DB-010 | 建立rules集合，實現ruleId、type、conditions等欄位 | 無 | 待處理 | 4.1 資料表設計 |
@@ -97,9 +97,9 @@
 ## 7. 總計
 - **總任務數**：28
 - **狀態分布**：
-  - 已完成：2個任務
+  - 已完成：6個任務
   - 進行中：0個任務
-  - 待處理：26個任務
+  - 待處理：22個任務
 - **建議開發順序**：
   1. 資料庫設置（DB-001~DB-011）
   2. 領域模型與服務（DDD-001~DDD-010）

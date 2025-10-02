@@ -3,4 +3,6 @@ export interface IBaseModel {
   createdAt?: Date;
   /** update time */
   updatedAt?: Date;
+  /** is valid flag for soft delete */
+  valid: boolean;
 }
