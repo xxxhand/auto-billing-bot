@@ -16,9 +16,9 @@
 | DB-005 | 建立promoCodes集合，實現code、discountId、usageLimit等欄位 | DB-004 | 已完成 | 4.1 資料表設計 |
 | DB-006 | 建立paymentAttempts集合，實現attemptId、subscriptionId、status等欄位 | DB-003 | 已完成 | 4.1 資料表設計 |
 | DB-007 | 建立refunds集合，實現refundId、subscriptionId、amount等欄位 | DB-003 | 已完成 | 4.1 資料表設計 |
-| DB-008 | 建立billingLogs集合，實現logId、subscriptionId、eventType等欄位 | DB-003 | 待處理 | 4.1 資料表設計 |
-| DB-009 | 建立config集合，實現configId、type、gracePeriodDays等欄位 | 無 | 待處理 | 4.1 資料表設計 |
-| DB-010 | 建立rules集合，實現ruleId、type、conditions等欄位 | 無 | 待處理 | 4.1 資料表設計 |
+| DB-008 | 建立billingLogs集合，實現logId、subscriptionId、eventType等欄位 | DB-003 | 已完成 | 4.1 資料表設計 |
+| DB-009 | 建立config集合，實現configId、type、gracePeriodDays等欄位 | 無 | 已完成 | 4.1 資料表設計 |
+| DB-010 | 建立rules集合，實現ruleId、type、conditions等欄位 | 無 | 已完成 | 4.1 資料表設計 |
 | DB-011 | 為所有集合添加索引，優化nextBillingDate與status查詢 | DB-001~DB-010 | 待處理 | 4.1 資料表設計, 7.1 性能 |
 
 ---
