@@ -16,6 +16,11 @@
 - （無）目前暫停，等待下一個任務指示
 
 ### 已完成任務 (最近)
+- ✅ DDD-002：實現Subscription.applyDiscount方法（含TDD測試）（2025年10月3日）
+- ### 已完成任務 (最近)
+- ✅ DDD-002：實現Subscription.applyDiscount方法（含TDD測試）（2025年10月3日）
+- ✅ DDD-006：定義Discount實體，實現isApplicable與calculateDiscountedPrice方法（含TDD測試）（2025年10月3日）
+- ✅ DDD-001：定義Subscription聚合根，實現calculateNextBillingDate方法（含TDD測試）（2025年10月3日）
 - ✅ DB-010：建立 `rules` 集合模型（2025年10月3日）
 - ✅ DB-009：建立 `config` 集合模型（2025年10月3日）
 - ✅ DB-008：建立 `billingLogs` 集合模型（2025年10月3日）
@@ -36,7 +41,7 @@
 ## 🔧 技術狀態
 
 ### 當前架構
-- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊
+- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根，包含 calculateNextBillingDate 方法（支援月結、季結、年結、周結，處理大小月/閏年），並通過 TDD 測試驗證
 - **資料模型**：新增 `users` 模型（userId／tenantId／encryptedData）、`products` 模型（productId／name／price／cycleType／cycleValue／gracePeriodDays）、`subscriptions` 模型（subscriptionId／userId／productId／status／cycleType／startDate／nextBillingDate／renewalCount／remainingDiscountPeriods）、`discounts` 模型（discountId／type／value／priority／startDate／endDate）、`promoCodes` 模型（code／discountId／usageLimit／isSingleUse／usedCount）、`paymentAttempts` 模型（attemptId／subscriptionId／status／failureReason／retryCount）、`refunds` 模型（refundId／subscriptionId／amount／status）、`billingLogs` 模型（logId／subscriptionId／eventType／details）、`config` 模型（configId／type／productId／gracePeriodDays／refundPolicy）、`rules` 模型（ruleId／type／conditions／actions），其餘集合待建立
 - **文件**：v0.7 實作指南完成，提供模組拆解與開發順序
 
@@ -49,7 +54,7 @@
 
 ## 📊 進度指標
 - **總任務數**：依 `billingBot_v0.7.2_tasks.markdown` 為 28 項
-- **已完成**：10 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010）
+- **已完成**：13 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DDD-001、DDD-006）
 - **進行中**：0 項
 - **測試覆蓋率**：尚未開始 v0.7 測試
 
