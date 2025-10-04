@@ -55,11 +55,7 @@ export class Subscription extends BaseEntity {
       case 'monthly':
         // Check if original start date was end of month
         const originalStartDay = this.startDate.getDate();
-        const originalMonthLastDay = new Date(
-          this.startDate.getFullYear(),
-          this.startDate.getMonth() + 1,
-          0
-        ).getDate();
+        const originalMonthLastDay = new Date(this.startDate.getFullYear(), this.startDate.getMonth() + 1, 0).getDate();
 
         if (originalStartDay === originalMonthLastDay) {
           // End-of-month billing: calculate next month's last day

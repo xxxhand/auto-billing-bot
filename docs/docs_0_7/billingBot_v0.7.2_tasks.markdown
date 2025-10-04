@@ -32,7 +32,7 @@
 | DDD-003 | 實現Subscription.convertToNewCycle方法（含TDD測試） | DDD-001 | 待處理 | 4.3 核心領域模型設計與方法 |
 | DDD-004 | 實現Subscription.handlePaymentFailure方法（含TDD測試） | DDD-001, DB-006 | 待處理 | 4.3 核心領域模型設計與方法 |
 | DDD-005 | 實現Subscription.renew方法（含TDD測試） | DDD-001 | 待處理 | 4.3 核心領域模型設計與方法 |
-| DDD-006 | 定義Discount實體，實現isApplicable與calculateDiscountedPrice方法（含TDD測試） | DB-004 | 進行中 | 4.3 核心領域模型設計與方法 |
+| DDD-006 | 定義Discount實體，實現isApplicable與calculateDiscountedPrice方法（含TDD測試） | DB-004 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-007 | 定義PromoCode值物件，實現canBeUsed方法（含TDD測試） | DB-005 | 待處理 | 4.3 核心領域模型設計與方法 |
 | DDD-008 | 定義PaymentAttempt實體，實現shouldRetry方法（含TDD測試） | DB-006 | 待處理 | 4.3 核心領域模型設計與方法 |
 | DDD-009 | 實現billingService領域服務，整合mock支付網關與RabbitMQ（含TDD測試） | DDD-001, DDD-004, DDD-008, PAY-001 | 待處理 | 4.3 核心領域模型設計與方法, 6.1 訂閱與扣款流程 |
@@ -97,9 +97,9 @@
 ## 7. 總計
 - **總任務數**：28
 - **狀態分布**：
-  - 已完成：6個任務
+  - 已完成：13個任務
   - 進行中：0個任務
-  - 待處理：22個任務
+  - 待處理：15個任務
 - **建議開發順序**：
   1. 資料庫設置（DB-001~DB-011）
   2. 領域模型與服務（DDD-001~DDD-010）

@@ -7,14 +7,7 @@ describe('Subscription Entity', () => {
       // Arrange
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-01-15');
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'monthly',
-        startDate,
-        nextBillingDate
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate);
 
       // Act
       const result = subscription.calculateNextBillingDate();
@@ -29,14 +22,7 @@ describe('Subscription Entity', () => {
       // Arrange - January 31st
       const startDate = new Date('2024-01-31');
       const nextBillingDate = new Date('2024-01-31');
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'monthly',
-        startDate,
-        nextBillingDate
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate);
 
       // Act
       const result = subscription.calculateNextBillingDate();
@@ -51,14 +37,7 @@ describe('Subscription Entity', () => {
       // Arrange - January 31st in non-leap year
       const startDate = new Date('2023-01-31');
       const nextBillingDate = new Date('2023-01-31');
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'monthly',
-        startDate,
-        nextBillingDate
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate);
 
       // Act
       const result = subscription.calculateNextBillingDate();
@@ -73,14 +52,7 @@ describe('Subscription Entity', () => {
       // Arrange
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-01-15');
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'quarterly',
-        startDate,
-        nextBillingDate
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'quarterly', startDate, nextBillingDate);
 
       // Act
       const result = subscription.calculateNextBillingDate();
@@ -95,14 +67,7 @@ describe('Subscription Entity', () => {
       // Arrange
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-01-15');
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'yearly',
-        startDate,
-        nextBillingDate
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'yearly', startDate, nextBillingDate);
 
       // Act
       const result = subscription.calculateNextBillingDate();
@@ -117,14 +82,7 @@ describe('Subscription Entity', () => {
       // Arrange
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-01-15');
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'weekly',
-        startDate,
-        nextBillingDate
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'weekly', startDate, nextBillingDate);
 
       // Act
       const result = subscription.calculateNextBillingDate();
@@ -139,14 +97,7 @@ describe('Subscription Entity', () => {
       // Arrange
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-01-15');
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'unsupported',
-        startDate,
-        nextBillingDate
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'unsupported', startDate, nextBillingDate);
 
       // Act & Assert
       expect(() => subscription.calculateNextBillingDate()).toThrow('Unsupported cycleType: unsupported');
@@ -156,14 +107,7 @@ describe('Subscription Entity', () => {
       // Arrange
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-01-15');
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'fixedDays',
-        startDate,
-        nextBillingDate
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'fixedDays', startDate, nextBillingDate);
 
       // Act & Assert
       expect(() => subscription.calculateNextBillingDate()).toThrow('fixedDays cycleType requires cycleValue from product, not yet implemented');
@@ -175,14 +119,7 @@ describe('Subscription Entity', () => {
       // Arrange & Act
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-01-15');
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'monthly',
-        startDate,
-        nextBillingDate
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate);
 
       // Assert
       expect(subscription.subscriptionId).toBe('sub_123');
@@ -201,17 +138,7 @@ describe('Subscription Entity', () => {
       // Arrange & Act
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-01-15');
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'monthly',
-        startDate,
-        nextBillingDate,
-        'active',
-        5,
-        3
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active', 5, 3);
 
       // Assert
       expect(subscription.status).toBe('active');
@@ -227,14 +154,7 @@ describe('Subscription Entity', () => {
     beforeEach(() => {
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-01-15');
-      subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'monthly',
-        startDate,
-        nextBillingDate
-      );
+      subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate);
       originalPrice = 100;
     });
 
@@ -246,7 +166,7 @@ describe('Subscription Entity', () => {
         20, // 20% off
         1,
         new Date('2024-01-01'),
-        new Date('2024-12-31')
+        new Date('2024-12-31'),
       );
 
       // Act
@@ -264,7 +184,7 @@ describe('Subscription Entity', () => {
         30, // $30 off
         1,
         new Date('2024-01-01'),
-        new Date('2024-12-31')
+        new Date('2024-12-31'),
       );
 
       // Act
@@ -282,7 +202,7 @@ describe('Subscription Entity', () => {
         150, // $150 off, more than original price
         1,
         new Date('2024-01-01'),
-        new Date('2024-12-31')
+        new Date('2024-12-31'),
       );
 
       // Act
@@ -294,14 +214,7 @@ describe('Subscription Entity', () => {
 
     it('should update remainingDiscountPeriods when discountPeriods is provided', () => {
       // Arrange
-      const discount = new Discount(
-        'disc_123',
-        'percentage',
-        10,
-        1,
-        new Date('2024-01-01'),
-        new Date('2024-12-31')
-      );
+      const discount = new Discount('disc_123', 'percentage', 10, 1, new Date('2024-01-01'), new Date('2024-12-31'));
 
       // Act
       subscription.applyDiscount(discount, originalPrice, 5);
@@ -312,14 +225,7 @@ describe('Subscription Entity', () => {
 
     it('should not update remainingDiscountPeriods when discountPeriods is not provided', () => {
       // Arrange
-      const discount = new Discount(
-        'disc_123',
-        'percentage',
-        10,
-        1,
-        new Date('2024-01-01'),
-        new Date('2024-12-31')
-      );
+      const discount = new Discount('disc_123', 'percentage', 10, 1, new Date('2024-01-01'), new Date('2024-12-31'));
       subscription.remainingDiscountPeriods = 3; // Set initial value
 
       // Act

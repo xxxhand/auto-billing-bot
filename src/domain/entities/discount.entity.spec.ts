@@ -6,14 +6,7 @@ describe('Discount Entity', () => {
       // Arrange
       const startDate = new Date('2024-01-01');
       const endDate = new Date('2024-12-31');
-      const discount = new Discount(
-        'disc_123',
-        'percentage',
-        10,
-        1,
-        startDate,
-        endDate
-      );
+      const discount = new Discount('disc_123', 'percentage', 10, 1, startDate, endDate);
       const now = new Date('2024-06-15');
 
       // Act
@@ -27,14 +20,7 @@ describe('Discount Entity', () => {
       // Arrange
       const startDate = new Date('2024-01-01');
       const endDate = new Date('2024-12-31');
-      const discount = new Discount(
-        'disc_123',
-        'percentage',
-        10,
-        1,
-        startDate,
-        endDate
-      );
+      const discount = new Discount('disc_123', 'percentage', 10, 1, startDate, endDate);
       const now = new Date('2023-12-31');
 
       // Act
@@ -48,14 +34,7 @@ describe('Discount Entity', () => {
       // Arrange
       const startDate = new Date('2024-01-01');
       const endDate = new Date('2024-12-31');
-      const discount = new Discount(
-        'disc_123',
-        'percentage',
-        10,
-        1,
-        startDate,
-        endDate
-      );
+      const discount = new Discount('disc_123', 'percentage', 10, 1, startDate, endDate);
       const now = new Date('2025-01-01');
 
       // Act
@@ -69,14 +48,7 @@ describe('Discount Entity', () => {
       // Arrange
       const startDate = new Date('2024-01-01');
       const endDate = new Date('2024-12-31');
-      const discount = new Discount(
-        'disc_123',
-        'percentage',
-        10,
-        1,
-        startDate,
-        endDate
-      );
+      const discount = new Discount('disc_123', 'percentage', 10, 1, startDate, endDate);
       const now = new Date('2024-01-01');
 
       // Act
@@ -90,14 +62,7 @@ describe('Discount Entity', () => {
       // Arrange
       const startDate = new Date('2024-01-01');
       const endDate = new Date('2024-12-31');
-      const discount = new Discount(
-        'disc_123',
-        'percentage',
-        10,
-        1,
-        startDate,
-        endDate
-      );
+      const discount = new Discount('disc_123', 'percentage', 10, 1, startDate, endDate);
       const now = new Date('2024-12-31');
 
       // Act
@@ -117,7 +82,7 @@ describe('Discount Entity', () => {
         20, // 20% off
         1,
         new Date('2024-01-01'),
-        new Date('2024-12-31')
+        new Date('2024-12-31'),
       );
       const originalPrice = 100;
 
@@ -136,7 +101,7 @@ describe('Discount Entity', () => {
         30, // $30 off
         1,
         new Date('2024-01-01'),
-        new Date('2024-12-31')
+        new Date('2024-12-31'),
       );
       const originalPrice = 100;
 
@@ -155,7 +120,7 @@ describe('Discount Entity', () => {
         150, // $150 off, more than original price
         1,
         new Date('2024-01-01'),
-        new Date('2024-12-31')
+        new Date('2024-12-31'),
       );
       const originalPrice = 100;
 
@@ -174,7 +139,7 @@ describe('Discount Entity', () => {
         10,
         1,
         new Date('2024-01-01'),
-        new Date('2024-12-31')
+        new Date('2024-12-31'),
       );
       const originalPrice = 100;
 
@@ -191,14 +156,7 @@ describe('Discount Entity', () => {
       // Arrange & Act
       const startDate = new Date('2024-01-01');
       const endDate = new Date('2024-12-31');
-      const discount = new Discount(
-        'disc_123',
-        'percentage',
-        10,
-        1,
-        startDate,
-        endDate
-      );
+      const discount = new Discount('disc_123', 'percentage', 10, 1, startDate, endDate);
 
       // Assert
       expect(discount.discountId).toBe('disc_123');

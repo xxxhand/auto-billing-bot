@@ -16,14 +16,7 @@ export class Discount extends BaseEntity {
   public startDate: Date;
   public endDate: Date;
 
-  constructor(
-    discountId: string,
-    type: DiscountType,
-    value: number,
-    priority: number,
-    startDate: Date,
-    endDate: Date,
-  ) {
+  constructor(discountId: string, type: DiscountType, value: number, priority: number, startDate: Date, endDate: Date) {
     super();
     this.id = discountId; // Use discountId as the entity ID
     this.discountId = discountId;
