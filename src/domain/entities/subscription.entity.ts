@@ -19,6 +19,10 @@ export class Subscription extends BaseEntity {
   public nextBillingDate: Date;
   public renewalCount: number;
   public remainingDiscountPeriods: number;
+  public pendingConversion?: {
+    newCycleType: string;
+    requestedAt: Date;
+  } | null;
 
   constructor(
     subscriptionId: string,
@@ -30,6 +34,7 @@ export class Subscription extends BaseEntity {
     status: SubscriptionStatus = 'pending',
     renewalCount: number = 0,
     remainingDiscountPeriods: number = 0,
+    pendingConversion: { newCycleType: string; requestedAt: Date } | null = null,
   ) {
     super();
     this.id = subscriptionId; // Use subscriptionId as the entity ID
@@ -42,6 +47,7 @@ export class Subscription extends BaseEntity {
     this.nextBillingDate = nextBillingDate;
     this.renewalCount = renewalCount;
     this.remainingDiscountPeriods = remainingDiscountPeriods;
+    this.pendingConversion = pendingConversion;
   }
 
   /**
@@ -123,16 +129,56 @@ export class Subscription extends BaseEntity {
   }
 
   /**
-   * Convert subscription to a new billing cycle, recalculating nextBillingDate while preserving remaining discount periods
+   * Request conversion to a new billing cycle, effective at the start of the next cycle
+   * This records the conversion request without immediately applying it
    * @param newCycleType The new cycle type to convert to
+   * @returns Object containing conversion details for fee calculation
    */
-  public convertToNewCycle(newCycleType: string): void {
+  public convertToNewCycle(newCycleType: string): { requestedAt: Date; newCycleType: string } {
+    if (this.pendingConversion) {
+      throw new Error('A conversion is already pending');
+    }
+
+    // Validate the new cycle type
+    if (newCycleType === 'fixedDays') {
+      throw new Error('fixedDays cycleType requires cycleValue from product, not yet implemented');
+    }
+
+    // Check if the new cycle type is supported by trying to calculate a date with it
+    const supportedCycleTypes = ['monthly', 'quarterly', 'yearly', 'weekly'];
+    if (!supportedCycleTypes.includes(newCycleType)) {
+      throw new Error(`Unsupported cycleType: ${newCycleType}`);
+    }
+
+    const requestedAt = new Date();
+    this.pendingConversion = {
+      newCycleType,
+      requestedAt,
+    };
+
+    return {
+      requestedAt,
+      newCycleType,
+    };
+  }
+
+  /**
+   * Apply the pending conversion at the start of the next cycle
+   * This should be called when the current cycle ends
+   */
+  public applyPendingConversion(): void {
+    if (!this.pendingConversion) {
+      throw new Error('No pending conversion to apply');
+    }
+
     const oldCycleType = this.cycleType;
-    this.cycleType = newCycleType;
+    this.cycleType = this.pendingConversion.newCycleType;
 
     try {
       // Recalculate nextBillingDate based on the new cycle type
       this.nextBillingDate = this.calculateNextBillingDate();
+      // Clear the pending conversion
+      this.pendingConversion = null;
     } catch (error) {
       // If calculation fails, revert the cycleType change
       this.cycleType = oldCycleType;

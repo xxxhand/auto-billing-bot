@@ -11,7 +11,7 @@
 |--------|------|----------|------|--------|
 | DB-001 | 建立users集合，實現userId、tenantId、encryptedData欄位 | 無 | 已完成 | 4.1 資料表設計 |
 | DB-002 | 建立products集合，實現productId、name、price、cycleType等欄位 | 無 | 已完成 | 4.1 資料表設計 |
-| DB-003 | 建立subscriptions集合，實現subscriptionId、userId、productId、status等欄位 | DB-001, DB-002 | 已完成 | 4.1 資料表設計 |
+| DB-003 | 建立subscriptions集合，實現subscriptionId、userId、productId、status、cycleType、startDate、nextBillingDate、renewalCount、remainingDiscountPeriods、pendingConversion等欄位 | DB-001, DB-002 | 已完成 | 4.1 資料表設計 |
 | DB-004 | 建立discounts集合，實現discountId、type、value等欄位 | 無 | 已完成 | 4.1 資料表設計 |
 | DB-005 | 建立promoCodes集合，實現code、discountId、usageLimit等欄位 | DB-004 | 已完成 | 4.1 資料表設計 |
 | DB-006 | 建立paymentAttempts集合，實現attemptId、subscriptionId、status等欄位 | DB-003 | 已完成 | 4.1 資料表設計 |
@@ -29,7 +29,7 @@
 |--------|------|----------|------|--------|
 | DDD-001 | 定義Subscription聚合根，實現calculateNextBillingDate方法（含TDD測試） | DB-003 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-002 | 實現Subscription.applyDiscount方法（含TDD測試） | DDD-001, DB-004 | 已完成 | 4.3 核心領域模型設計與方法 |
-| DDD-003 | 實現Subscription.convertToNewCycle方法（含TDD測試） | DDD-001 | 已完成 | 4.3 核心領域模型設計與方法 |
+| DDD-003 | 實現Subscription.convertToNewCycle方法（等到下個週期生效，處理費用差額，含TDD測試） | DDD-001 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-004 | 實現Subscription.handlePaymentFailure方法（含TDD測試） | DDD-001, DB-006 | 待處理 | 4.3 核心領域模型設計與方法 |
 | DDD-005 | 實現Subscription.renew方法（含TDD測試） | DDD-001 | 待處理 | 4.3 核心領域模型設計與方法 |
 | DDD-006 | 定義Discount實體，實現isApplicable與calculateDiscountedPrice方法（含TDD測試） | DB-004 | 已完成 | 4.3 核心領域模型設計與方法 |
@@ -47,7 +47,7 @@
 | API-001 | 實現GET /products，查詢產品列表與即時優惠價 | DB-002, DDD-006, DDD-010 | 待處理 | 5.1 RESTful API, 5.2 API 資料格式示例 |
 | API-002 | 實現POST /subscriptions，創建訂閱 | DB-003, DDD-001 | 待處理 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
 | API-003 | 實現GET /subscriptions/{id}，查詢訂閱狀態 | DB-003, DDD-001 | 待處理 | 5.1 RESTful API |
-| API-004 | 實現POST /subscriptions/convert，方案轉換 | DDD-003 | 待處理 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
+| API-004 | 實現POST /subscriptions/convert，記錄方案轉換請求，處理費用調整（升級立即補收差額），但實際生效等到當前週期結束後的下個週期開始 | DDD-003 | 待處理 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
 | API-005 | 實現POST /subscriptions/cancel，取消訂閱與退款 | DB-007, DDD-001 | 待處理 | 5.1 RESTful API, 6.3 退款流程 |
 | API-006 | 實現GET /discounts，返回適用優惠列表 | DB-004, DDD-006 | 待處理 | 5.1 RESTful API, 6.2 優惠應用流程 |
 | API-007 | 實現POST /applyPromo，應用優惠碼 | DB-005, DDD-007, DDD-010 | 待處理 | 5.1 RESTful API, 6.2 優惠應用流程 |

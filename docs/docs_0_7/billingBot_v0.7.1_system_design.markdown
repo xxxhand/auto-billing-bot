@@ -103,6 +103,7 @@ graph TD
 | nextBillingDate | date | Yes | - | 下次扣款日期 |
 | renewalCount | number | Yes | 0 | 續訂次數 |
 | remainingDiscountPeriods | number | Yes | 0 | 剩餘優惠期數 |
+| pendingConversion | object | No | null | 待生效的轉換請求（包含newCycleType, requestedAt） |
 | createdAt | date | Yes | - | 創建時間 |
 | updatedAt | date | Yes | - | 變更時間 |
 
@@ -233,6 +234,7 @@ erDiagram
         date nextBillingDate
         number renewalCount
         number remainingDiscountPeriods
+        object pendingConversion
         date createdAt
         date updatedAt
         boolean valid 
@@ -318,11 +320,11 @@ erDiagram
 基於DDD，定義核心聚合根（Subscription為主要聚合根），並提供領域方法。以下為TypeScript-like偽碼示例，TDD將先測試這些方法。
 
 - **Subscription (聚合根)**：
-  - 屬性：subscriptionId, userId, productId, status, cycleType, startDate, nextBillingDate, renewalCount, remainingDiscountPeriods
+  - 屬性：subscriptionId, userId, productId, status, cycleType, startDate, nextBillingDate, renewalCount, remainingDiscountPeriods, pendingConversion
   - 方法：
     - `calculateNextBillingDate()`: 基於cycleType計算下次扣款日，處理大小月/閏年。
     - `applyDiscount(discount: Discount)`: 應用優惠，更新remainingDiscountPeriods並計算折扣價。
-    - `convertToNewCycle(newCycleType: string)`: 方案轉換，更新cycleType並承接剩餘優惠期數。
+    - `convertToNewCycle(newCycleType: string)`: 方案轉換，記錄新週期類型並等到當前週期結束後的下個週期開始時生效。若新方案價格較高（升級），立即補收剩餘期間的費用差額；若較低（降級），下個週期生效無退款。承接剩餘優惠期數。
     - `handlePaymentFailure(failureReason: string)`: 根據原因決定重試或進入寬限期，更新status。
     - `renew()`: 增加renewalCount，檢查是否適用續訂優惠。
 
@@ -359,7 +361,7 @@ erDiagram
   - **訂閱管理**：
     - `POST /subscriptions`：創建訂閱。
     - `GET /subscriptions/{id}`：查詢訂閱狀態。
-    - `POST /subscriptions/convert`：方案轉換。
+    - `POST /subscriptions/convert`：記錄方案轉換請求，處理費用調整（升級立即補收差額），但實際生效等到當前週期結束後的下個週期開始。
     - `POST /subscriptions/cancel`：取消訂閱並申請退款。
   - **優惠管理**：
     - `GET /discounts`：返回適用優惠列表。
@@ -471,12 +473,28 @@ sequenceDiagram
     API->>Payment: Request Refund
     Payment-->>API: Refund Processed
     API->>DB: Record Refund & Update Status
-    API-->>User: Refund Initiated
+### 6.4 方案轉換流程 (Sequence Diagram)
+```mermaid
+sequenceDiagram
+    participant User
+    participant API as NestJS API
+    participant DB as MongoDB
+    participant Payment as Payment Gateway
+
+    User->>API: POST /subscriptions/convert (newCycleType)
+    API->>DB: Validate Subscription & Calculate Fee Difference
+    DB-->>API: Fee Details
+    alt Upgrade (new price > current)
+        API->>Payment: Charge Immediate Difference
+        Payment-->>API: Success
+        API->>DB: Record Conversion Request (pending next cycle)
+    else Downgrade (new price < current)
+        API->>DB: Record Conversion Request (effective next cycle, no refund)
+    end
+    API->>DB: Update Subscription (pendingConversion flag)
+    API-->>User: Conversion Scheduled
+    Note over DB: At next cycle start, apply new cycleType & reset nextBillingDate
 ```
-
----
-
-## 7. 非功能性需求
 
 ### 7.1 性能
 - **吞吐量**：支援每秒100次API請求。

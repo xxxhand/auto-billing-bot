@@ -237,73 +237,57 @@ describe('Subscription Entity', () => {
   });
 
   describe('convertToNewCycle', () => {
-    it('should convert from monthly to yearly cycle and recalculate nextBillingDate', () => {
+    it('should request conversion from monthly to yearly cycle and set pendingConversion', () => {
       // Arrange
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-02-15');
       const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active', 2, 5);
 
       // Act
-      subscription.convertToNewCycle('yearly');
+      const result = subscription.convertToNewCycle('yearly');
 
       // Assert
-      expect(subscription.cycleType).toBe('yearly');
-      expect(subscription.nextBillingDate.getFullYear()).toBe(2025); // Next year from 2024-02-15
-      expect(subscription.nextBillingDate.getMonth()).toBe(1); // February
-      expect(subscription.nextBillingDate.getDate()).toBe(15);
+      expect(subscription.cycleType).toBe('monthly'); // Should not change immediately
+      expect(subscription.nextBillingDate.getTime()).toBe(nextBillingDate.getTime()); // Should not change
+      expect(subscription.pendingConversion).toEqual({
+        newCycleType: 'yearly',
+        requestedAt: result.requestedAt,
+      });
+      expect(result.newCycleType).toBe('yearly');
+      expect(result.requestedAt).toBeInstanceOf(Date);
       expect(subscription.remainingDiscountPeriods).toBe(5); // Should remain unchanged
       expect(subscription.renewalCount).toBe(2); // Should remain unchanged
     });
 
-    it('should convert from yearly to monthly cycle and recalculate nextBillingDate', () => {
+    it('should request conversion from yearly to monthly cycle and set pendingConversion', () => {
       // Arrange
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2025-01-15');
       const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'yearly', startDate, nextBillingDate, 'active', 1, 3);
 
       // Act
-      subscription.convertToNewCycle('monthly');
+      const result = subscription.convertToNewCycle('monthly');
 
       // Assert
-      expect(subscription.cycleType).toBe('monthly');
-      expect(subscription.nextBillingDate.getFullYear()).toBe(2025);
-      expect(subscription.nextBillingDate.getMonth()).toBe(1); // February (next month from 2025-01-15)
-      expect(subscription.nextBillingDate.getDate()).toBe(15);
+      expect(subscription.cycleType).toBe('yearly'); // Should not change immediately
+      expect(subscription.nextBillingDate.getTime()).toBe(nextBillingDate.getTime()); // Should not change
+      expect(subscription.pendingConversion).toEqual({
+        newCycleType: 'monthly',
+        requestedAt: result.requestedAt,
+      });
+      expect(result.newCycleType).toBe('monthly');
       expect(subscription.remainingDiscountPeriods).toBe(3); // Should remain unchanged
     });
 
-    it('should convert from weekly to quarterly cycle and recalculate nextBillingDate', () => {
+    it('should throw error when a conversion is already pending', () => {
       // Arrange
       const startDate = new Date('2024-01-15');
-      const nextBillingDate = new Date('2024-01-22');
-      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'weekly', startDate, nextBillingDate, 'active', 0, 10);
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active', 2, 5);
+      subscription.convertToNewCycle('yearly'); // First conversion
 
-      // Act
-      subscription.convertToNewCycle('quarterly');
-
-      // Assert
-      expect(subscription.cycleType).toBe('quarterly');
-      expect(subscription.nextBillingDate.getFullYear()).toBe(2024);
-      expect(subscription.nextBillingDate.getMonth()).toBe(3); // April (3 months from 2024-01-22)
-      expect(subscription.nextBillingDate.getDate()).toBe(22);
-      expect(subscription.remainingDiscountPeriods).toBe(10); // Should remain unchanged
-    });
-
-    it('should handle month-end billing when converting cycles', () => {
-      // Arrange - End of month billing
-      const startDate = new Date('2024-01-31');
-      const nextBillingDate = new Date('2024-02-29'); // Leap year February 29
-      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active', 0, 2);
-
-      // Act - Convert to yearly
-      subscription.convertToNewCycle('yearly');
-
-      // Assert
-      expect(subscription.cycleType).toBe('yearly');
-      expect(subscription.nextBillingDate.getFullYear()).toBe(2025); // Next year from 2024-02-29
-      expect(subscription.nextBillingDate.getMonth()).toBe(1); // February
-      expect(subscription.nextBillingDate.getDate()).toBe(28); // 2025 is not leap year, so February 28
-      expect(subscription.remainingDiscountPeriods).toBe(2); // Should remain unchanged
+      // Act & Assert
+      expect(() => subscription.convertToNewCycle('quarterly')).toThrow('A conversion is already pending');
     });
 
     it('should throw error for unsupported newCycleType', () => {
@@ -324,6 +308,56 @@ describe('Subscription Entity', () => {
 
       // Act & Assert
       expect(() => subscription.convertToNewCycle('fixedDays')).toThrow('fixedDays cycleType requires cycleValue from product, not yet implemented');
+    });
+  });
+
+  describe('applyPendingConversion', () => {
+    it('should apply pending conversion from monthly to yearly and update nextBillingDate', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active', 2, 5);
+      subscription.convertToNewCycle('yearly');
+
+      // Act
+      subscription.applyPendingConversion();
+
+      // Assert
+      expect(subscription.cycleType).toBe('yearly');
+      expect(subscription.nextBillingDate.getFullYear()).toBe(2025); // Next year from 2024-02-15
+      expect(subscription.nextBillingDate.getMonth()).toBe(1); // February
+      expect(subscription.nextBillingDate.getDate()).toBe(15);
+      expect(subscription.pendingConversion).toBeNull();
+      expect(subscription.remainingDiscountPeriods).toBe(5); // Should remain unchanged
+    });
+
+    it('should handle month-end billing when applying pending conversion', () => {
+      // Arrange - End of month billing
+      const startDate = new Date('2024-01-31');
+      const nextBillingDate = new Date('2024-02-29'); // Leap year February 29
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active', 0, 2);
+      subscription.convertToNewCycle('yearly');
+
+      // Act
+      subscription.applyPendingConversion();
+
+      // Assert
+      expect(subscription.cycleType).toBe('yearly');
+      expect(subscription.nextBillingDate.getFullYear()).toBe(2025); // Next year from 2024-02-29
+      expect(subscription.nextBillingDate.getMonth()).toBe(1); // February
+      expect(subscription.nextBillingDate.getDate()).toBe(28); // 2025 is not leap year, so February 28
+      expect(subscription.pendingConversion).toBeNull();
+      expect(subscription.remainingDiscountPeriods).toBe(2); // Should remain unchanged
+    });
+
+    it('should throw error when no pending conversion exists', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate);
+
+      // Act & Assert
+      expect(() => subscription.applyPendingConversion()).toThrow('No pending conversion to apply');
     });
   });
 });

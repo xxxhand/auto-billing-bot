@@ -25,4 +25,9 @@ export interface ISubscriptionModel extends IBaseModel {
   renewalCount: number;
   /** Remaining discount periods, default 0 */
   remainingDiscountPeriods: number;
+  /** Pending conversion request (contains newCycleType, requestedAt), effective next cycle */
+  pendingConversion?: {
+    newCycleType: string;
+    requestedAt: Date;
+  } | null;
 }
