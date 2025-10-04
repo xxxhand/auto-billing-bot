@@ -128,9 +128,22 @@ graph TD
 | usageLimit | number | No | null | 總使用次數上限（多人共用時有效） |
 | isSingleUse | boolean | Yes | false | 是否僅限單人使用 |
 | usedCount | number | Yes | 0 | 已使用次數 |
+| minimumAmount | number | No | 0 | 最低消費金額門檻 |
 | createdAt | date | Yes | - | 創建時間 |
 | updatedAt | date | Yes | - | 變更時間 |
 | valid | boolean | Yes | - | 有效否 |
+
+#### promoCodeUsages 集合
+| Name | Type | Required | Default Value | Description |
+|------|------|----------|---------------|-------------|
+| usageId | string | Yes | - | 使用記錄唯一識別碼，主鍵 |
+| promoCode | string | Yes | - | 關聯優惠碼，外鍵 |
+| userId | string | Yes | - | 使用者ID |
+| usedAt | date | Yes | - | 使用時間 |
+| orderAmount | number | Yes | - | 訂單金額 |
+| createdAt | date | Yes | - | 創建時間 |
+| updatedAt | date | Yes | - | 變更時間 |
+| valid | boolean | Yes | - | 是否有效 |
 
 #### paymentAttempts 集合
 | Name | Type | Required | Default Value | Description |
@@ -197,6 +210,7 @@ erDiagram
     USERS ||--o{ SUBSCRIPTIONS : has
     PRODUCTS ||--o{ SUBSCRIPTIONS : provides
     DISCOUNTS ||--o{ PROMO_CODES : applies
+    PROMO_CODES ||--o{ PROMO_CODE_USAGES : tracks
     SUBSCRIPTIONS ||--o{ PAYMENT_ATTEMPTS : records
     SUBSCRIPTIONS ||--o{ REFUNDS : processes
     SUBSCRIPTIONS ||--o{ BILLING_LOGS : logs
@@ -258,6 +272,18 @@ erDiagram
         number usageLimit
         boolean isSingleUse
         number usedCount
+        number minimumAmount
+        date createdAt
+        date updatedAt
+        boolean valid
+    }
+
+    PROMO_CODE_USAGES {
+        string usageId PK
+        string promoCode FK
+        string userId
+        date usedAt
+        number orderAmount
         date createdAt
         date updatedAt
         boolean valid
@@ -335,9 +361,10 @@ erDiagram
     - `calculateDiscountedPrice(originalPrice: number)`: 計算折扣後價格（固定或百分比）。
 
 - **PromoCode (值物件)**：
-  - 屬性：code, discountId, usageLimit, isSingleUse, usedCount
+  - 屬性：code, discountId, usageLimit, isSingleUse, usedCount, minimumAmount
   - 方法：
-    - `canBeUsed(userId: string)`: 檢查是否可使用（次數上限或單人限制）。
+    - `canBeUsed()`: 檢查優惠碼本身是否可用（次數上限、有效期等）。
+    - `incrementUsage()`: 返回使用次數+1的新實例。
 
 - **PaymentAttempt (實體)**：
   - 屬性：attemptId, subscriptionId, status, failureReason, retryCount, createdAt
@@ -347,6 +374,7 @@ erDiagram
 領域服務（Domain Services）：
 - `billingService`: 協調扣款流程，整合支付網關、RabbitMQ及Cron job觸發。
 - `discountPriorityService`: 處理多重優惠優先級，選擇最佳優惠。
+- `promoCodeDomainService`: 處理優惠碼業務邏輯，包含用戶重複使用檢查、消費門檻驗證等。
 
 ---
 
@@ -365,8 +393,9 @@ erDiagram
     - `POST /subscriptions/cancel`：取消訂閱並申請退款。
   - **優惠管理**：
     - `GET /discounts`：返回適用優惠列表。
-    - `POST /applyPromo`：應用優惠碼。
+    - `POST /applyPromo`：應用優惠碼，包含消費門檻和用戶重複使用檢查。
     - `GET /userPromoCodes`：返回用戶可用優惠碼。
+    - `GET /admin/promoCodes/{code}/usage`：後台查詢優惠碼使用狀態與歷史。
   - **支付管理**：
     - `POST /payments/retry`：手動補款。
   - **日誌與管理**：
@@ -395,7 +424,8 @@ erDiagram
       "code": "SAVE30",
       "discountId": "disc_456",
       "isSingleUse": true,
-      "remainingUses": 1
+      "remainingUses": 1,
+      "minimumAmount": 500
     }
   ]
   ```
@@ -450,11 +480,17 @@ stateDiagram-v2
     QueryProducts --> ReturnList: No Discounts
 
     ReturnList --> ApplyPromo: POST /applyPromo
-    ApplyPromo --> ValidateCode: Check PromoCode Validity
-    ValidateCode --> UpdateUsed: Valid? Update usedCount
-    UpdateUsed --> ApplyToSub: Apply to Subscription
-    ApplyToSub --> [*]
-    ValidateCode --> Invalid: Return Error
+    ApplyPromo --> ValidateUser: Check User ID Validity
+    ValidateUser --> CheckOrderAmount: Valid User? Check Minimum Amount
+    CheckOrderAmount --> CheckUsageLimit: Amount >= Minimum? Check Usage Limits
+    CheckUsageLimit --> CheckUserHistory: Within Limits? Check User Usage History
+    CheckUserHistory --> ApplyDiscount: Not Used Before? Apply Discount & Record Usage
+    ApplyDiscount --> Success: Return Success
+    Success --> [*]
+    ValidateUser --> Invalid: Return Error
+    CheckOrderAmount --> Invalid
+    CheckUsageLimit --> Invalid
+    CheckUserHistory --> Invalid
     Invalid --> [*]
 ```
 
@@ -473,7 +509,30 @@ sequenceDiagram
     API->>Payment: Request Refund
     Payment-->>API: Refund Processed
     API->>DB: Record Refund & Update Status
-### 6.4 方案轉換流程 (Sequence Diagram)
+
+### 6.4 優惠碼應用流程 (Sequence Diagram)
+```mermaid
+sequenceDiagram
+    participant User
+    participant API as NestJS API
+    participant DB as MongoDB
+
+    User->>API: POST /applyPromo (promoCode, orderAmount)
+    API->>DB: Get PromoCode & User Usage History
+    DB-->>API: PromoCode Details & Usage Records
+    API->>API: Validate User ID
+    API->>API: Check Minimum Amount Threshold
+    API->>API: Check Usage Limits & User History
+    alt All Validations Pass
+        API->>DB: Record Usage in promoCodeUsages
+        API->>DB: Update PromoCode usedCount
+        API->>API: Calculate Discounted Price
+        API-->>User: Return Discount Details
+    else Validation Failed
+        API-->>User: Return Error Message
+    end
+
+### 6.5 方案轉換流程 (Sequence Diagram)
 ```mermaid
 sequenceDiagram
     participant User

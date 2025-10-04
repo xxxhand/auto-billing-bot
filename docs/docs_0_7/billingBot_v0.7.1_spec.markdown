@@ -26,18 +26,35 @@
   - 優惠碼分兩類：
     - 一碼多人使用：設定總次數上限（例：100次）。
     - 一碼一人使用：每用戶限用一次，記錄使用歷史。
+  - **情境一：共用優惠碼（多用戶可用、單次限用、含消費門檻）**
+    - 行銷活動期間，系統管理員建立單一優惠碼（如 ANNIV100），供多位會員使用。每位會員僅能使用一次，需達最低消費金額才可折抵。
+    - 支援建立單一優惠碼，設定最低消費金額與折扣值。
+    - 系統於結帳時檢核金額門檻、使用次數與有效期限。
+    - 已使用會員不可再用，其他會員仍可繼續使用。
+    - 優惠碼狀態可於後台查詢、停用或修改。
+  - **情境二：獨立優惠碼（專屬代碼、一次性、無門檻）**
+    - 系統管理員建立優惠計劃，批次生成多組唯一優惠碼。客服人員將代碼個別發送給不同會員，每組代碼僅能使用一次，無消費門檻限制。
+    - 支援優惠計劃建立與批次生成多組唯一代碼。
+    - 每組代碼可綁定至特定會員或留待客服分配。
+    - 使用後自動標記為「已使用」，不可重複。
+    - 後台可查詢各代碼的使用者與使用狀態。
   - 支援第二次及以上續訂優惠，與其他優惠比較優先級。
   - 多重優惠按優先級套用，若優先級相同，選擇金額較高者。
   - 方案轉換時，新方案下個週期以原價計費，僅允許優惠碼，續訂優惠從第二次週期開始。
   - 提供API讓用戶查詢其可用的優惠碼。
 - **技術規格**：
-  - 資料庫表：`discounts`（`discountId`, `type`：enum[fixed, percentage], `value`, `priority`, `startDate`, `endDate`）。
-  - 優惠碼表：`promoCodes`（`code`, `discountId`, `usageLimit`, `isSingleUse`, `usedCount`）。
+  - 資料庫表：
+    - `discounts`（`discountId`, `type`：enum[fixed, percentage], `value`, `priority`, `startDate`, `endDate`）。
+    - `promoCodes`（`code`, `discountId`, `usageLimit`, `isSingleUse`, `usedCount`, `minimumAmount`）。
+    - `promoCodeUsages`（`usageId`, `promoCode`, `userId`, `usedAt`, `orderAmount`, `valid`）：記錄優惠碼使用歷史，支援用戶重複使用檢查。
   - 續訂計數：`subscriptions`表中新增`renewalCount`欄位。
+  - 消費門檻檢查：結帳時驗證訂單金額是否達`minimumAmount`。
+  - 用戶重複使用防護：查詢`promoCodeUsages`表檢查用戶是否已使用該優惠碼。
   - API端點：
-    - `POST /applyPromo` 驗證並應用優惠碼。
+    - `POST /applyPromo` 驗證並應用優惠碼，包含消費門檻和用戶重複使用檢查。
     - `GET /discounts` 返回適用優惠列表。
     - `GET /userPromoCodes` 返回用戶可用的優惠碼列表，包含`code`, `discountId`, `isSingleUse`, `remainingUses`。
+    - `GET /admin/promoCodes/{code}/usage` 後台查詢優惠碼使用狀態與歷史。
 
 ### 1.3 方案轉換
 - **功能描述**：
@@ -110,10 +127,14 @@
     - `users`（`userId`, `tenantId`, `encryptedData`）
     - `products`（`productId`, `name`, `price`, `cycleType`）
     - `subscriptions`（`subscriptionId`, `userId`, `productId`, `status`, `renewalCount`）
+    - `promoCodes`（`code`, `discountId`, `usageLimit`, `isSingleUse`, `usedCount`, `minimumAmount`）
+    - `promoCodeUsages`（`usageId`, `promoCode`, `userId`, `usedAt`, `orderAmount`, `valid`）
   - API端點示例：
     - `GET /subscriptions/{id}`：查詢訂閱狀態。
     - `POST /subscriptions`：創建訂閱。
     - `GET /userPromoCodes`：查詢用戶可用優惠碼。
+    - `POST /applyPromo`：應用優惠碼，包含消費門檻和用戶重複使用檢查。
+    - `GET /admin/promoCodes/{code}/usage`：後台查詢優惠碼使用狀態與歷史。
 
 ### 1.10 文件化與管理後台
 - **功能描述**：

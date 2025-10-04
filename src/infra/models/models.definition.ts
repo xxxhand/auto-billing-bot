@@ -5,6 +5,7 @@ import { IProductModel } from './product.model';
 import { ISubscriptionModel } from './subscription.model';
 import { IDiscountModel } from './discount.model';
 import { IPromoCodeModel } from './promoCodes.model';
+import { IPromoCodeUsageModel } from './promoCodeUsages.model';
 import { IPaymentAttemptModel } from './paymentAttempts.model';
 import { IRefundModel } from './refunds.model';
 import { IBillingLogModel } from './billingLogs.model';
@@ -18,6 +19,7 @@ export enum modelNames {
   SUBSCRIPTIONS = 'subscriptions',
   DISCOUNTS = 'discounts',
   PROMO_CODES = 'promoCodes',
+  PROMO_CODE_USAGES = 'promoCodeUsages',
   PAYMENT_ATTEMPTS = 'paymentAttempts',
   REFUNDS = 'refunds',
   BILLING_LOGS = 'billingLogs',
@@ -33,6 +35,7 @@ export type IProductDocument = WithId<IProductModel>;
 export type ISubscriptionDocument = WithId<ISubscriptionModel>;
 export type IDiscountDocument = WithId<IDiscountModel>;
 export type IPromoCodeDocument = WithId<IPromoCodeModel>;
+export type IPromoCodeUsageDocument = WithId<IPromoCodeUsageModel>;
 export type IPaymentAttemptDocument = WithId<IPaymentAttemptModel>;
 export type IRefundDocument = WithId<IRefundModel>;
 export type IBillingLogDocument = WithId<IBillingLogModel>;

@@ -360,4 +360,184 @@ describe('Subscription Entity', () => {
       expect(() => subscription.applyPendingConversion()).toThrow('No pending conversion to apply');
     });
   });
+
+  describe('handlePaymentFailure', () => {
+    it('should enter grace period for non-retryable failure (insufficient funds)', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active');
+
+      // Act
+      const result = subscription.handlePaymentFailure('insufficient_funds');
+
+      // Assert
+      expect(subscription.status).toBe('grace');
+      expect(result).toEqual({
+        shouldRetry: false,
+        enteredGracePeriod: true,
+        failureReason: 'insufficient_funds',
+      });
+    });
+
+    it('should enter grace period for non-retryable failure (card declined)', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active');
+
+      // Act
+      const result = subscription.handlePaymentFailure('card_declined');
+
+      // Assert
+      expect(subscription.status).toBe('grace');
+      expect(result).toEqual({
+        shouldRetry: false,
+        enteredGracePeriod: true,
+        failureReason: 'card_declined',
+      });
+    });
+
+    it('should allow retry for retryable failure (network error)', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active');
+
+      // Act
+      const result = subscription.handlePaymentFailure('network_error');
+
+      // Assert
+      expect(subscription.status).toBe('active'); // Should remain active for retryable failures
+      expect(result).toEqual({
+        shouldRetry: true,
+        enteredGracePeriod: false,
+        failureReason: 'network_error',
+      });
+    });
+
+    it('should allow retry for retryable failure (gateway timeout)', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active');
+
+      // Act
+      const result = subscription.handlePaymentFailure('gateway_timeout');
+
+      // Assert
+      expect(subscription.status).toBe('active'); // Should remain active for retryable failures
+      expect(result).toEqual({
+        shouldRetry: true,
+        enteredGracePeriod: false,
+        failureReason: 'gateway_timeout',
+      });
+    });
+
+    it('should not change status if already in grace period', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace');
+
+      // Act
+      const result = subscription.handlePaymentFailure('insufficient_funds');
+
+      // Assert
+      expect(subscription.status).toBe('grace'); // Should remain in grace
+      expect(result).toEqual({
+        shouldRetry: false,
+        enteredGracePeriod: false, // Already in grace period
+        failureReason: 'insufficient_funds',
+      });
+    });
+
+    it('should not change status if subscription is cancelled', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'cancelled');
+
+      // Act
+      const result = subscription.handlePaymentFailure('network_error');
+
+      // Assert
+      expect(subscription.status).toBe('cancelled'); // Should remain cancelled
+      expect(result).toEqual({
+        shouldRetry: false, // No retry for cancelled subscriptions
+        enteredGracePeriod: false,
+        failureReason: 'network_error',
+      });
+    });
+  });
+
+  describe('renew', () => {
+    it('should increment renewalCount when renewing subscription', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active', 2);
+
+      // Act
+      const result = subscription.renew();
+
+      // Assert
+      expect(subscription.renewalCount).toBe(3);
+      expect(result).toEqual({
+        renewalCount: 3,
+        renewalDiscountEligible: false, // Default behavior for basic renewal
+      });
+    });
+
+    it('should increment renewalCount from zero', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active', 0);
+
+      // Act
+      const result = subscription.renew();
+
+      // Assert
+      expect(subscription.renewalCount).toBe(1);
+      expect(result).toEqual({
+        renewalCount: 1,
+        renewalDiscountEligible: false,
+      });
+    });
+
+    it('should handle renewal for different cycle types', () => {
+      // Arrange - yearly subscription
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2025-01-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'yearly', startDate, nextBillingDate, 'active', 1);
+
+      // Act
+      const result = subscription.renew();
+
+      // Assert
+      expect(subscription.renewalCount).toBe(2);
+      expect(result).toEqual({
+        renewalCount: 2,
+        renewalDiscountEligible: false,
+      });
+    });
+
+    it('should work for subscription in grace period', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 1);
+
+      // Act
+      const result = subscription.renew();
+
+      // Assert
+      expect(subscription.renewalCount).toBe(2);
+      expect(result).toEqual({
+        renewalCount: 2,
+        renewalDiscountEligible: false,
+      });
+    });
+  });
 });

@@ -185,4 +185,57 @@ export class Subscription extends BaseEntity {
       throw error;
     }
   }
+
+  /**
+   * Handle payment failure based on failure reason
+   * Determines whether to retry payment or enter grace period
+   * @param failureReason The reason for payment failure
+   * @returns Object containing decision results
+   */
+  public handlePaymentFailure(failureReason: string): {
+    shouldRetry: boolean;
+    enteredGracePeriod: boolean;
+    failureReason: string;
+  } {
+    // Define retryable failure reasons
+    const retryableFailures = ['network_error', 'gateway_timeout', 'temporary_system_error'];
+
+    // Only retry if failure is retryable AND subscription is active
+    const shouldRetry = retryableFailures.includes(failureReason) && this.status === 'active';
+    let enteredGracePeriod = false;
+
+    // Only enter grace period for non-retryable failures and active subscriptions
+    if (!shouldRetry && this.status === 'active') {
+      this.status = 'grace';
+      enteredGracePeriod = true;
+    }
+
+    return {
+      shouldRetry,
+      enteredGracePeriod,
+      failureReason,
+    };
+  }
+
+  /**
+   * Renew the subscription by incrementing renewal count
+   * This method is called when a successful payment occurs for a recurring subscription
+   * @returns Object containing renewal information
+   */
+  public renew(): {
+    renewalCount: number;
+    renewalDiscountEligible: boolean;
+  } {
+    // Increment renewal count
+    this.renewalCount += 1;
+
+    // For now, renewal discount eligibility is always false
+    // This can be extended later based on business rules (e.g., every 5th renewal gets discount)
+    const renewalDiscountEligible = false;
+
+    return {
+      renewalCount: this.renewalCount,
+      renewalDiscountEligible,
+    };
+  }
 }

@@ -1,7 +1,9 @@
 # 自動扣款機器人開發狀態總結
 
-**最後更新**：2025年10月2日  
-**當前階段**：v0.7 規劃啟動  
+**最後更新**：2025年10月4日### 待處理任務 (優先順序)
+1. 完成剩餘資料模型與儲存層（DB-011）
+2. 實作領域層 Subscription/Discount 方法與測試（DDD-006 起）
+3. 設定 Cron + RabbitMQ 流程與測試環境（CRON / QUEUE 任務）*當前階段**：v0.7 規劃啟動  
 **負責人**：GitHub Copilot
 
 ## 工作指南
@@ -16,6 +18,11 @@
 - （無）目前暫停，等待下一個任務指示
 
 ### 已完成任務 (最近)
+- ✅ DDD-008：定義PaymentAttempt實體，實現shouldRetry方法（含TDD測試）（2025年10月4日）
+- ✅ DB-011：建立 `promoCodeUsages` 集合模型（實現usageId／promoCode／userId／usedAt／orderAmount欄位）（2025年10月4日）
+- ✅ DDD-007：定義PromoCode值物件，實現canBeUsed方法（含TDD測試）（2025年10月4日）
+- ✅ DDD-005：實現Subscription.renew方法（含TDD測試）（2025年10月4日）
+- ✅ DDD-004：實現Subscription.handlePaymentFailure方法（含TDD測試）（2025年10月4日）
 - ✅ DDD-003：實現Subscription.convertToNewCycle與applyPendingConversion方法（含TDD測試）（2025年10月4日）
 - ✅ DB-003：建立 `subscriptions` 集合模型（實現pendingConversion欄位）（2025年10月4日）
 - ✅ DDD-002：實現Subscription.applyDiscount方法（含TDD測試）（2025年10月3日）
@@ -33,15 +40,14 @@
 - ✅ `docs/implementation-guide.md`：更新為 v0.7 實作指南（2025年10月1日）
 
 ### 待處理任務 (優先順序)
-1. 完成剩餘資料模型與儲存層（DB-003 ~ DB-011）
-2. 實作領域層 Subscription/Discount 方法與測試（DDD-001 起）
-3. 設定 Cron + RabbitMQ 流程與測試環境（CRON / QUEUE 任務）
+1. 實作領域層 Subscription/Discount 方法與測試（DDD-006 起）
+2. 設定 Cron + RabbitMQ 流程與測試環境（CRON / QUEUE 任務）
 
 ## 🔧 技術狀態
 
 ### 當前架構
-- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根，包含 calculateNextBillingDate 方法（支援月結、季結、年結、周結，處理大小月/閏年）、applyDiscount 方法，並通過 TDD 測試驗證
-- **資料模型**：新增 `users` 模型（userId／tenantId／encryptedData）、`products` 模型（productId／name／price／cycleType／cycleValue／gracePeriodDays）、`subscriptions` 模型（subscriptionId／userId／productId／status／cycleType／startDate／nextBillingDate／renewalCount／remainingDiscountPeriods／pendingConversion）、`discounts` 模型（discountId／type／value／priority／startDate／endDate）、`promoCodes` 模型（code／discountId／usageLimit／isSingleUse／usedCount）、`paymentAttempts` 模型（attemptId／subscriptionId／status／failureReason／retryCount）、`refunds` 模型（refundId／subscriptionId／amount／status）、`billingLogs` 模型（logId／subscriptionId／eventType／details）、`config` 模型（configId／type／productId／gracePeriodDays／refundPolicy）、`rules` 模型（ruleId／type／conditions／actions），其餘集合待建立
+- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根（含 calculateNextBillingDate、applyDiscount、convertToNewCycle、handlePaymentFailure、renew 方法）、Discount 實體（isApplicable、calculateDiscountedPrice）、PromoCode 值物件（canBeUsed）、PaymentAttempt 實體（shouldRetry），並通過 TDD 測試驗證
+- **資料模型**：新增 `users` 模型（userId／tenantId／encryptedData）、`products` 模型（productId／name／price／cycleType／cycleValue／gracePeriodDays）、`subscriptions` 模型（subscriptionId／userId／productId／status／cycleType／startDate／nextBillingDate／renewalCount／remainingDiscountPeriods／pendingConversion）、`discounts` 模型（discountId／type／value／priority／startDate／endDate）、`promoCodes` 模型（code／discountId／usageLimit／isSingleUse／usedCount）、`promoCodeUsages` 模型（usageId／promoCode／userId／usedAt／orderAmount）、`paymentAttempts` 模型（attemptId／subscriptionId／status／failureReason／retryCount）、`refunds` 模型（refundId／subscriptionId／amount／status）、`billingLogs` 模型（logId／subscriptionId／eventType／details）、`config` 模型（configId／type／productId／gracePeriodDays／refundPolicy）、`rules` 模型（ruleId／type／conditions／actions），其餘集合待建立
 - **文件**：v0.7 實作指南完成，提供模組拆解與開發順序
 
 ### 遇到的問題與解決方案
@@ -53,11 +59,12 @@
 
 ## 📊 進度指標
 - **總任務數**：依 `billingBot_v0.7.2_tasks.markdown` 為 28 項
-- **已完成**：13 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DDD-001、DDD-002、DDD-006）
+- **已完成**：16 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-007）
 - **進行中**：0 項
 - **測試覆蓋率**：尚未開始 v0.7 測試
 
 ## 🎯 下一步計劃
-1. 依據實作指南建立剩餘資料與領域層基礎（DB-004 ~ DB-011、DDD 任務）
-2. 串接 Cron / RabbitMQ 以支援自動扣款重試流程
-3. 完成支付介面 mock 與相關整合測試，再同步更新此狀態文件
+1. 完成 DDD-007 PromoCode 值物件實作
+2. 依據實作指南建立剩餘資料與領域層基礎（DB-011）
+3. 串接 Cron / RabbitMQ 以支援自動扣款重試流程
+4. 完成支付介面 mock 與相關整合測試，再同步更新此狀態文件
