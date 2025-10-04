@@ -16,8 +16,7 @@
 - （無）目前暫停，等待下一個任務指示
 
 ### 已完成任務 (最近)
-- ✅ DDD-002：實現Subscription.applyDiscount方法（含TDD測試）（2025年10月3日）
-- ### 已完成任務 (最近)
+- ✅ DDD-003：實現Subscription.convertToNewCycle方法（含TDD測試）（2025年10月4日）
 - ✅ DDD-002：實現Subscription.applyDiscount方法（含TDD測試）（2025年10月3日）
 - ✅ DDD-006：定義Discount實體，實現isApplicable與calculateDiscountedPrice方法（含TDD測試）（2025年10月3日）
 - ✅ DDD-001：定義Subscription聚合根，實現calculateNextBillingDate方法（含TDD測試）（2025年10月3日）
@@ -54,7 +53,7 @@
 
 ## 📊 進度指標
 - **總任務數**：依 `billingBot_v0.7.2_tasks.markdown` 為 28 項
-- **已完成**：13 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DDD-001、DDD-006）
+- **已完成**：14 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DDD-001、DDD-002、DDD-003、DDD-006）
 - **進行中**：0 項
 - **測試覆蓋率**：尚未開始 v0.7 測試
 

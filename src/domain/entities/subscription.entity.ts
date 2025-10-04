@@ -82,6 +82,14 @@ export class Subscription extends BaseEntity {
 
       case 'yearly':
         const nextYear = new Date(currentBillingDate);
+        // Handle leap year: if Feb 29 and next year is not leap, adjust to Feb 28 before adding year
+        if (currentBillingDate.getMonth() === 1 && currentBillingDate.getDate() === 29) {
+          const nextYearNum = currentBillingDate.getFullYear() + 1;
+          const isNextLeap = (nextYearNum % 4 === 0 && nextYearNum % 100 !== 0) || nextYearNum % 400 === 0;
+          if (!isNextLeap) {
+            nextYear.setDate(28);
+          }
+        }
         nextYear.setFullYear(nextYear.getFullYear() + 1);
         return nextYear;
 
@@ -112,5 +120,23 @@ export class Subscription extends BaseEntity {
       this.remainingDiscountPeriods = discountPeriods;
     }
     return discount.calculateDiscountedPrice(originalPrice);
+  }
+
+  /**
+   * Convert subscription to a new billing cycle, recalculating nextBillingDate while preserving remaining discount periods
+   * @param newCycleType The new cycle type to convert to
+   */
+  public convertToNewCycle(newCycleType: string): void {
+    const oldCycleType = this.cycleType;
+    this.cycleType = newCycleType;
+
+    try {
+      // Recalculate nextBillingDate based on the new cycle type
+      this.nextBillingDate = this.calculateNextBillingDate();
+    } catch (error) {
+      // If calculation fails, revert the cycleType change
+      this.cycleType = oldCycleType;
+      throw error;
+    }
   }
 }
