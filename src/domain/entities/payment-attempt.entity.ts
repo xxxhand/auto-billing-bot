@@ -4,17 +4,23 @@ export enum RetryableFailureReason {
   TEMPORARY_FAILURE = 'TEMPORARY_FAILURE',
 }
 
+export enum PaymentAttemptStatus {
+  PENDING = 'pending',
+  SUCCESS = 'success',
+  FAILED = 'failed',
+}
+
 export class PaymentAttempt {
   constructor(
     public attemptId: string,
     public subscriptionId: string,
-    public status: string,
+    public status: PaymentAttemptStatus,
     public failureReason: string | null,
     public retryCount: number,
   ) {}
 
   shouldRetry(): boolean {
-    if (this.status !== 'failed') {
+    if (this.status !== PaymentAttemptStatus.FAILED) {
       return false;
     }
 
