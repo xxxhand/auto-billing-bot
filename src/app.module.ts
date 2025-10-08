@@ -5,6 +5,9 @@ import { Module, BeforeApplicationShutdown, MiddlewareConsumer, NestModule, OnAp
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { ExampleRepository } from './infra/repositories/example.repository';
+import { SubscriptionRepository } from './infra/repositories/subscription.repository';
+import { PaymentAttemptRepository } from './infra/repositories/payment-attempt.repository';
+import { BillingService } from './infra/services/billing.service';
 import { AppExceptionFilter } from './app-components/app-exception.filter';
 import { AppTracerMiddleware } from './app-components/app-tracer.middleware';
 import * as jobs from './application/jobs';
@@ -19,6 +22,9 @@ import * as v1Controllers from './application/controllers/v1';
       useClass: AppExceptionFilter,
     },
     ExampleRepository,
+    SubscriptionRepository,
+    PaymentAttemptRepository,
+    BillingService,
     ...Array.from(Object.keys(jobs)).map((key) => jobs[key]),
   ],
 })

@@ -129,6 +129,7 @@ graph TD
 | isSingleUse | boolean | Yes | false | 是否僅限單人使用 |
 | usedCount | number | Yes | 0 | 已使用次數 |
 | minimumAmount | number | No | 0 | 最低消費金額門檻 |
+| assignedUserId | string | No | null | 專屬用戶ID（專屬優惠碼時有效） |
 | createdAt | date | Yes | - | 創建時間 |
 | updatedAt | date | Yes | - | 變更時間 |
 | valid | boolean | Yes | - | 有效否 |
@@ -273,6 +274,7 @@ erDiagram
         boolean isSingleUse
         number usedCount
         number minimumAmount
+        string assignedUserId
         date createdAt
         date updatedAt
         boolean valid
@@ -361,10 +363,12 @@ erDiagram
     - `calculateDiscountedPrice(originalPrice: number)`: 計算折扣後價格（固定或百分比）。
 
 - **PromoCode (值物件)**：
-  - 屬性：code, discountId, usageLimit, isSingleUse, usedCount, minimumAmount
+  - 屬性：code, discountId, usageLimit, isSingleUse, usedCount, minimumAmount, assignedUserId
   - 方法：
     - `canBeUsed()`: 檢查優惠碼本身是否可用（次數上限、有效期等）。
     - `incrementUsage()`: 返回使用次數+1的新實例。
+    - `isAssignedToUser()`: 檢查優惠碼是否為專屬用戶。
+    - `canBeUsedByUser(userId: string)`: 檢查指定用戶是否可以使用此優惠碼。
 
 - **PaymentAttempt (實體)**：
   - 屬性：attemptId, subscriptionId, status, failureReason, retryCount, createdAt
@@ -374,7 +378,7 @@ erDiagram
 領域服務（Domain Services）：
 - `billingService`: 協調扣款流程，整合支付網關、RabbitMQ及Cron job觸發。
 - `discountPriorityService`: 處理多重優惠優先級，選擇最佳優惠。
-- `promoCodeDomainService`: 處理優惠碼業務邏輯，包含用戶重複使用檢查、消費門檻驗證等。
+- `promoCodeDomainService`: 處理優惠碼業務邏輯，包含用戶重複使用檢查、消費門檻驗證、專屬優惠碼用戶綁定驗證等。
 
 ---
 
@@ -480,7 +484,7 @@ stateDiagram-v2
     QueryProducts --> ReturnList: No Discounts
 
     ReturnList --> ApplyPromo: POST /applyPromo
-    ApplyPromo --> ValidateUser: Check User ID Validity
+    ApplyPromo --> ValidateUser: Check User ID Validity (專屬優惠碼驗證)
     ValidateUser --> CheckOrderAmount: Valid User? Check Minimum Amount
     CheckOrderAmount --> CheckUsageLimit: Amount >= Minimum? Check Usage Limits
     CheckUsageLimit --> CheckUserHistory: Within Limits? Check User Usage History
@@ -520,7 +524,7 @@ sequenceDiagram
     User->>API: POST /applyPromo (promoCode, orderAmount)
     API->>DB: Get PromoCode & User Usage History
     DB-->>API: PromoCode Details & Usage Records
-    API->>API: Validate User ID
+    API->>API: Validate User ID (專屬優惠碼檢查)
     API->>API: Check Minimum Amount Threshold
     API->>API: Check Usage Limits & User History
     alt All Validations Pass

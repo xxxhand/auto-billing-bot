@@ -9,8 +9,9 @@ export class PromoCode {
   public readonly isSingleUse: boolean;
   public readonly usedCount: number;
   public readonly minimumAmount: number;
+  public readonly assignedUserId?: string;
 
-  constructor(code: string, discountId: string, usageLimit: number | null = null, isSingleUse: boolean = false, usedCount: number = 0, minimumAmount: number = 0) {
+  constructor(code: string, discountId: string, usageLimit: number | null = null, isSingleUse: boolean = false, usedCount: number = 0, minimumAmount: number = 0, assignedUserId?: string) {
     // Validation
     if (!code || code.trim().length === 0) {
       throw new Error('Promo code cannot be empty');
@@ -34,6 +35,7 @@ export class PromoCode {
     this.isSingleUse = isSingleUse;
     this.usedCount = usedCount;
     this.minimumAmount = minimumAmount;
+    this.assignedUserId = assignedUserId;
   }
 
   /**
@@ -61,7 +63,7 @@ export class PromoCode {
    * @returns A new PromoCode instance with usedCount + 1
    */
   public incrementUsage(): PromoCode {
-    return new PromoCode(this.code, this.discountId, this.usageLimit, this.isSingleUse, this.usedCount + 1, this.minimumAmount);
+    return new PromoCode(this.code, this.discountId, this.usageLimit, this.isSingleUse, this.usedCount + 1, this.minimumAmount, this.assignedUserId);
   }
 
   /**
@@ -76,5 +78,26 @@ export class PromoCode {
       return this.usedCount >= this.usageLimit;
     }
     return false; // Unlimited use
+  }
+
+  /**
+   * Check if the promo code is assigned to a specific user
+   * @returns true if the promo code is assigned to a specific user, false otherwise
+   */
+  public isAssignedToUser(): boolean {
+    return this.assignedUserId !== undefined && this.assignedUserId !== null;
+  }
+
+  /**
+   * Check if the promo code can be used by a specific user
+   * For assigned promo codes, only the assigned user can use it
+   * @param userId The user ID to check
+   * @returns true if the user can use this promo code, false otherwise
+   */
+  public canBeUsedByUser(userId: string): boolean {
+    if (!this.isAssignedToUser()) {
+      return true; // Not assigned, anyone can use
+    }
+    return this.assignedUserId === userId;
   }
 }

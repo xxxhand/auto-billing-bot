@@ -1,5 +1,6 @@
 import { BaseEntity } from './base-entity.abstract';
 import { Discount } from './discount.entity';
+import { RetryableFailureReason } from './payment-attempt.entity';
 
 /**
  * Subscription status enums as defined in the system design v0.7.1
@@ -197,8 +198,8 @@ export class Subscription extends BaseEntity {
     enteredGracePeriod: boolean;
     failureReason: string;
   } {
-    // Define retryable failure reasons
-    const retryableFailures = ['network_error', 'gateway_timeout', 'temporary_system_error'];
+    // Define retryable failure reasons using enum values
+    const retryableFailures = Object.values(RetryableFailureReason) as string[];
 
     // Only retry if failure is retryable AND subscription is active
     const shouldRetry = retryableFailures.includes(failureReason) && this.status === 'active';

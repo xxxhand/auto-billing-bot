@@ -11,4 +11,6 @@ export interface IPromoCodeModel extends IBaseModel {
   isSingleUse: boolean;
   /** Number of times used */
   usedCount: number;
+  /** Assigned user ID for exclusive promo codes (optional) */
+  assignedUserId?: string;
 }

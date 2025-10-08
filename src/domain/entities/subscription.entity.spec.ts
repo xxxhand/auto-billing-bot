@@ -405,14 +405,14 @@ describe('Subscription Entity', () => {
       const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active');
 
       // Act
-      const result = subscription.handlePaymentFailure('network_error');
+      const result = subscription.handlePaymentFailure('NETWORK_ERROR');
 
       // Assert
       expect(subscription.status).toBe('active'); // Should remain active for retryable failures
       expect(result).toEqual({
         shouldRetry: true,
         enteredGracePeriod: false,
-        failureReason: 'network_error',
+        failureReason: 'NETWORK_ERROR',
       });
     });
 
@@ -423,14 +423,14 @@ describe('Subscription Entity', () => {
       const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active');
 
       // Act
-      const result = subscription.handlePaymentFailure('gateway_timeout');
+      const result = subscription.handlePaymentFailure('GATEWAY_TIMEOUT');
 
       // Assert
       expect(subscription.status).toBe('active'); // Should remain active for retryable failures
       expect(result).toEqual({
         shouldRetry: true,
         enteredGracePeriod: false,
-        failureReason: 'gateway_timeout',
+        failureReason: 'GATEWAY_TIMEOUT',
       });
     });
 
