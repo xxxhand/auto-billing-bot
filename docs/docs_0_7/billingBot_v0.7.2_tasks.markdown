@@ -20,7 +20,7 @@
 | DB-009 | 建立config集合，實現configId、type、gracePeriodDays等欄位 | 無 | 已完成 | 4.1 資料表設計 |
 | DB-010 | 建立rules集合，實現ruleId、type、conditions等欄位 | 無 | 已完成 | 4.1 資料表設計 |
 | DB-011 | 建立promoCodeUsages集合，實現usageId、promoCode、userId、usedAt、orderAmount等欄位 | DB-005 | 已完成 | 4.1 資料表設計 |
-| DB-012 | 為所有集合添加索引，優化nextBillingDate與status查詢 | DB-001~DB-011 | 待處理 | 4.1 資料表設計, 7.1 性能 |
+| DB-012 | 為所有集合添加索引，優化nextBillingDate與status查詢 | DB-001~DB-011 | 已完成 | 4.1 資料表設計, 7.1 性能 |
 
 ---
 
@@ -38,7 +38,7 @@
 | DDD-008 | 定義PaymentAttempt實體，實現shouldRetry方法（含TDD測試） | DB-006 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-009 | 實現promoCodeDomainService領域服務，處理優惠碼業務邏輯（用戶重複使用檢查、消費門檻驗證，含TDD測試） | DB-005, DB-011, DDD-007 | 已完成 | 4.3 核心領域模型設計與方法, 6.4 優惠碼應用流程 |
 | DDD-010 | 實現billingService領域服務，整合mock支付網關與RabbitMQ（含TDD測試） | DDD-001, DDD-004, DDD-008, PAY-001, PAY-004 | 已完成 | 4.3 核心領域模型設計與方法, 6.1 訂閱與扣款流程 |
-| DDD-011 | 實現discountPriorityService領域服務，處理多重優惠優先級（含TDD測試） | DDD-002, DDD-006 | 待處理 | 4.3 核心領域模型設計與方法, 6.2 優惠應用流程 |
+| DDD-011 | 實現discountPriorityService領域服務，處理多重優惠優先級（含TDD測試） | DDD-002, DDD-006 | 已完成 | 4.3 核心領域模型設計與方法, 6.2 優惠應用流程 |
 
 ---
 
@@ -101,9 +101,9 @@
 ## 7. 總計
 - **總任務數**：31
 - **狀態分布**：
-  - 已完成：24個任務
+  - 已完成：26個任務
   - 進行中：0個任務
-  - 待處理：7個任務
+  - 待處理：5個任務
 - **建議開發順序**：
   1. 資料庫設置（DB-001~DB-012）
   2. 領域模型與服務（DDD-001~DDD-011）

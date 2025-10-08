@@ -8,6 +8,8 @@ import { ExampleRepository } from './infra/repositories/example.repository';
 import { SubscriptionRepository } from './infra/repositories/subscription.repository';
 import { PaymentAttemptRepository } from './infra/repositories/payment-attempt.repository';
 import { BillingService } from './infra/services/billing.service';
+import { DatabaseIndexService } from './infra/services/database-index.service';
+import { DiscountPriorityService } from './domain/services/discount-priority.service';
 import { AppExceptionFilter } from './app-components/app-exception.filter';
 import { AppTracerMiddleware } from './app-components/app-tracer.middleware';
 import * as jobs from './application/jobs';
@@ -25,17 +27,22 @@ import * as v1Controllers from './application/controllers/v1';
     SubscriptionRepository,
     PaymentAttemptRepository,
     BillingService,
+    DatabaseIndexService,
+    DiscountPriorityService,
     ...Array.from(Object.keys(jobs)).map((key) => jobs[key]),
   ],
 })
 export class AppModule implements NestModule, OnApplicationBootstrap, BeforeApplicationShutdown {
-  constructor(private readonly cmmService: CommonService) {}
+  constructor(private readonly cmmService: CommonService, private readonly databaseIndexService: DatabaseIndexService) {}
 
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(AppTracerMiddleware).forRoutes('*');
   }
 
-  async onApplicationBootstrap() {}
+  async onApplicationBootstrap() {
+    // Create database indexes on application startup
+    await this.databaseIndexService.createIndexes();
+  }
 
   // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
   async beforeApplicationShutdown(signal?: string) {
