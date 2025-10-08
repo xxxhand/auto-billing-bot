@@ -11,6 +11,15 @@ yarn test:cov
 此指南對應 `docs/docs_0_7/requirements_0.7.markdown`、`docs/docs_0_7/billingBot_v0.7.1_spec.markdown` 與 `docs/docs_0_7/billingBot_v0.7.1_system_design.markdown`，提供 v0.7 版實作的整體藍圖與落地步驟。v0.7 聚焦於「可用的訂閱扣款引擎」，涵蓋多週期訂閱、優惠優先權、扣款重試、寬限期、退款、RabbitMQ 任務佇列與 Cron 自動化。未來 v0.8 之後才會處理多租戶與 webhook 等延伸功能。
 
 > **開發守則**：持續遵循 Domain-Driven Design（DDD）與 Test-Driven Development（TDD），所有新邏輯須先定義領域模型與測試，再補齊應用層與基礎設施。
+>
+> **API 測試守則**：所有 API-* 任務的端點測試必須遵循以下規範：
+> - 使用 `MongoHelper` 管理測試數據庫，確保測試隔離（指定專用測試數據庫名稱，如 `'get_products'`）
+> - 在 `beforeAll` 中準備 mock 數據並插入測試數據庫
+> - 在 `afterAll` 中使用 `dbHelper.clear()` 清理測試數據
+> - 驗證標準 API 響應格式：`{ code: 0, message: '', result: <data> }`
+> - 測試業務邏輯場景：新用戶、已訂閱用戶過濾、邊界條件等
+> - 使用有效的 MongoDB ObjectId 作為測試數據的 ID 字段
+> - 覆蓋成功路徑、錯誤處理和業務規則驗證
 
 ## 工作指南
 

@@ -55,17 +55,17 @@ describe('DatabaseIndexService', () => {
       await expect(service.createIndexes()).resolves.not.toThrow();
 
       // Verify that db.collection was called for all expected collections
-      expect(mockDb.collection).toHaveBeenCalledWith('subscriptions');
-      expect(mockDb.collection).toHaveBeenCalledWith('paymentAttempts');
-      expect(mockDb.collection).toHaveBeenCalledWith('promoCodeUsages');
-      expect(mockDb.collection).toHaveBeenCalledWith('billingLogs');
-      expect(mockDb.collection).toHaveBeenCalledWith('products');
-      expect(mockDb.collection).toHaveBeenCalledWith('users');
-      expect(mockDb.collection).toHaveBeenCalledWith('discounts');
-      expect(mockDb.collection).toHaveBeenCalledWith('promoCodes');
-      expect(mockDb.collection).toHaveBeenCalledWith('refunds');
-      expect(mockDb.collection).toHaveBeenCalledWith('config');
-      expect(mockDb.collection).toHaveBeenCalledWith('rules');
+      expect(mockDb.collection).toHaveBeenCalledWith('Subscriptions');
+      expect(mockDb.collection).toHaveBeenCalledWith('PaymentAttempts');
+      expect(mockDb.collection).toHaveBeenCalledWith('PromoCodeUsages');
+      expect(mockDb.collection).toHaveBeenCalledWith('BillingLogs');
+      expect(mockDb.collection).toHaveBeenCalledWith('Products');
+      expect(mockDb.collection).toHaveBeenCalledWith('Users');
+      expect(mockDb.collection).toHaveBeenCalledWith('Discounts');
+      expect(mockDb.collection).toHaveBeenCalledWith('PromoCodes');
+      expect(mockDb.collection).toHaveBeenCalledWith('Refunds');
+      expect(mockDb.collection).toHaveBeenCalledWith('Configs');
+      expect(mockDb.collection).toHaveBeenCalledWith('Rules');
     });
 
     it('should handle errors during index creation', async () => {

@@ -1,7 +1,7 @@
 import { Inject, Injectable, LoggerService } from '@nestjs/common';
 import { CommonService } from '@myapp/common';
 import { v4 as uuidv4 } from 'uuid';
-import { IPaymentGateway, PaymentRequest, PaymentResponse } from '../../domain/services/payment-gateway.interface';
+import { IPaymentGateway, IPaymentGatewayToken, PaymentRequest, PaymentResponse } from '../../domain/services/payment-gateway.interface';
 import { ITaskQueue, BillingTask } from '../../domain/services/task-queue.interface';
 import { IBillingService, BillingResult } from '../../domain/services/billing.service.interface';
 import { SubscriptionRepository } from '../repositories/subscription.repository';
@@ -15,7 +15,7 @@ export class BillingService implements IBillingService {
 
   constructor(
     private readonly commonService: CommonService,
-    @Inject('IPaymentGateway') private readonly paymentGateway: IPaymentGateway,
+    @Inject(IPaymentGatewayToken) private readonly paymentGateway: IPaymentGateway,
     @Inject('ITaskQueue') private readonly taskQueue: ITaskQueue,
     private readonly subscriptionRepository: SubscriptionRepository,
     private readonly paymentAttemptRepository: PaymentAttemptRepository,

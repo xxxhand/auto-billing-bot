@@ -3,6 +3,8 @@
  * Defines the contracts for task queuing in the domain layer
  */
 
+export const ITaskQueueToken = 'ITaskQueue';
+
 /**
  * Billing task data structure
  */

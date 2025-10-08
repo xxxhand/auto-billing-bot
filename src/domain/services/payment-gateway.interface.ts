@@ -3,6 +3,8 @@
  * Defines the contracts for payment processing in the domain layer
  */
 
+export const IPaymentGatewayToken = 'IPaymentGateway';
+
 /**
  * Payment request data structure
  */

@@ -1,4 +1,4 @@
-import type { WithId } from 'mongodb';
+import type { OptionalId } from 'mongodb';
 import { IExampleModel } from './example.model';
 import { IUserModel } from './user.model';
 import { IProductModel } from './product.model';
@@ -14,30 +14,30 @@ import { IRulesModel } from './rules.model';
 
 export enum modelNames {
   EXAMPLE = 'Examples',
-  USERS = 'users',
-  PRODUCTS = 'products',
-  SUBSCRIPTIONS = 'subscriptions',
-  DISCOUNTS = 'discounts',
-  PROMO_CODES = 'promoCodes',
-  PROMO_CODE_USAGES = 'promoCodeUsages',
-  PAYMENT_ATTEMPTS = 'paymentAttempts',
-  REFUNDS = 'refunds',
-  BILLING_LOGS = 'billingLogs',
-  CONFIG = 'config',
-  RULES = 'rules',
-  PAYMENT_HISTORY = 'paymentHistory',
-  OPERATION_LOGS = 'operationLogs',
+  USERS = 'Users',
+  PRODUCTS = 'Products',
+  SUBSCRIPTIONS = 'Subscriptions',
+  DISCOUNTS = 'Discounts',
+  PROMO_CODES = 'PromoCodes',
+  PROMO_CODE_USAGES = 'PromoCodeUsages',
+  PAYMENT_ATTEMPTS = 'PaymentAttempts',
+  REFUNDS = 'Refunds',
+  BILLING_LOGS = 'BillingLogs',
+  CONFIG = 'Configs',
+  RULES = 'Rules',
+  PAYMENT_HISTORY = 'PaymentHistory',
+  OPERATION_LOGS = 'OperationLogs',
 }
 
-export type IExampleDocument = WithId<IExampleModel>;
-export type IUserDocument = WithId<IUserModel>;
-export type IProductDocument = WithId<IProductModel>;
-export type ISubscriptionDocument = WithId<ISubscriptionModel>;
-export type IDiscountDocument = WithId<IDiscountModel>;
-export type IPromoCodeDocument = WithId<IPromoCodeModel>;
-export type IPromoCodeUsageDocument = WithId<IPromoCodeUsageModel>;
-export type IPaymentAttemptDocument = WithId<IPaymentAttemptModel>;
-export type IRefundDocument = WithId<IRefundModel>;
-export type IBillingLogDocument = WithId<IBillingLogModel>;
-export type IConfigDocument = WithId<IConfigModel>;
-export type IRulesDocument = WithId<IRulesModel>;
+export type IExampleDocument = OptionalId<IExampleModel>;
+export type IUserDocument = OptionalId<IUserModel>;
+export type IProductDocument = OptionalId<IProductModel>;
+export type ISubscriptionDocument = OptionalId<ISubscriptionModel>;
+export type IDiscountDocument = OptionalId<IDiscountModel>;
+export type IPromoCodeDocument = OptionalId<IPromoCodeModel>;
+export type IPromoCodeUsageDocument = OptionalId<IPromoCodeUsageModel>;
+export type IPaymentAttemptDocument = OptionalId<IPaymentAttemptModel>;
+export type IRefundDocument = OptionalId<IRefundModel>;
+export type IBillingLogDocument = OptionalId<IBillingLogModel>;
+export type IConfigDocument = OptionalId<IConfigModel>;
+export type IRulesDocument = OptionalId<IRulesModel>;

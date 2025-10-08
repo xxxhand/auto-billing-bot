@@ -18,6 +18,7 @@
 - （無）目前暫停，等待下一個任務指示
 
 ### 已完成任務 (最近)
+- ✅ API-001：實現GET /products，查詢產品列表與即時優惠價（2025年10月8日）
 - ✅ DDD-011：實現discountPriorityService領域服務，處理多重優惠優先級（含TDD測試）（2025年10月8日）
 - ✅ DB-012：為所有集合添加索引，優化nextBillingDate與status查詢（2025年10月8日）
 - ✅ DDD-010：實現billingService領域服務，整合mock支付網關與RabbitMQ（含TDD測試）（2025年10月7日）

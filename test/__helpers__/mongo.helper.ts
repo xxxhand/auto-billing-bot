@@ -1,5 +1,6 @@
+import { ObjectId } from 'mongodb';
 import { cmmConf } from '@myapp/conf';
-import { CustomMongoClient } from '@xxxhand/app-common';
+import { CustomMongoClient, CustomUtils } from '@xxxhand/app-common';
 
 export class MongoHelper {
   private _mongo: CustomMongoClient;
@@ -23,5 +24,17 @@ export class MongoHelper {
 
   public async clear(): Promise<void> {
     this._mongo.client.db(cmmConf.defaultMongo.dbName).dropDatabase();
+  }
+
+  public newObjectId(addedSeconds: number = 0): ObjectId {
+    if (addedSeconds <= 0) {
+      addedSeconds = Number.parseInt(CustomUtils.makeRandomNumbers(7));
+    }
+    const time = new Date().getTime() / 1000 + addedSeconds;
+    return ObjectId.createFromTime(time);
+  }
+
+  public newObjectAsString(addedSeconds: number = 0): string {
+    return this.newObjectId(addedSeconds).toHexString();
   }
 }
