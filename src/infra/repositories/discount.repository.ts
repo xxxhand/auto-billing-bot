@@ -45,8 +45,8 @@ export class DiscountRepository {
       endDate: { $gte: now }
     };
 
-    let query;
-    if (productId) {
+    let query: any;
+    if (CustomValidator.nonEmptyString(productId)) {
       // Find discounts that either apply to all products (empty applicableProducts) or include the specific product
       query = {
         ...baseQuery,

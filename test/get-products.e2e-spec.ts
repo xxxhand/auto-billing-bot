@@ -3,7 +3,7 @@ import * as superTest from 'supertest';
 import { CustomUtils } from '@xxxhand/app-common';
 import { AppHelper } from './__helpers__/app.helper';
 import { MongoHelper } from './__helpers__/mongo.helper';
-import { IProductDocument, ISubscriptionDocument } from './__helpers__/shcema-interface.helper';
+import { IProductDocument, ISubscriptionDocument, IDiscountDocument } from './__helpers__/shcema-interface.helper';
 
 describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/products`, () => {
   let agent: superTest.SuperAgentTest;
@@ -12,6 +12,7 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/products`, () => {
   const db = dbHelper.mongo;
   const productCol = 'Products';
   const subscriptionCol = 'Subscriptions';
+  const discountCol = 'Discounts';
   //#region Test data
   // 3 products. monthly, quarterly, yearly
   const mockProducts: IProductDocument[] = [];
@@ -25,12 +26,28 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/products`, () => {
       valid: true,
     });
   }
+
+  // Discount only applicable to yearly product (ProductId-3)
+  const mockDiscount: IDiscountDocument = {
+    _id: dbHelper.newObjectId(),
+    discountId: 'yearly-discount-20',
+    type: 'percentage',
+    value: 20,
+    priority: 1,
+    startDate: new Date('2025-01-01'),
+    endDate: new Date('2025-12-31'),
+    applicableProducts: ['ProductId-3'], // Only applies to yearly product
+    valid: true,
+  };
   //#endregion Test data
 
   beforeAll(async () => {
     agent = await AppHelper.getAgent();
     await db.tryConnect();
-    await Promise.all([db.getCollection(productCol).insertMany(mockProducts)]);
+    await Promise.all([
+      db.getCollection(productCol).insertMany(mockProducts),
+      db.getCollection(discountCol).insertOne(mockDiscount)
+    ]);
   });
 
   afterAll(async () => {
@@ -82,6 +99,40 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/products`, () => {
       expect(returnedProductIds).not.toContain('ProductId-1');
     });
 
-    it.todo('得到3個產品，其中只有yearly有折扣');
+    it('should return 3 products where only yearly product has discount', async () => {
+      const res = await agent.get(endpoint).query({ userId: dbHelper.newObjectAsString() });
+
+      expect(res.status).toBe(200);
+      expect(res.body.code).toBe(0);
+      expect(res.body.message).toBe('');
+      expect(res.body.result).toBeInstanceOf(Array);
+      expect(res.body.result).toHaveLength(3);
+
+      // Find products by cycle type
+      const monthlyProduct = res.body.result.find((p: any) => p.cycleType === 'monthly');
+      const quarterlyProduct = res.body.result.find((p: any) => p.cycleType === 'quarterly');
+      const yearlyProduct = res.body.result.find((p: any) => p.cycleType === 'yearly');
+
+      // Verify all products exist
+      expect(monthlyProduct).toBeDefined();
+      expect(quarterlyProduct).toBeDefined();
+      expect(yearlyProduct).toBeDefined();
+
+      // Verify prices
+      expect(monthlyProduct.originalPrice).toBe(10);
+      expect(quarterlyProduct.originalPrice).toBe(20);
+      expect(yearlyProduct.originalPrice).toBe(30);
+
+      // Only yearly product should have discount (20% off = 30 * 0.8 = 24)
+      expect(monthlyProduct.discountedPrice).toBe(10); // No discount
+      expect(quarterlyProduct.discountedPrice).toBe(20); // No discount
+      expect(yearlyProduct.discountedPrice).toBe(24); // 20% discount applied
+
+      // Verify applicable discounts
+      expect(monthlyProduct.applicableDiscounts).toHaveLength(0);
+      expect(quarterlyProduct.applicableDiscounts).toHaveLength(0);
+      expect(yearlyProduct.applicableDiscounts).toHaveLength(1);
+      expect(yearlyProduct.applicableDiscounts[0].discountId).toBe('yearly-discount-20');
+    });
   });
 });

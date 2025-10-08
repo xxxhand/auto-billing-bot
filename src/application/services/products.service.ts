@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ProductRepository } from '../../infra/repositories/product.repository';
 import { SubscriptionRepository } from '../../infra/repositories/subscription.repository';
+import { DiscountRepository } from '../../infra/repositories/discount.repository';
 import { DiscountPriorityService } from '../../domain/services/discount-priority.service';
 import { ProductEntity } from '../../domain/entities/product.entity';
 import { Discount } from '../../domain/entities/discount.entity';
@@ -19,6 +20,7 @@ export class ProductsService {
   constructor(
     private readonly productRepository: ProductRepository,
     private readonly subscriptionRepository: SubscriptionRepository,
+    private readonly discountRepository: DiscountRepository,
     private readonly discountPriorityService: DiscountPriorityService,
   ) {}
 
@@ -76,8 +78,7 @@ export class ProductsService {
   }
 
   private async getApplicableDiscounts(product: ProductEntity): Promise<Discount[]> {
-    // TODO: Implement discount retrieval logic
-    // For now, return empty array - will be implemented when discount repository is available
-    return [];
+    // Get all applicable discounts for this product
+    return await this.discountRepository.findApplicableDiscounts(product.productId);
   }
 }
