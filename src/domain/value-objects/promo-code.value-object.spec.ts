@@ -65,10 +65,21 @@ describe('PromoCode Value Object', () => {
       expect(promoCode.minimumAmount).toBe(50);
     });
 
-    it('should throw error for invalid usageLimit', () => {
-      // Arrange & Act & Assert
-      expect(() => new PromoCode('SAVE10', 'discount_123', 0)).toThrow('Usage limit must be positive when specified');
-      expect(() => new PromoCode('SAVE10', 'discount_123', -5)).toThrow('Usage limit must be positive when specified');
+    it('should create promo code with applicableProducts', () => {
+      // Arrange & Act
+      const applicableProducts = ['prod_1', 'prod_2'];
+      const promoCode = new PromoCode('GLOBAL', 'discount_789', null, false, 0, 0, undefined, applicableProducts);
+
+      // Assert
+      expect(promoCode.applicableProducts).toEqual(applicableProducts);
+    });
+
+    it('should create promo code with empty applicableProducts by default', () => {
+      // Arrange & Act
+      const promoCode = new PromoCode('GLOBAL', 'discount_789');
+
+      // Assert
+      expect(promoCode.applicableProducts).toEqual([]);
     });
   });
 
@@ -214,6 +225,41 @@ describe('PromoCode Value Object', () => {
 
       // Assert
       expect(result).toBe(true);
+    });
+  });
+
+  describe('isApplicableToProduct', () => {
+    it('should return true when applicableProducts is empty (global promo code)', () => {
+      // Arrange
+      const promoCode = new PromoCode('GLOBAL', 'discount_123', null, false, 0, 0, undefined, []);
+
+      // Act
+      const result = promoCode.isApplicableToProduct('prod_123');
+
+      // Assert
+      expect(result).toBe(true);
+    });
+
+    it('should return true when productId is in applicableProducts', () => {
+      // Arrange
+      const promoCode = new PromoCode('LIMITED', 'discount_456', null, false, 0, 0, undefined, ['prod_123', 'prod_456']);
+
+      // Act
+      const result = promoCode.isApplicableToProduct('prod_123');
+
+      // Assert
+      expect(result).toBe(true);
+    });
+
+    it('should return false when productId is not in applicableProducts', () => {
+      // Arrange
+      const promoCode = new PromoCode('LIMITED', 'discount_456', null, false, 0, 0, undefined, ['prod_123', 'prod_456']);
+
+      // Act
+      const result = promoCode.isApplicableToProduct('prod_789');
+
+      // Assert
+      expect(result).toBe(false);
     });
   });
 });

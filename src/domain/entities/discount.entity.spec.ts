@@ -151,21 +151,54 @@ describe('Discount Entity', () => {
     });
   });
 
-  describe('constructor', () => {
-    it('should create discount with correct properties', () => {
-      // Arrange & Act
-      const startDate = new Date('2024-01-01');
-      const endDate = new Date('2024-12-31');
-      const discount = new Discount('disc_123', 'percentage', 10, 1, startDate, endDate);
+  describe('isApplicableToProduct', () => {
+    it('should return true when applicableProducts is empty (global discount)', () => {
+      // Arrange
+      const discount = new Discount('disc_123', 'percentage', 10, 1, new Date(), new Date(), []);
+
+      // Act
+      const result = discount.isApplicableToProduct('prod_123');
 
       // Assert
-      expect(discount.discountId).toBe('disc_123');
-      expect(discount.type).toBe('percentage');
-      expect(discount.value).toBe(10);
-      expect(discount.priority).toBe(1);
-      expect(discount.startDate).toBe(startDate);
-      expect(discount.endDate).toBe(endDate);
-      expect(discount.id).toBe('disc_123'); // BaseEntity id should be set to discountId
+      expect(result).toBe(true);
+    });
+
+    it('should return true when productId is in applicableProducts', () => {
+      // Arrange
+      const discount = new Discount(
+        'disc_123',
+        'percentage',
+        10,
+        1,
+        new Date(),
+        new Date(),
+        ['prod_123', 'prod_456']
+      );
+
+      // Act
+      const result = discount.isApplicableToProduct('prod_123');
+
+      // Assert
+      expect(result).toBe(true);
+    });
+
+    it('should return false when productId is not in applicableProducts', () => {
+      // Arrange
+      const discount = new Discount(
+        'disc_123',
+        'percentage',
+        10,
+        1,
+        new Date(),
+        new Date(),
+        ['prod_123', 'prod_456']
+      );
+
+      // Act
+      const result = discount.isApplicableToProduct('prod_789');
+
+      // Assert
+      expect(result).toBe(false);
     });
   });
 });

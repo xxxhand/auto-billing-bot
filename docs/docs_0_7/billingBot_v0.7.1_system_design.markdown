@@ -116,6 +116,7 @@ graph TD
 | priority | number | Yes | 0 | 優惠優先級，數字越大優先 |
 | startDate | date | Yes | - | 優惠開始日期 |
 | endDate | date | Yes | - | 優惠結束日期 |
+| applicableProducts | array[string] | No | [] | 適用產品ID列表，為空表示全域適用 |
 | createdAt | date | Yes | - | 創建時間 |
 | updatedAt | date | Yes | - | 變更時間 |
 | valid | boolean | Yes | - | 有效否 |
@@ -130,6 +131,7 @@ graph TD
 | usedCount | number | Yes | 0 | 已使用次數 |
 | minimumAmount | number | No | 0 | 最低消費金額門檻 |
 | assignedUserId | string | No | null | 專屬用戶ID（專屬優惠碼時有效） |
+| applicableProducts | array[string] | No | [] | 適用產品ID列表，為空表示全域適用 |
 | createdAt | date | Yes | - | 創建時間 |
 | updatedAt | date | Yes | - | 變更時間 |
 | valid | boolean | Yes | - | 有效否 |
@@ -262,6 +264,7 @@ erDiagram
         number priority
         date startDate
         date endDate
+        array applicableProducts
         date createdAt
         date updatedAt
         boolean valid 
@@ -275,6 +278,7 @@ erDiagram
         number usedCount
         number minimumAmount
         string assignedUserId
+        array applicableProducts
         date createdAt
         date updatedAt
         boolean valid
@@ -357,18 +361,20 @@ erDiagram
     - `renew()`: 增加renewalCount，檢查是否適用續訂優惠。
 
 - **Discount (實體)**：
-  - 屬性：discountId, type, value, priority, startDate, endDate
+  - 屬性：discountId, type, value, priority, startDate, endDate, applicableProducts
   - 方法：
     - `isApplicable(now: Date)`: 檢查優惠是否在有效期內。
+    - `isApplicableToProduct(productId: string)`: 檢查優惠是否適用於指定產品。
     - `calculateDiscountedPrice(originalPrice: number)`: 計算折扣後價格（固定或百分比）。
 
 - **PromoCode (值物件)**：
-  - 屬性：code, discountId, usageLimit, isSingleUse, usedCount, minimumAmount, assignedUserId
+  - 屬性：code, discountId, usageLimit, isSingleUse, usedCount, minimumAmount, assignedUserId, applicableProducts
   - 方法：
     - `canBeUsed()`: 檢查優惠碼本身是否可用（次數上限、有效期等）。
     - `incrementUsage()`: 返回使用次數+1的新實例。
     - `isAssignedToUser()`: 檢查優惠碼是否為專屬用戶。
     - `canBeUsedByUser(userId: string)`: 檢查指定用戶是否可以使用此優惠碼。
+    - `isApplicableToProduct(productId: string)`: 檢查優惠碼是否適用於指定產品。
 
 - **PaymentAttempt (實體)**：
   - 屬性：attemptId, subscriptionId, status, failureReason, retryCount, createdAt
@@ -377,8 +383,8 @@ erDiagram
 
 領域服務（Domain Services）：
 - `billingService`: 協調扣款流程，整合支付網關、RabbitMQ及Cron job觸發。
-- `discountPriorityService`: 處理多重優惠優先級，選擇最佳優惠。
-- `promoCodeDomainService`: 處理優惠碼業務邏輯，包含用戶重複使用檢查、消費門檻驗證、專屬優惠碼用戶綁定驗證等。
+- `discountPriorityService`: 處理多重優惠優先級，選擇最佳優惠，並檢查優惠是否適用於指定產品。
+- `promoCodeDomainService`: 處理優惠碼業務邏輯，包含用戶重複使用檢查、消費門檻驗證、專屬優惠碼用戶綁定驗證及產品適用性檢查。
 
 ---
 
@@ -397,7 +403,7 @@ erDiagram
     - `POST /subscriptions/cancel`：取消訂閱並申請退款。
   - **優惠管理**：
     - `GET /discounts`：返回適用優惠列表。
-    - `POST /applyPromo`：應用優惠碼，包含消費門檻和用戶重複使用檢查。
+    - `POST /applyPromo`：應用優惠碼，包含消費門檻、用戶重複使用檢查及產品適用性檢查。
     - `GET /userPromoCodes`：返回用戶可用優惠碼。
     - `GET /admin/promoCodes/{code}/usage`：後台查詢優惠碼使用狀態與歷史。
   - **支付管理**：
@@ -429,7 +435,8 @@ erDiagram
       "discountId": "disc_456",
       "isSingleUse": true,
       "remainingUses": 1,
-      "minimumAmount": 500
+      "minimumAmount": 500,
+      "applicableProducts": ["prod_123", "prod_456"]
     }
   ]
   ```
@@ -478,7 +485,8 @@ sequenceDiagram
 stateDiagram-v2
     [*] --> QueryProducts: GET /products
     QueryProducts --> CalculateDiscount: Fetch Discounts
-    CalculateDiscount --> ApplyPriority: Multi-Discount? Yes
+    CalculateDiscount --> CheckProductApplicability: Check if discount applies to product
+    CheckProductApplicability --> ApplyPriority: Applicable? Yes, Multi-Discount?
     ApplyPriority --> SelectHighest: Same Priority? Choose Highest Amount
     SelectHighest --> ReturnList: Return Discounted Prices
     QueryProducts --> ReturnList: No Discounts
@@ -486,13 +494,15 @@ stateDiagram-v2
     ReturnList --> ApplyPromo: POST /applyPromo
     ApplyPromo --> ValidateUser: Check User ID Validity (專屬優惠碼驗證)
     ValidateUser --> CheckOrderAmount: Valid User? Check Minimum Amount
-    CheckOrderAmount --> CheckUsageLimit: Amount >= Minimum? Check Usage Limits
+    CheckOrderAmount --> CheckProductApplicabilityPromo: Amount >= Minimum? Check Product Applicability
+    CheckProductApplicabilityPromo --> CheckUsageLimit: Applicable to Product? Check Usage Limits
     CheckUsageLimit --> CheckUserHistory: Within Limits? Check User Usage History
     CheckUserHistory --> ApplyDiscount: Not Used Before? Apply Discount & Record Usage
     ApplyDiscount --> Success: Return Success
     Success --> [*]
     ValidateUser --> Invalid: Return Error
     CheckOrderAmount --> Invalid
+    CheckProductApplicabilityPromo --> Invalid
     CheckUsageLimit --> Invalid
     CheckUserHistory --> Invalid
     Invalid --> [*]
@@ -522,11 +532,12 @@ sequenceDiagram
     participant API as NestJS API
     participant DB as MongoDB
 
-    User->>API: POST /applyPromo (promoCode, orderAmount)
+    User->>API: POST /applyPromo (promoCode, orderAmount, productId)
     API->>DB: Get PromoCode & User Usage History
     DB-->>API: PromoCode Details & Usage Records
     API->>API: Validate User ID (專屬優惠碼檢查)
     API->>API: Check Minimum Amount Threshold
+    API->>API: Check Product Applicability
     API->>API: Check Usage Limits & User History
     alt All Validations Pass
         API->>DB: Record Usage in promoCodeUsages
@@ -617,3 +628,5 @@ sequenceDiagram
   - **緩解**：TDD確保方法正確性，DDD審核聚合邊界。
 - **風險**：Cron job延遲或失敗。
   - **緩解**：監控Cron執行，設定重試機制，並使用分布式鎖避免重複。
+- **風險**：優惠產品綁定邏輯複雜，導致用戶體驗不佳。
+  - **緩解**：在API層提供清晰的錯誤訊息，說明優惠碼不適用於當前產品；在管理介面提供產品綁定的視覺化設定。

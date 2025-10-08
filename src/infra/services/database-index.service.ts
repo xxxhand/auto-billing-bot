@@ -255,6 +255,14 @@ export class DatabaseIndexService {
         background: true,
       }
     );
+    // Index for applicableProducts - for product-specific discount queries
+    await discountsCollection.createIndex(
+      { applicableProducts: 1 },
+      {
+        name: 'applicableProducts_1',
+        background: true,
+      }
+    );
 
     // PromoCodes collection
     const promoCodesCollection = db.collection(modelNames.PROMO_CODES);
@@ -263,6 +271,30 @@ export class DatabaseIndexService {
       {
         name: 'code_1',
         unique: true,
+        background: true,
+      }
+    );
+    // Index for discountId - for discount-related promo code queries
+    await promoCodesCollection.createIndex(
+      { discountId: 1 },
+      {
+        name: 'discountId_1',
+        background: true,
+      }
+    );
+    // Index for assignedUserId - for exclusive promo code queries
+    await promoCodesCollection.createIndex(
+      { assignedUserId: 1 },
+      {
+        name: 'assignedUserId_1',
+        background: true,
+      }
+    );
+    // Index for applicableProducts - for product-specific promo code queries
+    await promoCodesCollection.createIndex(
+      { applicableProducts: 1 },
+      {
+        name: 'applicableProducts_1',
         background: true,
       }
     );

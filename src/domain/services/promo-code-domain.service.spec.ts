@@ -17,7 +17,7 @@ describe('PromoCodeDomainService', () => {
       const userUsageHistory: string[] = []; // User has not used this promo code
 
       // Act
-      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, userUsageHistory);
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, undefined, userUsageHistory);
 
       // Assert
       expect(result.isValid).toBe(true);
@@ -32,7 +32,7 @@ describe('PromoCodeDomainService', () => {
       const userUsageHistory: string[] = ['SAVE10']; // User has already used this promo code
 
       // Act
-      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, userUsageHistory);
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, undefined, userUsageHistory);
 
       // Assert
       expect(result.isValid).toBe(false);
@@ -47,7 +47,7 @@ describe('PromoCodeDomainService', () => {
       const userUsageHistory: string[] = []; // User has not used this promo code
 
       // Act
-      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, userUsageHistory);
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, undefined, userUsageHistory);
 
       // Assert
       expect(result.isValid).toBe(true);
@@ -62,7 +62,7 @@ describe('PromoCodeDomainService', () => {
       const userUsageHistory: string[] = ['SAVE10']; // User has already used this promo code
 
       // Act
-      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, userUsageHistory);
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, undefined, userUsageHistory);
 
       // Assert
       expect(result.isValid).toBe(false);
@@ -77,7 +77,7 @@ describe('PromoCodeDomainService', () => {
       const userUsageHistory: string[] = [];
 
       // Act
-      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, userUsageHistory);
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, undefined, userUsageHistory);
 
       // Assert
       expect(result.isValid).toBe(false);
@@ -92,7 +92,7 @@ describe('PromoCodeDomainService', () => {
       const userUsageHistory: string[] = [];
 
       // Act
-      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, userUsageHistory);
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, undefined, userUsageHistory);
 
       // Assert
       expect(result.isValid).toBe(true);
@@ -107,7 +107,7 @@ describe('PromoCodeDomainService', () => {
       const userUsageHistory: string[] = [];
 
       // Act
-      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, userUsageHistory);
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, undefined, userUsageHistory);
 
       // Assert
       expect(result.isValid).toBe(true);
@@ -122,7 +122,7 @@ describe('PromoCodeDomainService', () => {
       const userUsageHistory: string[] = [];
 
       // Act
-      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, userUsageHistory);
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, undefined, userUsageHistory);
 
       // Assert
       expect(result.isValid).toBe(false);
@@ -137,7 +137,7 @@ describe('PromoCodeDomainService', () => {
       const userUsageHistory: string[] = [];
 
       // Act
-      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, userUsageHistory);
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, undefined, userUsageHistory);
 
       // Assert
       expect(result.isValid).toBe(true);
@@ -152,7 +152,7 @@ describe('PromoCodeDomainService', () => {
       const userUsageHistory: string[] = [];
 
       // Act
-      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, userUsageHistory);
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, undefined, userUsageHistory);
 
       // Assert
       expect(result.isValid).toBe(false);
@@ -167,7 +167,85 @@ describe('PromoCodeDomainService', () => {
       const userUsageHistory: string[] = [];
 
       // Act
-      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, userUsageHistory);
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, undefined, userUsageHistory);
+
+      // Assert
+      expect(result.isValid).toBe(true);
+      expect(result.errorMessage).toBeUndefined();
+    });
+
+    it('should reject assigned promo code when used by a different user', () => {
+      // Arrange
+      const promoCode = new PromoCode('EXCLUSIVE10', 'disc_123', null, true, 0, 100, 'user_123'); // Assigned to user_123
+      const userId = 'user_456'; // Different user
+      const orderAmount = 150;
+      const userUsageHistory: string[] = [];
+
+      // Act
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, undefined, userUsageHistory);
+
+      // Assert
+      expect(result.isValid).toBe(false);
+      expect(result.errorMessage).toBe('This promo code is not available for your account');
+    });
+
+    it('should validate successfully for non-assigned promo code used by any user', () => {
+      // Arrange
+      const promoCode = new PromoCode('SHARED10', 'disc_123', 100, false, 5, 100); // Not assigned to any user
+      const userId = 'user_456'; // Any user
+      const orderAmount = 150;
+      const userUsageHistory: string[] = [];
+
+      // Act
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, undefined, userUsageHistory);
+
+      // Assert
+      expect(result.isValid).toBe(true);
+      expect(result.errorMessage).toBeUndefined();
+    });
+
+    it('should validate successfully when promo code is applicable to product', () => {
+      // Arrange
+      const promoCode = new PromoCode('PRODUCT10', 'disc_123', null, false, 0, 100, undefined, ['prod_123', 'prod_456']);
+      const userId = 'user_123';
+      const orderAmount = 150;
+      const productId = 'prod_123'; // Product in applicable list
+      const userUsageHistory: string[] = [];
+
+      // Act
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, productId, userUsageHistory);
+
+      // Assert
+      expect(result.isValid).toBe(true);
+      expect(result.errorMessage).toBeUndefined();
+    });
+
+    it('should reject when promo code is not applicable to product', () => {
+      // Arrange
+      const promoCode = new PromoCode('PRODUCT10', 'disc_123', null, false, 0, 100, undefined, ['prod_123', 'prod_456']);
+      const userId = 'user_123';
+      const orderAmount = 150;
+      const productId = 'prod_789'; // Product not in applicable list
+      const userUsageHistory: string[] = [];
+
+      // Act
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, productId, userUsageHistory);
+
+      // Assert
+      expect(result.isValid).toBe(false);
+      expect(result.errorMessage).toBe('This promo code is not applicable to the selected product');
+    });
+
+    it('should validate successfully for global promo code (empty applicableProducts)', () => {
+      // Arrange
+      const promoCode = new PromoCode('GLOBAL10', 'disc_123', null, false, 0, 100, undefined, []); // Empty applicableProducts = global
+      const userId = 'user_123';
+      const orderAmount = 150;
+      const productId = 'prod_789'; // Any product
+      const userUsageHistory: string[] = [];
+
+      // Act
+      const result = service.validatePromoCodeUsage(promoCode, userId, orderAmount, productId, userUsageHistory);
 
       // Assert
       expect(result.isValid).toBe(true);

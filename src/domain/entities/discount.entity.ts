@@ -15,8 +15,9 @@ export class Discount extends BaseEntity {
   public priority: number;
   public startDate: Date;
   public endDate: Date;
+  public applicableProducts: string[];
 
-  constructor(discountId: string, type: DiscountType, value: number, priority: number, startDate: Date, endDate: Date) {
+  constructor(discountId: string, type: DiscountType, value: number, priority: number, startDate: Date, endDate: Date, applicableProducts: string[] = []) {
     super();
     this.id = discountId; // Use discountId as the entity ID
     this.discountId = discountId;
@@ -25,6 +26,7 @@ export class Discount extends BaseEntity {
     this.priority = priority;
     this.startDate = startDate;
     this.endDate = endDate;
+    this.applicableProducts = applicableProducts;
   }
 
   /**
@@ -34,6 +36,16 @@ export class Discount extends BaseEntity {
    */
   public isApplicable(now: Date): boolean {
     return now >= this.startDate && now <= this.endDate;
+  }
+
+  /**
+   * Check if the discount is applicable to a specific product
+   * @param productId The product ID to check
+   * @returns true if the discount applies to the product (or is global)
+   */
+  public isApplicableToProduct(productId: string): boolean {
+    // Empty applicableProducts means global applicable
+    return this.applicableProducts.length === 0 || this.applicableProducts.includes(productId);
   }
 
   /**

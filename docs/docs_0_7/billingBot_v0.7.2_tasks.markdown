@@ -12,15 +12,15 @@
 | DB-001 | 建立users集合，實現userId、tenantId、encryptedData欄位 | 無 | 已完成 | 4.1 資料表設計 |
 | DB-002 | 建立products集合，實現productId、name、price、cycleType等欄位 | 無 | 已完成 | 4.1 資料表設計 |
 | DB-003 | 建立subscriptions集合，實現subscriptionId、userId、productId、status、cycleType、startDate、nextBillingDate、renewalCount、remainingDiscountPeriods、pendingConversion等欄位 | DB-001, DB-002 | 已完成 | 4.1 資料表設計 |
-| DB-004 | 建立discounts集合，實現discountId、type、value等欄位 | 無 | 已完成 | 4.1 資料表設計 |
-| DB-005 | 建立promoCodes集合，實現code、discountId、usageLimit等欄位 | DB-004 | 已完成 | 4.1 資料表設計 |
+| DB-004 | 建立discounts集合，實現discountId、type、value、priority、startDate、endDate、applicableProducts等欄位 | 無 | 已完成 | 4.1 資料表設計 |
+| DB-005 | 建立promoCodes集合，實現code、discountId、usageLimit、isSingleUse、usedCount、minimumAmount、assignedUserId、applicableProducts等欄位 | DB-004 | 已完成 | 4.1 資料表設計 |
 | DB-006 | 建立paymentAttempts集合，實現attemptId、subscriptionId、status等欄位 | DB-003 | 已完成 | 4.1 資料表設計 |
 | DB-007 | 建立refunds集合，實現refundId、subscriptionId、amount等欄位 | DB-003 | 已完成 | 4.1 資料表設計 |
 | DB-008 | 建立billingLogs集合，實現logId、subscriptionId、eventType等欄位 | DB-003 | 已完成 | 4.1 資料表設計 |
 | DB-009 | 建立config集合，實現configId、type、gracePeriodDays等欄位 | 無 | 已完成 | 4.1 資料表設計 |
 | DB-010 | 建立rules集合，實現ruleId、type、conditions等欄位 | 無 | 已完成 | 4.1 資料表設計 |
 | DB-011 | 建立promoCodeUsages集合，實現usageId、promoCode、userId、usedAt、orderAmount等欄位 | DB-005 | 已完成 | 4.1 資料表設計 |
-| DB-012 | 為所有集合添加索引，優化nextBillingDate與status查詢 | DB-001~DB-011 | 已完成 | 4.1 資料表設計, 7.1 性能 |
+| DB-012 | 為所有集合添加索引，優化nextBillingDate、status、applicableProducts查詢 | DB-001~DB-011 | 已完成 | 4.1 資料表設計, 7.1 性能 |
 
 ---
 
@@ -33,12 +33,12 @@
 | DDD-003 | 實現Subscription.convertToNewCycle方法（等到下個週期生效，處理費用差額，含TDD測試） | DDD-001 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-004 | 實現Subscription.handlePaymentFailure方法（含TDD測試） | DDD-001, DB-006 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-005 | 實現Subscription.renew方法（含TDD測試） | DDD-001 | 已完成 | 4.3 核心領域模型設計與方法 |
-| DDD-006 | 定義Discount實體，實現isApplicable與calculateDiscountedPrice方法（含TDD測試） | DB-004 | 已完成 | 4.3 核心領域模型設計與方法 |
-| DDD-007 | 定義PromoCode值物件，實現canBeUsed與incrementUsage方法（加入minimumAmount欄位，含TDD測試） | DB-005 | 已完成 | 4.3 核心領域模型設計與方法 |
+| DDD-006 | 定義Discount實體，實現isApplicable、isApplicableToProduct與calculateDiscountedPrice方法（含TDD測試） | DB-004 | 已完成 | 4.3 核心領域模型設計與方法 |
+| DDD-007 | 定義PromoCode值物件，實現canBeUsed、incrementUsage、isApplicableToProduct方法（加入minimumAmount欄位，含TDD測試） | DB-005 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-008 | 定義PaymentAttempt實體，實現shouldRetry方法（含TDD測試） | DB-006 | 已完成 | 4.3 核心領域模型設計與方法 |
-| DDD-009 | 實現promoCodeDomainService領域服務，處理優惠碼業務邏輯（用戶重複使用檢查、消費門檻驗證，含TDD測試） | DB-005, DB-011, DDD-007 | 已完成 | 4.3 核心領域模型設計與方法, 6.4 優惠碼應用流程 |
+| DDD-009 | 實現promoCodeDomainService領域服務，處理優惠碼業務邏輯（用戶重複使用檢查、消費門檻驗證、專屬優惠碼用戶綁定驗證及產品適用性檢查，含TDD測試） | DB-005, DB-011, DDD-007 | 已完成 | 4.3 核心領域模型設計與方法, 6.4 優惠碼應用流程 |
 | DDD-010 | 實現billingService領域服務，整合mock支付網關與RabbitMQ（含TDD測試） | DDD-001, DDD-004, DDD-008, PAY-001, PAY-004 | 已完成 | 4.3 核心領域模型設計與方法, 6.1 訂閱與扣款流程 |
-| DDD-011 | 實現discountPriorityService領域服務，處理多重優惠優先級（含TDD測試） | DDD-002, DDD-006 | 已完成 | 4.3 核心領域模型設計與方法, 6.2 優惠應用流程 |
+| DDD-011 | 實現discountPriorityService領域服務，處理多重優惠優先級並檢查優惠是否適用於指定產品（含TDD測試） | DDD-002, DDD-006 | 已完成 | 4.3 核心領域模型設計與方法, 6.2 優惠應用流程 |
 
 ---
 
@@ -52,8 +52,8 @@
 | API-004 | 實現POST /subscriptions/convert，記錄方案轉換請求，處理費用調整（升級立即補收差額），但實際生效等到當前週期結束後的下個週期開始 | DDD-003 | 待處理 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
 | API-005 | 實現POST /subscriptions/cancel，取消訂閱與退款 | DB-007, DDD-001 | 待處理 | 5.1 RESTful API, 6.3 退款流程 |
 | API-006 | 實現GET /discounts，返回適用優惠列表 | DB-004, DDD-006 | 待處理 | 5.1 RESTful API, 6.2 優惠應用流程 |
-| API-007 | 實現POST /applyPromo，應用優惠碼（包含消費門檻檢查、用戶重複使用檢查） | DB-005, DB-011, DDD-007, DDD-009 | 待處理 | 5.1 RESTful API, 6.4 優惠碼應用流程 |
-| API-008 | 實現GET /userPromoCodes，返回用戶可用優惠碼（包含minimumAmount欄位） | DB-005, DDD-007, DDD-009 | 待處理 | 5.1 RESTful API, 5.2 API 資料格式示例 |
+| API-007 | 實現POST /applyPromo，應用優惠碼（包含消費門檻檢查、用戶重複使用檢查及產品適用性檢查） | DB-005, DB-011, DDD-007, DDD-009 | 待處理 | 5.1 RESTful API, 6.4 優惠碼應用流程 |
+| API-008 | 實現GET /userPromoCodes，返回用戶可用優惠碼（包含minimumAmount與applicableProducts欄位） | DB-005, DDD-007, DDD-009 | 待處理 | 5.1 RESTful API, 5.2 API 資料格式示例 |
 | API-009 | 實現GET /admin/promoCodes/{code}/usage，後台查詢優惠碼使用狀態與歷史 | DB-005, DB-011 | 待處理 | 5.1 RESTful API |
 | API-010 | 實現POST /payments/retry，手動補款 | DB-006, DDD-008 | 待處理 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
 | API-011 | 實現GET /subscriptions/{id}/history，查詢訂閱與扣款歷史 | DB-008 | 待處理 | 5.1 RESTful API |
@@ -117,6 +117,7 @@
 ## 8. 注意事項
 - **TDD實踐**：每個領域模型、API及支付mock任務需先撰寫測試，涵蓋正常、邊緣與異常案例（如大小月、閏年、優惠無效、消費門檻未達、用戶重複使用等）。
 - **DDD原則**：確保業務邏輯封裝在領域層，避免應用層直接操作資料庫。Subscription為核心聚合根，控制所有訂閱相關操作。PromoCode為值物件，業務邏輯通過promoCodeDomainService處理。
-- **優惠碼業務邏輯**：需實現消費門檻檢查、用戶重複使用防護及使用記錄追蹤。情境一（共用優惠碼）與情境二（獨立優惠碼）有不同驗證邏輯。
+- **優惠碼業務邏輯**：需實現消費門檻檢查、用戶重複使用防護、產品適用性檢查及使用記錄追蹤。情境一（共用優惠碼）與情境二（獨立優惠碼）有不同驗證邏輯。
+- **優惠產品綁定邏輯**：優惠方案與優惠碼支援產品綁定，為空表示全域適用；需在API層驗證產品適用性並提供清晰錯誤訊息。
 - **Cron可靠性**：分布式鎖（CRON-002）需優先實現，以避免多實例重複執行扣款任務。
 - **支付模擬**：mock支付網關需模擬真實場景（成功、網路錯誤、餘額不足等），確保重試與寬限期邏輯正確。

@@ -10,8 +10,9 @@ export class PromoCode {
   public readonly usedCount: number;
   public readonly minimumAmount: number;
   public readonly assignedUserId?: string;
+  public readonly applicableProducts: string[];
 
-  constructor(code: string, discountId: string, usageLimit: number | null = null, isSingleUse: boolean = false, usedCount: number = 0, minimumAmount: number = 0, assignedUserId?: string) {
+  constructor(code: string, discountId: string, usageLimit: number | null = null, isSingleUse: boolean = false, usedCount: number = 0, minimumAmount: number = 0, assignedUserId?: string, applicableProducts: string[] = []) {
     // Validation
     if (!code || code.trim().length === 0) {
       throw new Error('Promo code cannot be empty');
@@ -36,6 +37,7 @@ export class PromoCode {
     this.usedCount = usedCount;
     this.minimumAmount = minimumAmount;
     this.assignedUserId = assignedUserId;
+    this.applicableProducts = applicableProducts;
   }
 
   /**
@@ -63,7 +65,7 @@ export class PromoCode {
    * @returns A new PromoCode instance with usedCount + 1
    */
   public incrementUsage(): PromoCode {
-    return new PromoCode(this.code, this.discountId, this.usageLimit, this.isSingleUse, this.usedCount + 1, this.minimumAmount, this.assignedUserId);
+    return new PromoCode(this.code, this.discountId, this.usageLimit, this.isSingleUse, this.usedCount + 1, this.minimumAmount, this.assignedUserId, this.applicableProducts);
   }
 
   /**
@@ -99,5 +101,15 @@ export class PromoCode {
       return true; // Not assigned, anyone can use
     }
     return this.assignedUserId === userId;
+  }
+
+  /**
+   * Check if the promo code is applicable to a specific product
+   * @param productId The product ID to check
+   * @returns true if the promo code applies to the product (or is global)
+   */
+  public isApplicableToProduct(productId: string): boolean {
+    // Empty applicableProducts means global applicable
+    return this.applicableProducts.length === 0 || this.applicableProducts.includes(productId);
   }
 }

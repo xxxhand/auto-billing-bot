@@ -113,5 +113,111 @@ describe('DiscountPriorityService', () => {
       const result = service.selectBestDiscount([negativeDiscount, normalDiscount], 100);
       expect(result).toEqual(normalDiscount);
     });
+
+    it('should filter discounts by product applicability when productId is provided', () => {
+      const applicableDiscount = new Discount('disc1', 'percentage', 20, 1, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']);
+      const nonApplicableDiscount = new Discount('disc2', 'percentage', 30, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod2']);
+
+      const result = service.selectBestDiscount([applicableDiscount, nonApplicableDiscount], 100, 'prod1');
+      expect(result).toEqual(applicableDiscount);
+    });
+
+    it('should return null when no discounts are applicable to the product', () => {
+      const discount1 = new Discount('disc1', 'percentage', 20, 1, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']);
+      const discount2 = new Discount('disc2', 'percentage', 30, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod2']);
+
+      const result = service.selectBestDiscount([discount1, discount2], 100, 'prod3');
+      expect(result).toBeNull();
+    });
+
+    it('should ignore product filtering when no productId is provided', () => {
+      const discount1 = new Discount('disc1', 'percentage', 20, 1, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']);
+      const discount2 = new Discount('disc2', 'percentage', 30, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod2']);
+
+      const result = service.selectBestDiscount([discount1, discount2], 100);
+      expect(result).toEqual(discount2); // Should select highest priority regardless of product applicability
+    });
+  });
+
+  describe('filterApplicableDiscounts', () => {
+    it('should return empty array when no discounts are provided', () => {
+      const result = service.filterApplicableDiscounts([], 'prod1');
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array when empty discounts array is provided', () => {
+      const result = service.filterApplicableDiscounts([], 'prod1');
+      expect(result).toEqual([]);
+    });
+
+    it('should filter discounts that are applicable to the product', () => {
+      const applicableDiscount = new Discount('disc1', 'percentage', 20, 1, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']);
+      const nonApplicableDiscount = new Discount('disc2', 'percentage', 30, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod2']);
+
+      const result = service.filterApplicableDiscounts([applicableDiscount, nonApplicableDiscount], 'prod1');
+      expect(result).toEqual([applicableDiscount]);
+    });
+
+    it('should return all applicable discounts for a product', () => {
+      const discount1 = new Discount('disc1', 'percentage', 20, 1, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']);
+      const discount2 = new Discount('disc2', 'percentage', 30, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1', 'prod2']);
+      const discount3 = new Discount('disc3', 'percentage', 10, 3, new Date('2025-01-01'), new Date('2025-12-31'), ['prod2']);
+
+      const result = service.filterApplicableDiscounts([discount1, discount2, discount3], 'prod1');
+      expect(result).toEqual([discount1, discount2]);
+    });
+
+    it('should exclude expired discounts', () => {
+      const expiredDiscount = new Discount('disc1', 'percentage', 20, 1, new Date('2020-01-01'), new Date('2020-12-31'), ['prod1']);
+      const validDiscount = new Discount('disc2', 'percentage', 30, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']);
+
+      const result = service.filterApplicableDiscounts([expiredDiscount, validDiscount], 'prod1');
+      expect(result).toEqual([validDiscount]);
+    });
+
+    it('should exclude discounts not yet active', () => {
+      const futureDiscount = new Discount('disc1', 'percentage', 20, 1, new Date('2030-01-01'), new Date('2030-12-31'), ['prod1']);
+      const validDiscount = new Discount('disc2', 'percentage', 30, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']);
+
+      const result = service.filterApplicableDiscounts([futureDiscount, validDiscount], 'prod1');
+      expect(result).toEqual([validDiscount]);
+    });
+  });
+
+  describe('getApplicableDiscounts', () => {
+    it('should return empty array when no discounts are provided', () => {
+      const result = service.getApplicableDiscounts([], 'prod1', 100);
+      expect(result).toEqual([]);
+    });
+
+    it('should return applicable discounts sorted by priority and savings', () => {
+      const discount1 = new Discount('disc1', 'percentage', 10, 1, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']); // saves 10
+      const discount2 = new Discount('disc2', 'percentage', 20, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']); // saves 20
+      const discount3 = new Discount('disc3', 'fixed', 15, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']); // saves 15
+
+      const result = service.getApplicableDiscounts([discount1, discount2, discount3], 'prod1', 100);
+
+      // Should be sorted: discount2 (priority 2, saves 20), discount3 (priority 2, saves 15), discount1 (priority 1, saves 10)
+      expect(result).toEqual([discount2, discount3, discount1]);
+    });
+
+    it('should filter out non-applicable discounts', () => {
+      const applicableDiscount = new Discount('disc1', 'percentage', 20, 1, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']);
+      const nonApplicableDiscount = new Discount('disc2', 'percentage', 30, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod2']);
+
+      const result = service.getApplicableDiscounts([applicableDiscount, nonApplicableDiscount], 'prod1', 100);
+      expect(result).toEqual([applicableDiscount]);
+    });
+
+    it('should handle discounts with same priority by sorting by savings descending', () => {
+      const discount1 = new Discount('disc1', 'percentage', 10, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']); // saves 10
+      const discount2 = new Discount('disc2', 'percentage', 15, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']); // saves 15
+      const discount3 = new Discount('disc3', 'fixed', 12, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']); // saves 12
+
+      const result = service.getApplicableDiscounts([discount1, discount2, discount3], 'prod1', 100);
+
+      // All priority 2: discount2 (saves 15), discount3 (saves 12), discount1 (saves 10)
+      expect(result).toEqual([discount2, discount3, discount1]);
+    });
   });
 });

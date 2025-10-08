@@ -18,4 +18,6 @@ export interface IDiscountModel extends IBaseModel {
   startDate: Date;
   /** Discount end date */
   endDate: Date;
+  /** Applicable product IDs, empty array means global applicable */
+  applicableProducts: string[];
 }

@@ -11,6 +11,10 @@ export interface IPromoCodeModel extends IBaseModel {
   isSingleUse: boolean;
   /** Number of times used */
   usedCount: number;
+  /** Minimum order amount required */
+  minimumAmount: number;
   /** Assigned user ID for exclusive promo codes (optional) */
   assignedUserId?: string;
+  /** Applicable product IDs (empty array means all products) */
+  applicableProducts: string[];
 }

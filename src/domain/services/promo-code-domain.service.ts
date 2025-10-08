@@ -20,6 +20,7 @@ export class PromoCodeDomainService {
    * @param promoCode The promo code to validate
    * @param userId The user attempting to use the promo code
    * @param orderAmount The order amount
+   * @param productId The product ID for the order (optional)
    * @param userUsageHistory Array of promo codes already used by this user
    * @returns Validation result with success status and error message if applicable
    */
@@ -27,7 +28,8 @@ export class PromoCodeDomainService {
     promoCode: PromoCode,
     userId: string,
     orderAmount: number,
-    userUsageHistory: string[]
+    productId?: string,
+    userUsageHistory: string[] = []
   ): PromoCodeValidationResult {
     // Check if promo code can be used at all
     if (!promoCode.canBeUsed()) {
@@ -42,6 +44,14 @@ export class PromoCodeDomainService {
       return {
         isValid: false,
         errorMessage: 'This promo code is not available for your account'
+      };
+    }
+
+    // Check product applicability
+    if (productId && !promoCode.isApplicableToProduct(productId)) {
+      return {
+        isValid: false,
+        errorMessage: 'This promo code is not applicable to the selected product'
       };
     }
 
