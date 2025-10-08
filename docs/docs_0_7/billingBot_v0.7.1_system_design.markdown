@@ -513,6 +513,7 @@ sequenceDiagram
     API->>Payment: Request Refund
     Payment-->>API: Refund Processed
     API->>DB: Record Refund & Update Status
+```
 
 ### 6.4 優惠碼應用流程 (Sequence Diagram)
 ```mermaid
@@ -535,6 +536,7 @@ sequenceDiagram
     else Validation Failed
         API-->>User: Return Error Message
     end
+```
 
 ### 6.5 方案轉換流程 (Sequence Diagram)
 ```mermaid
