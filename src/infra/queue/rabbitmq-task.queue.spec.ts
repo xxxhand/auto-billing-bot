@@ -4,7 +4,7 @@ import { ITaskQueue, BillingTask } from '../../domain/services/task-queue.interf
 
 // Mock amqplib
 jest.mock('amqplib', () => ({
-  connect: jest.fn()
+  connect: jest.fn(),
 }));
 
 import * as amqp from 'amqplib';
@@ -20,7 +20,7 @@ describe('RabbitMQTaskQueue', () => {
     taskType: 'billing',
     retryCount: 0,
     createdAt: new Date(),
-    metadata: { amount: 100 }
+    metadata: { amount: 100 },
   };
 
   beforeEach(async () => {
@@ -34,12 +34,12 @@ describe('RabbitMQTaskQueue', () => {
       ack: jest.fn(),
       nack: jest.fn(),
       cancel: jest.fn().mockResolvedValue({}),
-      close: jest.fn().mockResolvedValue({})
+      close: jest.fn().mockResolvedValue({}),
     };
 
     mockConnection = {
       createChannel: jest.fn().mockResolvedValue(mockChannel),
-      close: jest.fn().mockResolvedValue({})
+      close: jest.fn().mockResolvedValue({}),
     };
 
     (amqp.connect as jest.Mock).mockResolvedValue(mockConnection);
@@ -69,21 +69,13 @@ describe('RabbitMQTaskQueue', () => {
     it('should publish task to main queue', async () => {
       await taskQueue.publishTask(mockTask);
 
-      expect(mockChannel.sendToQueue).toHaveBeenCalledWith(
-        'billing_tasks',
-        Buffer.from(JSON.stringify(mockTask)),
-        { persistent: true }
-      );
+      expect(mockChannel.sendToQueue).toHaveBeenCalledWith('billing_tasks', Buffer.from(JSON.stringify(mockTask)), { persistent: true });
     });
 
     it('should publish delayed task to retry queue', async () => {
       await taskQueue.publishTask(mockTask, 5000);
 
-      expect(mockChannel.sendToQueue).toHaveBeenCalledWith(
-        'billing_retry',
-        Buffer.from(JSON.stringify(mockTask)),
-        { messageTtl: 5000, persistent: true }
-      );
+      expect(mockChannel.sendToQueue).toHaveBeenCalledWith('billing_retry', Buffer.from(JSON.stringify(mockTask)), { messageTtl: 5000, persistent: true });
     });
   });
 
@@ -103,7 +95,7 @@ describe('RabbitMQTaskQueue', () => {
       // Get the consume callback
       const consumeCallback = mockChannel.consume.mock.calls[0][1];
       const mockMsg = {
-        content: Buffer.from(JSON.stringify(mockTask))
+        content: Buffer.from(JSON.stringify(mockTask)),
       };
 
       await consumeCallback(mockMsg);
@@ -121,7 +113,7 @@ describe('RabbitMQTaskQueue', () => {
       // Get the consume callback
       const consumeCallback = mockChannel.consume.mock.calls[0][1];
       const mockMsg = {
-        content: Buffer.from(JSON.stringify(mockTask))
+        content: Buffer.from(JSON.stringify(mockTask)),
       };
 
       await consumeCallback(mockMsg);

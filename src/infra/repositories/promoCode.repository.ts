@@ -12,7 +12,7 @@ export class PromoCodeRepository {
   public async findAll(): Promise<PromoCode[]> {
     const col = this.defMongoClient.getCollection(modelNames.PROMO_CODES);
     const docs = (await col.find({}).toArray()) as IPromoCodeDocument[];
-    return docs.map(doc => {
+    return docs.map((doc) => {
       const ent = plainToInstance(PromoCode, doc);
       ent.id = doc._id.toHexString();
       return ent;
@@ -41,7 +41,7 @@ export class PromoCodeRepository {
     const col = this.defMongoClient.getCollection(modelNames.PROMO_CODES);
     const q = { discountId };
     const docs = (await col.find(q).toArray()) as IPromoCodeDocument[];
-    return docs.map(doc => {
+    return docs.map((doc) => {
       const ent = plainToInstance(PromoCode, doc);
       ent.id = doc._id.toHexString();
       return ent;
@@ -53,20 +53,13 @@ export class PromoCodeRepository {
 
     // Base query: promo codes that can still be used
     const baseQuery: any = {
-      $or: [
-        { usageLimit: null },
-        { $expr: { $lt: ['$usedCount', '$usageLimit'] } }
-      ]
+      $or: [{ usageLimit: null }, { $expr: { $lt: ['$usedCount', '$usageLimit'] } }],
     };
 
     // Add user assignment filter
     if (userId) {
       baseQuery.$or = baseQuery.$or || [];
-      baseQuery.$or.push(
-        { assignedUserId: userId },
-        { assignedUserId: { $exists: false } },
-        { assignedUserId: null }
-      );
+      baseQuery.$or.push({ assignedUserId: userId }, { assignedUserId: { $exists: false } }, { assignedUserId: null });
     }
 
     let query;
@@ -77,19 +70,19 @@ export class PromoCodeRepository {
         $or: [
           ...(baseQuery.$or || []),
           { applicableProducts: { $size: 0 } }, // Empty array means global applicable
-          { applicableProducts: productId }
-        ]
+          { applicableProducts: productId },
+        ],
       };
     } else {
       // If no productId specified, only return global promo codes
       query = {
         ...baseQuery,
-        applicableProducts: { $size: 0 }
+        applicableProducts: { $size: 0 },
       };
     }
 
     const docs = (await col.find(query).toArray()) as IPromoCodeDocument[];
-    return docs.map(doc => {
+    return docs.map((doc) => {
       const ent = plainToInstance(PromoCode, doc);
       ent.id = doc._id.toHexString();
       return ent;
@@ -122,7 +115,7 @@ export class PromoCodeRepository {
       $set: {
         usedCount: promoCode.usedCount,
         updatedAt: new Date(),
-      }
+      },
     };
     await col.updateOne(q, updateDoc);
   }

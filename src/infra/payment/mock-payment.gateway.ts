@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  IPaymentGateway,
-  PaymentRequest,
-  PaymentResponse
-} from '../../domain/services/payment-gateway.interface';
+import { IPaymentGateway, PaymentRequest, PaymentResponse } from '../../domain/services/payment-gateway.interface';
 
 /**
  * Mock payment gateway implementation for testing and development
@@ -75,8 +71,8 @@ export class MockPaymentGateway implements IPaymentGateway {
         originalTransactionId: transactionId,
         refundAmount: amount,
         refundReason: reason || 'Customer request',
-        refundedAt: new Date().toISOString()
-      }
+        refundedAt: new Date().toISOString(),
+      },
     };
   }
 
@@ -142,8 +138,8 @@ export class MockPaymentGateway implements IPaymentGateway {
         status: 'completed',
         processedAt: new Date().toISOString(),
         cardLastFour: '4242', // Mock card number ending
-        authCode: `AUTH${Math.random().toString(36).substr(2, 6).toUpperCase()}`
-      }
+        authCode: `AUTH${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+      },
     };
   }
 
@@ -161,8 +157,8 @@ export class MockPaymentGateway implements IPaymentGateway {
       providerResponse: {
         error: errorCode.toLowerCase(),
         message: errorMessage,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     };
   }
 
@@ -175,7 +171,7 @@ export class MockPaymentGateway implements IPaymentGateway {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash);
@@ -187,6 +183,6 @@ export class MockPaymentGateway implements IPaymentGateway {
    * @returns Promise that resolves after delay
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

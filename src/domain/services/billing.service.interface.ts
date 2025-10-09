@@ -43,11 +43,7 @@ export interface IBillingService {
    * @param retryCount Current retry count
    * @returns Promise resolving to handling result
    */
-  handlePaymentFailure(
-    subscriptionId: string,
-    failureReason: string,
-    retryCount: number,
-  ): Promise<BillingResult>;
+  handlePaymentFailure(subscriptionId: string, failureReason: string, retryCount: number): Promise<BillingResult>;
 
   /**
    * Process a billing task from the queue
@@ -58,10 +54,5 @@ export interface IBillingService {
    * @param retryCount Current retry count
    * @returns Promise resolving to billing result
    */
-  processBillingTask(
-    taskId: string,
-    subscriptionId: string,
-    taskType: 'billing' | 'retry' | 'manual_retry',
-    retryCount: number,
-  ): Promise<BillingResult>;
+  processBillingTask(taskId: string, subscriptionId: string, taskType: 'billing' | 'retry' | 'manual_retry', retryCount: number): Promise<BillingResult>;
 }

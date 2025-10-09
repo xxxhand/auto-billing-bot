@@ -13,7 +13,9 @@ import { PromoCodeRepository } from './infra/repositories/promoCode.repository';
 import { BillingService } from './infra/services/billing.service';
 import { DatabaseIndexService } from './infra/services/database-index.service';
 import { DiscountPriorityService } from './domain/services/discount-priority.service';
+import { PromoCodeDomainService } from './domain/services/promo-code-domain.service';
 import { ProductsService } from './application/services/products.service';
+import { SubscriptionsService } from './application/services/subscriptions.service';
 import { AppExceptionFilter } from './app-components/app-exception.filter';
 import { AppTracerMiddleware } from './app-components/app-tracer.middleware';
 import * as jobs from './application/jobs';
@@ -49,12 +51,17 @@ import { MockTaskQueue } from './infra/queue/mock-task.queue';
     },
     DatabaseIndexService,
     DiscountPriorityService,
+    PromoCodeDomainService,
     ProductsService,
+    SubscriptionsService,
     ...Array.from(Object.keys(jobs)).map((key) => jobs[key]),
   ],
 })
 export class AppModule implements NestModule, OnApplicationBootstrap, BeforeApplicationShutdown {
-  constructor(private readonly cmmService: CommonService, private readonly databaseIndexService: DatabaseIndexService) {}
+  constructor(
+    private readonly cmmService: CommonService,
+    private readonly databaseIndexService: DatabaseIndexService,
+  ) {}
 
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(AppTracerMiddleware).forRoutes('*');

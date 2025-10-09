@@ -27,7 +27,7 @@ describe('MockPaymentGateway', () => {
         userId: 'user_success_001',
         amount: 1000,
         currency: 'TWD',
-        description: 'Test successful payment'
+        description: 'Test successful payment',
       };
 
       const response = await gateway.charge(request);
@@ -49,7 +49,7 @@ describe('MockPaymentGateway', () => {
         userId: 'user_insuff',
         amount: 1000,
         currency: 'TWD',
-        description: 'Test insufficient funds'
+        description: 'Test insufficient funds',
       };
 
       const response = await gateway.charge(request);
@@ -65,7 +65,7 @@ describe('MockPaymentGateway', () => {
         userId: 'user_network_001',
         amount: 1000,
         currency: 'TWD',
-        description: 'Test network error'
+        description: 'Test network error',
       };
 
       const response = await gateway.charge(request);
@@ -81,7 +81,7 @@ describe('MockPaymentGateway', () => {
         userId: 'user_expired',
         amount: 1000,
         currency: 'TWD',
-        description: 'Test card expired'
+        description: 'Test card expired',
       };
 
       const response = await gateway.charge(request);
@@ -97,7 +97,7 @@ describe('MockPaymentGateway', () => {
         userId: 'user_invalid',
         amount: 1000,
         currency: 'TWD',
-        description: 'Test invalid card'
+        description: 'Test invalid card',
       };
 
       const response = await gateway.charge(request);
@@ -113,7 +113,7 @@ describe('MockPaymentGateway', () => {
         userId: 'user_declined',
         amount: 1000,
         currency: 'TWD',
-        description: 'Test payment declined'
+        description: 'Test payment declined',
       };
 
       const response = await gateway.charge(request);
@@ -129,7 +129,7 @@ describe('MockPaymentGateway', () => {
         userId: 'user_deterministic',
         amount: 500,
         currency: 'TWD',
-        description: 'Deterministic test'
+        description: 'Deterministic test',
       };
 
       // Call multiple times with same input
@@ -154,7 +154,7 @@ describe('MockPaymentGateway', () => {
         amount: 2000,
         currency: 'USD',
         description: 'Test with metadata',
-        metadata: { orderId: 'order_123', source: 'web' }
+        metadata: { orderId: 'order_123', source: 'web' },
       };
 
       const response = await gateway.charge(request);
@@ -213,7 +213,7 @@ describe('MockPaymentGateway', () => {
         userId: 'user_performance',
         amount: 100,
         currency: 'TWD',
-        description: 'Performance test'
+        description: 'Performance test',
       };
 
       const startTime = Date.now();

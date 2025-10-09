@@ -1,4 +1,4 @@
-import { PromoCode } from '../value-objects/promo-code.value-object';
+import { PromoCode } from '../entities/promoCode.entity';
 
 /**
  * Validation result for promo code usage
@@ -16,6 +16,7 @@ export class PromoCodeDomainService {
   /**
    * Validate if a user can use a promo code for an order
    * Checks minimum amount, user usage history, and promo code availability
+   * HAND-NOTE: 做得不好，回傳值讓callers難判斷要不要接續。改為用CustomResult並定義錯誤碼
    *
    * @param promoCode The promo code to validate
    * @param userId The user attempting to use the promo code
@@ -24,18 +25,12 @@ export class PromoCodeDomainService {
    * @param userUsageHistory Array of promo codes already used by this user
    * @returns Validation result with success status and error message if applicable
    */
-  public validatePromoCodeUsage(
-    promoCode: PromoCode,
-    userId: string,
-    orderAmount: number,
-    productId?: string,
-    userUsageHistory: string[] = []
-  ): PromoCodeValidationResult {
+  public validatePromoCodeUsage(promoCode: PromoCode, userId: string, orderAmount: number, productId?: string, userUsageHistory: string[] = []): PromoCodeValidationResult {
     // Check if promo code can be used at all
     if (!promoCode.canBeUsed()) {
       return {
         isValid: false,
-        errorMessage: 'This promo code is no longer available'
+        errorMessage: 'This promo code is no longer available',
       };
     }
 
@@ -43,7 +38,7 @@ export class PromoCodeDomainService {
     if (!promoCode.canBeUsedByUser(userId)) {
       return {
         isValid: false,
-        errorMessage: 'This promo code is not available for your account'
+        errorMessage: 'This promo code is not available for your account',
       };
     }
 
@@ -51,15 +46,16 @@ export class PromoCodeDomainService {
     if (productId && !promoCode.isApplicableToProduct(productId)) {
       return {
         isValid: false,
-        errorMessage: 'This promo code is not applicable to the selected product'
+        errorMessage: 'This promo code is not applicable to the selected product',
       };
     }
 
+    // HAND-NOTE: 是否要有這個檢查，折扣金額大於訂單金額就不能用?
     // Check minimum order amount
     if (!this.isOrderAmountValid(promoCode, orderAmount)) {
       return {
         isValid: false,
-        errorMessage: `Order amount must be at least ${promoCode.minimumAmount} to use this promo code`
+        errorMessage: `Order amount must be at least ${promoCode.minimumAmount} to use this promo code`,
       };
     }
 
@@ -67,7 +63,7 @@ export class PromoCodeDomainService {
     if (!this.canUserUsePromoCode(promoCode, userUsageHistory)) {
       return {
         isValid: false,
-        errorMessage: 'This promo code has already been used by this user'
+        errorMessage: 'This promo code has already been used by this user',
       };
     }
 

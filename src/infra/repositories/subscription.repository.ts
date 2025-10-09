@@ -86,7 +86,7 @@ export class SubscriptionRepository {
     };
 
     const col = this.defMongoClient.getCollection(modelNames.SUBSCRIPTIONS);
-    if (!CustomValidator.nonEmptyString(entity.id)) {
+    if (entity.isNew()) {
       // New entity
       doc.subscriptionId = entity.subscriptionId;
       doc.userId = CustomUtils.stringToObjectId(entity.userId);

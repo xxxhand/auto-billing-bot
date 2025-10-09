@@ -49,3 +49,7 @@ export class AppHelper {
     }
   }
 }
+
+export function getNewMockContainer(): Map<InjectionToken, any> {
+  return new Map<InjectionToken, any>();
+}

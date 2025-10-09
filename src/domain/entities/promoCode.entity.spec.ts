@@ -10,7 +10,7 @@ describe('PromoCode Entity', () => {
         null, // unlimited
         false,
         5,
-        100
+        100,
       );
 
       // Act
@@ -28,7 +28,7 @@ describe('PromoCode Entity', () => {
         10, // limit
         false,
         5, // used
-        100
+        100,
       );
 
       // Act
@@ -46,7 +46,7 @@ describe('PromoCode Entity', () => {
         10, // limit
         false,
         10, // used
-        100
+        100,
       );
 
       // Act
@@ -64,7 +64,7 @@ describe('PromoCode Entity', () => {
         10, // limit
         false,
         15, // used
-        100
+        100,
       );
 
       // Act
@@ -86,7 +86,7 @@ describe('PromoCode Entity', () => {
         0,
         100,
         undefined,
-        [] // empty array means global
+        [], // empty array means global
       );
 
       // Act
@@ -98,16 +98,7 @@ describe('PromoCode Entity', () => {
 
     it('should return true when productId is in applicableProducts', () => {
       // Arrange
-      const promoCode = new PromoCode(
-        'PROMO123',
-        'disc_123',
-        null,
-        false,
-        0,
-        100,
-        undefined,
-        ['prod_123', 'prod_456']
-      );
+      const promoCode = new PromoCode('PROMO123', 'disc_123', null, false, 0, 100, undefined, ['prod_123', 'prod_456']);
 
       // Act
       const result = promoCode.isApplicableToProduct('prod_123');
@@ -118,16 +109,7 @@ describe('PromoCode Entity', () => {
 
     it('should return false when productId is not in applicableProducts', () => {
       // Arrange
-      const promoCode = new PromoCode(
-        'PROMO123',
-        'disc_123',
-        null,
-        false,
-        0,
-        100,
-        undefined,
-        ['prod_123', 'prod_456']
-      );
+      const promoCode = new PromoCode('PROMO123', 'disc_123', null, false, 0, 100, undefined, ['prod_123', 'prod_456']);
 
       // Act
       const result = promoCode.isApplicableToProduct('prod_789');
@@ -146,7 +128,7 @@ describe('PromoCode Entity', () => {
         null,
         false,
         0,
-        100 // minimum amount
+        100, // minimum amount
       );
 
       // Act
@@ -164,7 +146,7 @@ describe('PromoCode Entity', () => {
         null,
         false,
         0,
-        100 // minimum amount
+        100, // minimum amount
       );
 
       // Act
@@ -182,7 +164,7 @@ describe('PromoCode Entity', () => {
         null,
         false,
         0,
-        100 // minimum amount
+        100, // minimum amount
       );
 
       // Act
@@ -203,7 +185,7 @@ describe('PromoCode Entity', () => {
         false,
         0,
         100,
-        undefined // no assigned user
+        undefined, // no assigned user
       );
 
       // Act
@@ -222,7 +204,7 @@ describe('PromoCode Entity', () => {
         false,
         0,
         100,
-        'user_123' // assigned to specific user
+        'user_123', // assigned to specific user
       );
 
       // Act
@@ -241,7 +223,7 @@ describe('PromoCode Entity', () => {
         false,
         0,
         100,
-        'user_123' // assigned to specific user
+        'user_123', // assigned to specific user
       );
 
       // Act
@@ -261,7 +243,7 @@ describe('PromoCode Entity', () => {
         null,
         false,
         5, // initial used count
-        100
+        100,
       );
 
       // Act
@@ -275,16 +257,7 @@ describe('PromoCode Entity', () => {
   describe('constructor', () => {
     it('should create promoCode with correct properties', () => {
       // Arrange & Act
-      const promoCode = new PromoCode(
-        'PROMO123',
-        'disc_123',
-        100,
-        true,
-        10,
-        50,
-        'user_123',
-        ['prod_1', 'prod_2']
-      );
+      const promoCode = new PromoCode('PROMO123', 'disc_123', 100, true, 10, 50, 'user_123', ['prod_1', 'prod_2']);
 
       // Assert
       expect(promoCode.code).toBe('PROMO123');
@@ -300,14 +273,7 @@ describe('PromoCode Entity', () => {
 
     it('should create promoCode with default applicableProducts as empty array', () => {
       // Arrange & Act
-      const promoCode = new PromoCode(
-        'PROMO123',
-        'disc_123',
-        null,
-        false,
-        0,
-        100
-      );
+      const promoCode = new PromoCode('PROMO123', 'disc_123', null, false, 0, 100);
 
       // Assert
       expect(promoCode.applicableProducts).toEqual([]);

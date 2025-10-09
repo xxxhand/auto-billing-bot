@@ -68,9 +68,7 @@ describe('IBillingService Interface Contract', () => {
         queuedForRetry: true,
       } as BillingResult);
 
-      await expect(
-        billingService.handlePaymentFailure('sub_123', 'network_error', 1),
-      ).resolves.toBeDefined();
+      await expect(billingService.handlePaymentFailure('sub_123', 'network_error', 1)).resolves.toBeDefined();
     });
 
     it('should return a BillingResult', async () => {
@@ -99,9 +97,7 @@ describe('IBillingService Interface Contract', () => {
         success: true,
       } as BillingResult);
 
-      await expect(
-        billingService.processBillingTask('task_123', 'sub_123', 'billing', 0),
-      ).resolves.toBeDefined();
+      await expect(billingService.processBillingTask('task_123', 'sub_123', 'billing', 0)).resolves.toBeDefined();
     });
 
     it('should return a BillingResult', async () => {

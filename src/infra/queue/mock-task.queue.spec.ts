@@ -11,7 +11,7 @@ describe('MockTaskQueue', () => {
     taskType: 'billing',
     retryCount: 0,
     createdAt: new Date(),
-    metadata: { amount: 100 }
+    metadata: { amount: 100 },
   };
 
   beforeEach(async () => {

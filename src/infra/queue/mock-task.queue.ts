@@ -86,14 +86,14 @@ export class MockTaskQueue implements ITaskQueue {
 
     if (requeue) {
       // Find the task in all published tasks to get its data
-      const originalTask = this.allPublishedTasks.find(t => t.taskId === taskId);
+      const originalTask = this.allPublishedTasks.find((t) => t.taskId === taskId);
       if (originalTask) {
         // Create a new task with incremented retry count
         const retryTask: BillingTask = {
           ...originalTask,
           taskId: `${originalTask.taskId}_retry_${Date.now()}`,
           retryCount: originalTask.retryCount + 1,
-          createdAt: new Date()
+          createdAt: new Date(),
         };
 
         // Track the retry task as published and add to queue

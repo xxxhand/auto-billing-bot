@@ -165,15 +165,7 @@ describe('Discount Entity', () => {
 
     it('should return true when productId is in applicableProducts', () => {
       // Arrange
-      const discount = new Discount(
-        'disc_123',
-        'percentage',
-        10,
-        1,
-        new Date(),
-        new Date(),
-        ['prod_123', 'prod_456']
-      );
+      const discount = new Discount('disc_123', 'percentage', 10, 1, new Date(), new Date(), ['prod_123', 'prod_456']);
 
       // Act
       const result = discount.isApplicableToProduct('prod_123');
@@ -184,15 +176,7 @@ describe('Discount Entity', () => {
 
     it('should return false when productId is not in applicableProducts', () => {
       // Arrange
-      const discount = new Discount(
-        'disc_123',
-        'percentage',
-        10,
-        1,
-        new Date(),
-        new Date(),
-        ['prod_123', 'prod_456']
-      );
+      const discount = new Discount('disc_123', 'percentage', 10, 1, new Date(), new Date(), ['prod_123', 'prod_456']);
 
       // Act
       const result = discount.isApplicableToProduct('prod_789');

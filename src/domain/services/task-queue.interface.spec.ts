@@ -9,7 +9,7 @@ describe('ITaskQueue Interface', () => {
     taskType: 'billing',
     retryCount: 0,
     createdAt: new Date(),
-    metadata: { amount: 100 }
+    metadata: { amount: 100 },
   };
 
   beforeEach(() => {
@@ -19,7 +19,7 @@ describe('ITaskQueue Interface', () => {
       consumeTasks: jest.fn().mockResolvedValue(undefined),
       acknowledgeTask: jest.fn().mockResolvedValue(undefined),
       rejectTask: jest.fn().mockResolvedValue(undefined),
-      getQueueName: jest.fn().mockReturnValue('mock')
+      getQueueName: jest.fn().mockReturnValue('mock'),
     };
   });
 

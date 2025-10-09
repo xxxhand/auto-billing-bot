@@ -25,13 +25,13 @@ export class DiscountPriorityService {
 
     // Filter out invalid discounts and those not applicable to the product
     const validDiscountsWithSavings = discounts
-      .filter(discount => discount && discount.isApplicable(new Date()))
-      .filter(discount => !productId || discount.isApplicableToProduct(productId)) // Filter by product applicability
-      .map(discount => ({
+      .filter((discount) => discount && discount.isApplicable(new Date()))
+      .filter((discount) => !productId || discount.isApplicableToProduct(productId)) // Filter by product applicability
+      .map((discount) => ({
         discount,
-        savings: this.calculateSavings(discount, originalPrice)
+        savings: this.calculateSavings(discount, originalPrice),
       }))
-      .filter(item => item.savings > 0); // Only consider discounts that actually save money
+      .filter((item) => item.savings > 0); // Only consider discounts that actually save money
 
     if (validDiscountsWithSavings.length === 0) {
       return null;
@@ -72,11 +72,7 @@ export class DiscountPriorityService {
       return [];
     }
 
-    return discounts.filter(discount =>
-      discount &&
-      discount.isApplicable(new Date()) &&
-      discount.isApplicableToProduct(productId)
-    );
+    return discounts.filter((discount) => discount && discount.isApplicable(new Date()) && discount.isApplicableToProduct(productId));
   }
 
   /**
@@ -91,9 +87,9 @@ export class DiscountPriorityService {
 
     // Sort by priority (descending), then by savings (descending)
     return applicableDiscounts
-      .map(discount => ({
+      .map((discount) => ({
         discount,
-        savings: this.calculateSavings(discount, originalPrice)
+        savings: this.calculateSavings(discount, originalPrice),
       }))
       .sort((a, b) => {
         // First compare by priority (higher priority first)
@@ -103,6 +99,6 @@ export class DiscountPriorityService {
         // If priorities are equal, compare by savings (higher savings first)
         return b.savings - a.savings;
       })
-      .map(item => item.discount);
+      .map((item) => item.discount);
   }
 }

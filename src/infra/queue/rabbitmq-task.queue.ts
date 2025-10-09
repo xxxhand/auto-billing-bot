@@ -48,12 +48,12 @@ export class RabbitMQTaskQueue implements ITaskQueue, OnModuleInit, OnModuleDest
       // Use retry queue with TTL for delayed messages
       await this.channel.sendToQueue(this.retryQueue, buffer, {
         messageTtl: delayMs,
-        persistent: true
+        persistent: true,
       });
     } else {
       // Send to main queue
       await this.channel.sendToQueue(this.mainQueue, buffer, {
-        persistent: true
+        persistent: true,
       });
     }
   }
@@ -158,8 +158,8 @@ export class RabbitMQTaskQueue implements ITaskQueue, OnModuleInit, OnModuleDest
       durable: true,
       arguments: {
         'x-dead-letter-exchange': this.deadLetterExchange,
-        'x-dead-letter-routing-key': this.mainQueue
-      }
+        'x-dead-letter-routing-key': this.mainQueue,
+      },
     });
 
     // Declare retry queue with TTL and dead letter exchange
@@ -168,8 +168,8 @@ export class RabbitMQTaskQueue implements ITaskQueue, OnModuleInit, OnModuleDest
       arguments: {
         'x-dead-letter-exchange': this.deadLetterExchange,
         'x-dead-letter-routing-key': this.mainQueue,
-        'x-message-ttl': 3600000 // 1 hour default TTL
-      }
+        'x-message-ttl': 3600000, // 1 hour default TTL
+      },
     });
 
     // Bind queues to dead letter exchange

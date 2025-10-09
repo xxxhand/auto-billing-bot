@@ -7,7 +7,7 @@ describe('PaymentGateway Interface Contract', () => {
       return {
         success: true,
         transactionId: 'mock_txn_123',
-        providerResponse: { mock: true }
+        providerResponse: { mock: true },
       };
     }
 
@@ -15,7 +15,7 @@ describe('PaymentGateway Interface Contract', () => {
       return {
         success: true,
         transactionId: `refund_${transactionId}`,
-        providerResponse: { refunded: true }
+        providerResponse: { refunded: true },
       };
     }
 
@@ -38,7 +38,7 @@ describe('PaymentGateway Interface Contract', () => {
         amount: 1000,
         currency: 'TWD',
         description: 'Test payment',
-        metadata: { orderId: 'order_789' }
+        metadata: { orderId: 'order_789' },
       };
 
       const result = await gateway.charge(request);
@@ -73,7 +73,7 @@ describe('PaymentGateway Interface Contract', () => {
         userId: 'user_456',
         amount: 1000,
         currency: 'TWD',
-        description: 'Test payment'
+        description: 'Test payment',
       };
 
       expect(request.attemptId).toBeDefined();
@@ -90,7 +90,7 @@ describe('PaymentGateway Interface Contract', () => {
         amount: 1000,
         currency: 'TWD',
         description: 'Test payment',
-        metadata: { orderId: 'order_789', source: 'web' }
+        metadata: { orderId: 'order_789', source: 'web' },
       };
 
       expect(request.metadata).toBeDefined();
@@ -104,7 +104,7 @@ describe('PaymentGateway Interface Contract', () => {
       const response: PaymentResponse = {
         success: true,
         transactionId: 'txn_123',
-        providerResponse: { confirmed: true }
+        providerResponse: { confirmed: true },
       };
 
       expect(response.success).toBe(true);
@@ -118,7 +118,7 @@ describe('PaymentGateway Interface Contract', () => {
         success: false,
         errorMessage: 'Insufficient funds',
         errorCode: 'INSUFFICIENT_FUNDS',
-        providerResponse: { error: 'balance_too_low' }
+        providerResponse: { error: 'balance_too_low' },
       };
 
       expect(response.success).toBe(false);

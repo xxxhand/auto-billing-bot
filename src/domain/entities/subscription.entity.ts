@@ -38,7 +38,6 @@ export class Subscription extends BaseEntity {
     pendingConversion: { newCycleType: string; requestedAt: Date } | null = null,
   ) {
     super();
-    this.id = subscriptionId; // Use subscriptionId as the entity ID
     this.subscriptionId = subscriptionId;
     this.userId = userId;
     this.productId = productId;

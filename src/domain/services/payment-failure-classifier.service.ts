@@ -287,45 +287,44 @@ export class PaymentFailureClassifierService {
     const message = errorMessage.toLowerCase();
 
     // Gateway timeout (check before general timeout)
-    if (code === 'gateway_timeout' || message.includes('gateway timeout') ||
-        (code.includes('timeout') && (code.includes('gateway') || message.includes('gateway')))) {
+    if (code === 'gateway_timeout' || message.includes('gateway timeout') || (code.includes('timeout') && (code.includes('gateway') || message.includes('gateway')))) {
       return PaymentFailureType.GATEWAY_TIMEOUT;
     }
 
     // Network and connectivity errors
-    if (code.includes('network') || code.includes('connection') ||
-        message.includes('network') || message.includes('connection') ||
-        code.includes('timeout') || message.includes('timeout')) {
+    if (
+      code.includes('network') ||
+      code.includes('connection') ||
+      message.includes('network') ||
+      message.includes('connection') ||
+      code.includes('timeout') ||
+      message.includes('timeout')
+    ) {
       return PaymentFailureType.NETWORK_ERROR;
     }
 
     // Insufficient funds
-    if (code.includes('insufficient') || message.includes('insufficient') ||
-        code.includes('funds') || message.includes('funds')) {
+    if (code.includes('insufficient') || message.includes('insufficient') || code.includes('funds') || message.includes('funds')) {
       return PaymentFailureType.INSUFFICIENT_FUNDS;
     }
 
     // Card expired
-    if (code.includes('expired') || message.includes('expired') ||
-        code.includes('expiry') || message.includes('expiry')) {
+    if (code.includes('expired') || message.includes('expired') || code.includes('expiry') || message.includes('expiry')) {
       return PaymentFailureType.CARD_EXPIRED;
     }
 
     // Invalid card
-    if (code.includes('invalid') && (code.includes('card') || message.includes('card')) ||
-        message.includes('invalid card') || code.includes('card_invalid')) {
+    if ((code.includes('invalid') && (code.includes('card') || message.includes('card'))) || message.includes('invalid card') || code.includes('card_invalid')) {
       return PaymentFailureType.INVALID_CARD;
     }
 
     // Card declined
-    if (code.includes('declined') || message.includes('declined') ||
-        code.includes('rejected') || message.includes('rejected')) {
+    if (code.includes('declined') || message.includes('declined') || code.includes('rejected') || message.includes('rejected')) {
       return PaymentFailureType.CARD_DECLINED;
     }
 
     // Fraud detection
-    if (code.includes('fraud') || message.includes('fraud') ||
-        code.includes('suspicious') || message.includes('suspicious')) {
+    if (code.includes('fraud') || message.includes('fraud') || code.includes('suspicious') || message.includes('suspicious')) {
       return PaymentFailureType.FRAUD_DETECTED;
     }
 
@@ -345,14 +344,12 @@ export class PaymentFailureClassifierService {
     }
 
     // Duplicate transaction
-    if (code.includes('duplicate') || message.includes('duplicate') ||
-        code.includes('already') || message.includes('already')) {
+    if (code.includes('duplicate') || message.includes('duplicate') || code.includes('already') || message.includes('already')) {
       return PaymentFailureType.DUPLICATE_TRANSACTION;
     }
 
     // System errors
-    if (code.includes('system') || message.includes('system') ||
-        code.includes('internal') || message.includes('internal')) {
+    if (code.includes('system') || message.includes('system') || code.includes('internal') || message.includes('internal')) {
       return PaymentFailureType.SYSTEM_ERROR;
     }
 

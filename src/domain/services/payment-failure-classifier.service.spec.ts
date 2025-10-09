@@ -236,10 +236,10 @@ describe('PaymentFailureClassifierService', () => {
     it('should return exponential backoff delays when enabled', () => {
       const strategy = { maxAttempts: 5, baseDelayMs: 60000, useExponentialBackoff: true };
 
-      expect(service.calculateRetryDelay(0, strategy)).toBe(60000);      // 1x
-      expect(service.calculateRetryDelay(1, strategy)).toBe(120000);     // 2x
-      expect(service.calculateRetryDelay(2, strategy)).toBe(240000);     // 4x
-      expect(service.calculateRetryDelay(3, strategy)).toBe(480000);     // 8x
+      expect(service.calculateRetryDelay(0, strategy)).toBe(60000); // 1x
+      expect(service.calculateRetryDelay(1, strategy)).toBe(120000); // 2x
+      expect(service.calculateRetryDelay(2, strategy)).toBe(240000); // 4x
+      expect(service.calculateRetryDelay(3, strategy)).toBe(480000); // 8x
     });
 
     it('should respect maximum delay cap', () => {
@@ -247,7 +247,7 @@ describe('PaymentFailureClassifierService', () => {
         maxAttempts: 10,
         baseDelayMs: 60000,
         useExponentialBackoff: true,
-        maxDelayMs: 3600000 // 1 hour cap
+        maxDelayMs: 3600000, // 1 hour cap
       };
 
       // Calculate what delay would be without cap: 60000 * 2^6 = 3,840,000 (64 minutes)
@@ -292,8 +292,8 @@ describe('PaymentFailureClassifierService', () => {
       expect(strategy.maxAttempts).toBe(3);
 
       // Calculate retry delays
-      expect(service.calculateRetryDelay(0, strategy)).toBe(300000);  // 5 min
-      expect(service.calculateRetryDelay(1, strategy)).toBe(600000);  // 10 min (exponential)
+      expect(service.calculateRetryDelay(0, strategy)).toBe(300000); // 5 min
+      expect(service.calculateRetryDelay(1, strategy)).toBe(600000); // 10 min (exponential)
       expect(service.calculateRetryDelay(2, strategy)).toBe(1200000); // 20 min
 
       // Should not enter grace period

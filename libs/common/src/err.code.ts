@@ -27,5 +27,29 @@ export const errCodes: CustomDefinition.ICodeStruct[] = [
     code: 20001,
     httpStatus: 400,
     message: 'User not found',
-  }
+  },
+  {
+    codeName: errConstants.ERR_PRODUCT_NOT_FOUND,
+    code: 20002,
+    httpStatus: 400,
+    message: 'Product not found',
+  },
+  {
+    codeName: errConstants.ERR_ALREADY_SUBSCRIBED,
+    code: 20003,
+    httpStatus: 400,
+    message: 'User already has an active subscription for this product',
+  },
+  {
+    codeName: errConstants.ERR_INVALID_PROMO_CODE,
+    code: 20004,
+    httpStatus: 400,
+    message: 'Invalid promo code',
+  },
+  {
+    codeName: errConstants.ERR_INVALID_DISCOUNT,
+    code: 20005,
+    httpStatus: 400,
+    message: 'Invalid discount for this promo code',
+  },
 ];

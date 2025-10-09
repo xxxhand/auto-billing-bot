@@ -12,7 +12,7 @@ export class DiscountRepository {
   public async findAll(): Promise<Discount[]> {
     const col = this.defMongoClient.getCollection(modelNames.DISCOUNTS);
     const docs = (await col.find({}).toArray()) as IDiscountDocument[];
-    return docs.map(doc => {
+    return docs.map((doc) => {
       const ent = plainToInstance(Discount, doc);
       ent.id = doc._id.toHexString();
       return ent;
@@ -42,7 +42,7 @@ export class DiscountRepository {
     const baseQuery = {
       valid: true,
       startDate: { $lte: now },
-      endDate: { $gte: now }
+      endDate: { $gte: now },
     };
 
     let query: any;
@@ -52,19 +52,19 @@ export class DiscountRepository {
         ...baseQuery,
         $or: [
           { applicableProducts: { $size: 0 } }, // Empty array means global applicable
-          { applicableProducts: productId }
-        ]
+          { applicableProducts: productId },
+        ],
       };
     } else {
       // If no productId specified, only return global discounts
       query = {
         ...baseQuery,
-        applicableProducts: { $size: 0 }
+        applicableProducts: { $size: 0 },
       };
     }
 
     const docs = (await col.find(query).sort({ priority: -1 }).toArray()) as IDiscountDocument[];
-    return docs.map(doc => {
+    return docs.map((doc) => {
       const ent = plainToInstance(Discount, doc);
       ent.id = doc._id.toHexString();
       return ent;

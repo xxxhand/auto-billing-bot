@@ -12,7 +12,7 @@ export class ProductRepository {
   public async findAll(): Promise<ProductEntity[]> {
     const col = this.defMongoClient.getCollection(modelNames.PRODUCTS);
     const docs = (await col.find({}).toArray()) as IProductDocument[];
-    return docs.map(doc => {
+    return docs.map((doc) => {
       const ent = plainToInstance(ProductEntity, doc);
       ent.id = doc._id.toHexString();
       return ent;

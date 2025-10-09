@@ -44,10 +44,7 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/products`, () => {
   beforeAll(async () => {
     agent = await AppHelper.getAgent();
     await db.tryConnect();
-    await Promise.all([
-      db.getCollection(productCol).insertMany(mockProducts),
-      db.getCollection(discountCol).insertOne(mockDiscount)
-    ]);
+    await Promise.all([db.getCollection(productCol).insertMany(mockProducts), db.getCollection(discountCol).insertOne(mockDiscount)]);
   });
 
   afterAll(async () => {

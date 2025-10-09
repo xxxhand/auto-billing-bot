@@ -2,11 +2,10 @@ import { Inject, Injectable, LoggerService } from '@nestjs/common';
 import { CommonService } from '@myapp/common';
 import { v4 as uuidv4 } from 'uuid';
 import { IPaymentGateway, IPaymentGatewayToken, PaymentRequest, PaymentResponse } from '../../domain/services/payment-gateway.interface';
-import { ITaskQueue, BillingTask } from '../../domain/services/task-queue.interface';
+import { ITaskQueue, BillingTask, ITaskQueueToken } from '../../domain/services/task-queue.interface';
 import { IBillingService, BillingResult } from '../../domain/services/billing.service.interface';
 import { SubscriptionRepository } from '../repositories/subscription.repository';
 import { PaymentAttemptRepository } from '../repositories/payment-attempt.repository';
-import { Subscription } from '../../domain/entities/subscription.entity';
 import { PaymentAttempt, PaymentAttemptStatus } from '../../domain/entities/payment-attempt.entity';
 
 @Injectable()
@@ -16,7 +15,7 @@ export class BillingService implements IBillingService {
   constructor(
     private readonly commonService: CommonService,
     @Inject(IPaymentGatewayToken) private readonly paymentGateway: IPaymentGateway,
-    @Inject('ITaskQueue') private readonly taskQueue: ITaskQueue,
+    @Inject(ITaskQueueToken) private readonly taskQueue: ITaskQueue,
     private readonly subscriptionRepository: SubscriptionRepository,
     private readonly paymentAttemptRepository: PaymentAttemptRepository,
   ) {
@@ -42,13 +41,7 @@ export class BillingService implements IBillingService {
 
     // Create payment attempt
     const attemptId = uuidv4();
-    const paymentAttempt = new PaymentAttempt(
-      attemptId,
-      subscriptionId,
-      PaymentAttemptStatus.PENDING,
-      null,
-      isRetry ? 1 : 0,
-    );
+    const paymentAttempt = new PaymentAttempt(attemptId, subscriptionId, PaymentAttemptStatus.PENDING, '', isRetry ? 1 : 0);
 
     await this.paymentAttemptRepository.save(paymentAttempt);
 
@@ -104,11 +97,7 @@ export class BillingService implements IBillingService {
   /**
    * Handle payment failure for a subscription
    */
-  async handlePaymentFailure(
-    subscriptionId: string,
-    failureReason: string,
-    retryCount: number,
-  ): Promise<BillingResult> {
+  async handlePaymentFailure(subscriptionId: string, failureReason: string, retryCount: number): Promise<BillingResult> {
     this._Logger.log(`Handling payment failure for subscription ${subscriptionId}, reason: ${failureReason}, retryCount: ${retryCount}`);
 
     // Find subscription
@@ -178,12 +167,7 @@ export class BillingService implements IBillingService {
   /**
    * Process a billing task from the queue
    */
-  async processBillingTask(
-    taskId: string,
-    subscriptionId: string,
-    taskType: 'billing' | 'retry' | 'manual_retry',
-    retryCount: number,
-  ): Promise<BillingResult> {
+  async processBillingTask(taskId: string, subscriptionId: string, taskType: 'billing' | 'retry' | 'manual_retry', retryCount: number): Promise<BillingResult> {
     this._Logger.log(`Processing billing task ${taskId} for subscription ${subscriptionId}, type: ${taskType}, retryCount: ${retryCount}`);
 
     try {

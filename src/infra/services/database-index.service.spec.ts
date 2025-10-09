@@ -98,7 +98,7 @@ describe('DatabaseIndexService', () => {
         {
           name: 'nextBillingDate_1',
           background: true,
-        }
+        },
       );
 
       // Verify status index
@@ -107,7 +107,7 @@ describe('DatabaseIndexService', () => {
         {
           name: 'status_1',
           background: true,
-        }
+        },
       );
 
       // Verify compound index
@@ -116,7 +116,7 @@ describe('DatabaseIndexService', () => {
         {
           name: 'status_1_nextBillingDate_1',
           background: true,
-        }
+        },
       );
     });
   });

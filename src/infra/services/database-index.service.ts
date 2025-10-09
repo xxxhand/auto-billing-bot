@@ -59,7 +59,7 @@ export class DatabaseIndexService {
       {
         name: 'nextBillingDate_1',
         background: true,
-      }
+      },
     );
 
     // Index for status - frequently queried
@@ -68,7 +68,7 @@ export class DatabaseIndexService {
       {
         name: 'status_1',
         background: true,
-      }
+      },
     );
 
     // Compound index for status + nextBillingDate - optimal for CRON queries
@@ -77,7 +77,7 @@ export class DatabaseIndexService {
       {
         name: 'status_1_nextBillingDate_1',
         background: true,
-      }
+      },
     );
 
     // Index for userId - for user subscription queries
@@ -86,7 +86,7 @@ export class DatabaseIndexService {
       {
         name: 'userId_1',
         background: true,
-      }
+      },
     );
 
     // Index for productId - for product subscription queries
@@ -95,7 +95,7 @@ export class DatabaseIndexService {
       {
         name: 'productId_1',
         background: true,
-      }
+      },
     );
 
     this.logger.log('Created indexes for subscriptions collection');
@@ -113,7 +113,7 @@ export class DatabaseIndexService {
       {
         name: 'status_1',
         background: true,
-      }
+      },
     );
 
     // Index for subscriptionId - for subscription payment history
@@ -122,7 +122,7 @@ export class DatabaseIndexService {
       {
         name: 'subscriptionId_1',
         background: true,
-      }
+      },
     );
 
     // Compound index for subscriptionId + status
@@ -131,7 +131,7 @@ export class DatabaseIndexService {
       {
         name: 'subscriptionId_1_status_1',
         background: true,
-      }
+      },
     );
 
     this.logger.log('Created indexes for paymentAttempts collection');
@@ -150,7 +150,7 @@ export class DatabaseIndexService {
       {
         name: 'userId_1',
         background: true,
-      }
+      },
     );
 
     // Index for promoCode - for promo code usage statistics
@@ -159,7 +159,7 @@ export class DatabaseIndexService {
       {
         name: 'promoCode_1',
         background: true,
-      }
+      },
     );
 
     // Compound index for userId + promoCode - for duplicate usage checks
@@ -168,7 +168,7 @@ export class DatabaseIndexService {
       {
         name: 'userId_1_promoCode_1',
         background: true,
-      }
+      },
     );
 
     // Index for usedAt - for usage history queries
@@ -177,7 +177,7 @@ export class DatabaseIndexService {
       {
         name: 'usedAt_1',
         background: true,
-      }
+      },
     );
 
     this.logger.log('Created indexes for promoCodeUsages collection');
@@ -195,7 +195,7 @@ export class DatabaseIndexService {
       {
         name: 'subscriptionId_1',
         background: true,
-      }
+      },
     );
 
     // Index for eventType - for filtering logs by type
@@ -204,7 +204,7 @@ export class DatabaseIndexService {
       {
         name: 'eventType_1',
         background: true,
-      }
+      },
     );
 
     // Compound index for subscriptionId + eventType
@@ -213,7 +213,7 @@ export class DatabaseIndexService {
       {
         name: 'subscriptionId_1_eventType_1',
         background: true,
-      }
+      },
     );
 
     this.logger.log('Created indexes for billingLogs collection');
@@ -231,7 +231,7 @@ export class DatabaseIndexService {
         name: 'productId_1',
         unique: true,
         background: true,
-      }
+      },
     );
 
     // Users collection
@@ -242,7 +242,7 @@ export class DatabaseIndexService {
         name: 'userId_1',
         unique: true,
         background: true,
-      }
+      },
     );
 
     // Discounts collection
@@ -253,7 +253,7 @@ export class DatabaseIndexService {
         name: 'discountId_1',
         unique: true,
         background: true,
-      }
+      },
     );
     // Index for applicableProducts - for product-specific discount queries
     await discountsCollection.createIndex(
@@ -261,7 +261,7 @@ export class DatabaseIndexService {
       {
         name: 'applicableProducts_1',
         background: true,
-      }
+      },
     );
 
     // PromoCodes collection
@@ -272,7 +272,7 @@ export class DatabaseIndexService {
         name: 'code_1',
         unique: true,
         background: true,
-      }
+      },
     );
     // Index for discountId - for discount-related promo code queries
     await promoCodesCollection.createIndex(
@@ -280,7 +280,7 @@ export class DatabaseIndexService {
       {
         name: 'discountId_1',
         background: true,
-      }
+      },
     );
     // Index for assignedUserId - for exclusive promo code queries
     await promoCodesCollection.createIndex(
@@ -288,7 +288,7 @@ export class DatabaseIndexService {
       {
         name: 'assignedUserId_1',
         background: true,
-      }
+      },
     );
     // Index for applicableProducts - for product-specific promo code queries
     await promoCodesCollection.createIndex(
@@ -296,7 +296,7 @@ export class DatabaseIndexService {
       {
         name: 'applicableProducts_1',
         background: true,
-      }
+      },
     );
 
     // Refunds collection
@@ -307,14 +307,14 @@ export class DatabaseIndexService {
         name: 'refundId_1',
         unique: true,
         background: true,
-      }
+      },
     );
     await refundsCollection.createIndex(
       { subscriptionId: 1 },
       {
         name: 'subscriptionId_1',
         background: true,
-      }
+      },
     );
 
     // Config collection
@@ -325,7 +325,7 @@ export class DatabaseIndexService {
         name: 'configId_1',
         unique: true,
         background: true,
-      }
+      },
     );
 
     // Rules collection
@@ -336,7 +336,7 @@ export class DatabaseIndexService {
         name: 'ruleId_1',
         unique: true,
         background: true,
-      }
+      },
     );
 
     this.logger.log('Created indexes for other collections');

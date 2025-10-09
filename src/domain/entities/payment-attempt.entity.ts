@@ -12,11 +12,11 @@ export enum PaymentAttemptStatus {
 
 export class PaymentAttempt {
   constructor(
-    public attemptId: string,
-    public subscriptionId: string,
-    public status: PaymentAttemptStatus,
-    public failureReason: string | null,
-    public retryCount: number,
+    public attemptId: string = '',
+    public subscriptionId: string = '',
+    public status: PaymentAttemptStatus = PaymentAttemptStatus.PENDING,
+    public failureReason: string = '',
+    public retryCount: number = 0,
   ) {}
 
   shouldRetry(): boolean {

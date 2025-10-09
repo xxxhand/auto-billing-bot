@@ -131,7 +131,6 @@ describe('Subscription Entity', () => {
       expect(subscription.nextBillingDate).toBe(nextBillingDate);
       expect(subscription.renewalCount).toBe(0);
       expect(subscription.remainingDiscountPeriods).toBe(0);
-      expect(subscription.id).toBe('sub_123'); // BaseEntity id should be set to subscriptionId
     });
 
     it('should create subscription with custom values', () => {

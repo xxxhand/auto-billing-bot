@@ -22,7 +22,7 @@ export class PromoCode extends BaseEntity {
     usedCount: number,
     minimumAmount: number,
     assignedUserId?: string,
-    applicableProducts: string[] = []
+    applicableProducts: string[] = [],
   ) {
     super();
     this.id = code; // Use code as the entity ID
@@ -41,7 +41,17 @@ export class PromoCode extends BaseEntity {
    * @returns true if the promo code can still be used
    */
   public canBeUsed(): boolean {
-    return this.usageLimit === null || this.usedCount < this.usageLimit;
+    // Check if single-use and already used
+    if (this.isSingleUse && this.usedCount > 0) {
+      return false;
+    }
+
+    // Check usage limit
+    if (this.usageLimit !== null && this.usedCount >= this.usageLimit) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -70,6 +80,41 @@ export class PromoCode extends BaseEntity {
    */
   public isAssignedToUser(userId: string): boolean {
     return !this.assignedUserId || this.assignedUserId === userId;
+  }
+
+  /**
+   * Check if the promo code is assigned to any specific user
+   * @returns true if the promo code is assigned to a specific user, false otherwise
+   */
+  public isAssignedToAnyUser(): boolean {
+    return this.assignedUserId !== undefined && this.assignedUserId !== null;
+  }
+
+  /**
+   * Check if the promo code can be used by a specific user
+   * For assigned promo codes, only the assigned user can use it
+   * @param userId The user ID to check
+   * @returns true if the user can use this promo code, false otherwise
+   */
+  public canBeUsedByUser(userId: string): boolean {
+    if (!this.isAssignedToAnyUser()) {
+      return true; // Not assigned, anyone can use
+    }
+    return this.assignedUserId === userId;
+  }
+
+  /**
+   * Check if the promo code is exhausted (cannot be used anymore)
+   * @returns true if the promo code is exhausted, false otherwise
+   */
+  public isExhausted(): boolean {
+    if (this.isSingleUse) {
+      return this.usedCount > 0;
+    }
+    if (this.usageLimit !== null) {
+      return this.usedCount >= this.usageLimit;
+    }
+    return false; // Unlimited use
   }
 
   /**

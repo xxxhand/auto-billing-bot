@@ -90,15 +90,7 @@ describe('BillingService', () => {
 
   describe('processBilling', () => {
     it('should process successful payment', async () => {
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'monthly',
-        new Date(),
-        new Date(),
-        'active',
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
 
       const paymentResponse: PaymentResponse = {
         success: true,
@@ -119,15 +111,7 @@ describe('BillingService', () => {
     });
 
     it('should handle payment failure and queue retry', async () => {
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'monthly',
-        new Date(),
-        new Date(),
-        'active',
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
 
       const paymentResponse: PaymentResponse = {
         success: false,
@@ -158,15 +142,7 @@ describe('BillingService', () => {
 
   describe('handlePaymentFailure', () => {
     it('should queue retry for retryable failure', async () => {
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'monthly',
-        new Date(),
-        new Date(),
-        'active',
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
 
       subscriptionRepository.findById.mockResolvedValue(subscription);
       taskQueue.publishTask.mockResolvedValue(undefined);
@@ -178,15 +154,7 @@ describe('BillingService', () => {
     });
 
     it('should enter grace period for non-retryable failure', async () => {
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'monthly',
-        new Date(),
-        new Date(),
-        'active',
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
 
       subscriptionRepository.findById.mockResolvedValue(subscription);
 
@@ -199,15 +167,7 @@ describe('BillingService', () => {
 
   describe('processBillingTask', () => {
     it('should acknowledge successful task', async () => {
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'monthly',
-        new Date(),
-        new Date(),
-        'active',
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
 
       const paymentResponse: PaymentResponse = {
         success: true,
@@ -227,15 +187,7 @@ describe('BillingService', () => {
     });
 
     it('should reject failed task', async () => {
-      const subscription = new Subscription(
-        'sub_123',
-        'user_123',
-        'prod_123',
-        'monthly',
-        new Date(),
-        new Date(),
-        'active',
-      );
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
 
       const paymentResponse: PaymentResponse = {
         success: false,

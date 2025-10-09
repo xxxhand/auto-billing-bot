@@ -1,5 +1,5 @@
 import { PromoCodeDomainService } from './promo-code-domain.service';
-import { PromoCode } from '../value-objects/promo-code.value-object';
+import { PromoCode } from '../entities/promoCode.entity';
 
 describe('PromoCodeDomainService', () => {
   let service: PromoCodeDomainService;
