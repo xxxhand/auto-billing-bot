@@ -182,7 +182,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
       expect(res.body.code).toBe(20005);
     });
     
-    it.skip('should return error for non-existent user', async () => {
+    it('[20001] should return error for non-existent user', async () => {
       const requestBody = {
         userId: dbHelper.newObjectId().toHexString(),
         productId: mockProduct.productId,
@@ -191,7 +191,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
       const res = await agent.post(endpoint).send(requestBody);
 
       expect(res.status).toBe(400);
-      expect(res.body.code).not.toBe(0);
+      expect(res.body.code).toBe(20001);
     });
   });
   describe('Success', () => {
@@ -236,7 +236,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
       expect(dbAttempts.retryCount).toBe(0);
     });
 
-    it.skip('[0] should create subscription with promo code (non-single use)', async () => {
+    it('[0] should create subscription with promo code (non-single use)', async () => {
       jest.spyOn(mockPaymentGateway, 'charge').mockResolvedValue({
         success: true,
         transactionId: 'txn-123456',
@@ -282,7 +282,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
       // check PromoCodeUsages
       const dbPromoUsages = (await db.getCollection(promoCodeUsagesCol).find({ promoCode: mockPromoCode.code }).toArray()) as IPromoCodeUsageDocument[];
       expect(dbPromoUsages).toHaveLength(1);
-      expect(dbPromoUsages[0].userId).toBe(newUser._id.toHexString());
+      expect(dbPromoUsages[0].userId.toHexString()).toBe(newUser.userId.toHexString());
       expect(dbPromoUsages[0].orderAmount).toBe(50); // after product.price - promoCode.minimumAmount
     });
   });

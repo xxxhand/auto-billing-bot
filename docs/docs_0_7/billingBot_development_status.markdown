@@ -1,7 +1,7 @@
 # 自動扣款機器人開發狀態總結
 
-**最後更新**：2025年10月9日
-**當前階段**：API-002任務進行中 - 實現POST /subscriptions端點，處理剩餘的測試用例（非存在用戶錯誤處理、優惠碼訂閱創建）
+**最後更新**：2025年10月13日
+**當前階段**：API-002任務完成 - 實現POST /subscriptions端點，包含完整業務邏輯測試與DDD架構優化
 **負責人**：GitHub Copilot
 
 ## 工作指南
@@ -13,9 +13,10 @@
 ## 📋 當前任務狀態
 
 ### 進行中任務
-- 🔄 API-002：實現POST /subscriptions，處理用戶訂閱創建（含完整業務邏輯測試）- **進行中**：基礎實現完成，需處理2個被skip的測試用例（非存在用戶錯誤處理、優惠碼訂閱創建）
+- 無
 
 ### 已完成任務 (最近)
+- ✅ API-002：實現POST /subscriptions，處理用戶訂閱創建（含完整業務邏輯測試與DDD架構優化）（2025年10月13日）
 - ✅ DDD-011：實現discountPriorityService領域服務，處理多重優惠優先級並檢查優惠是否適用於指定產品（含TDD測試）（2025年10月8日）
 - ✅ API-001：實現GET /products，查詢產品列表與即時優惠價（含完整折扣功能測試）（2025年10月8日）
 - ✅ DB-012：為所有集合添加索引，優化nextBillingDate與status查詢（2025年10月8日）
@@ -52,7 +53,7 @@
 ## 🔧 技術狀態
 
 ### 當前架構
-- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根（含 calculateNextBillingDate、applyDiscount、convertToNewCycle、handlePaymentFailure、renew 方法）、Discount 實體（isApplicable、isApplicableToProduct、calculateDiscountedPrice）、PromoCode 值物件（canBeUsed、incrementUsage、isApplicableToProduct）、PaymentAttempt 實體（shouldRetry）、promoCodeDomainService 領域服務（優惠碼業務邏輯）、billingService 領域服務（扣款流程整合支付網關與任務隊列）、discountPriorityService 領域服務（多重優惠優先級選擇與產品適用性檢查）、paymentGateway 抽象層接口（支付網關契約）、taskQueue 抽象層接口（訊息隊列契約），並通過 TDD 測試驗證
+- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根（含 calculateNextBillingDate、applyDiscount、convertToNewCycle、handlePaymentFailure、renew 方法）、Discount 實體（isApplicable、isApplicableToProduct、calculateDiscountedPrice）、PromoCode 值物件（canBeUsed、incrementUsage、isApplicableToProduct）、PaymentAttempt 實體（shouldRetry）、promoCodeDomainService 領域服務（優惠碼業務邏輯）、billingService 領域服務（扣款流程整合支付網關與任務隊列）、discountPriorityService 領域服務（多重優惠優先級選擇與產品適用性檢查）、paymentGateway 抽象層接口（支付網關契約）、taskQueue 抽象層接口（訊息隊列契約），並通過 TDD 測試驗證。Repository層已優化，PromoCodeUsageRepository.create方法現接收完整的PromoCodeUsage value object，符合DDD原則
 - **資料模型**：新增 `users` 模型（userId／tenantId／encryptedData）、`products` 模型（productId／name／price／cycleType／cycleValue／gracePeriodDays）、`subscriptions` 模型（subscriptionId／userId／productId／status／cycleType／startDate／nextBillingDate／renewalCount／remainingDiscountPeriods／pendingConversion）、`discounts` 模型（discountId／type／value／priority／startDate／endDate）、`promoCodes` 模型（code／discountId／usageLimit／isSingleUse／usedCount）、`promoCodeUsages` 模型（usageId／promoCode／userId／usedAt／orderAmount）、`paymentAttempts` 模型（attemptId／subscriptionId／status／failureReason／retryCount）、`refunds` 模型（refundId／subscriptionId／amount／status）、`billingLogs` 模型（logId／subscriptionId／eventType／details）、`config` 模型（configId／type／productId／gracePeriodDays／refundPolicy）、`rules` 模型（ruleId／type／conditions／actions），並完成所有集合的索引優化（nextBillingDate、status、subscriptionId 等關鍵欄位）
 - **文件**：v0.7 實作指南完成，提供模組拆解與開發順序
 
@@ -65,11 +66,11 @@
 
 ## 📊 進度指標
 - **總任務數**：依 `billingBot_v0.7.2_tasks.markdown` 為 31 項
-- **已完成**：27 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、PAY-001、PAY-002、PAY-003、PAY-004）
-- **進行中**：1 項（API-002）
+- **已完成**：28 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、PAY-001、PAY-002、PAY-003、PAY-004、API-002）
+- **進行中**：0 項
 - **測試覆蓋率**：尚未開始 v0.7 測試
 
 ## 🎯 下一步計劃
-1. **進行中**：完成API-002任務的剩餘測試用例（非存在用戶錯誤處理、優惠碼訂閱創建）
-2. 等待API-002完全完成後，開始下一個任務指示
-3. 預計後續任務：API-007（POST /applyPromo 端點）或其他API端點
+1. **等待指示**：API-002任務已完成，等待產品負責人審閱與下一個任務指示
+2. **建議後續任務**：API-003（GET /subscriptions/{id}）或API-007（POST /applyPromo 端點）
+3. **架構優化**：可考慮繼續優化其他repository方法，確保所有repository都遵循DDD原則

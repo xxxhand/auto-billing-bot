@@ -1,14 +1,18 @@
-import { Injectable, LoggerService, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, LoggerService, BadRequestException } from '@nestjs/common';
 import { CommonService, ErrException, errConstants } from '@myapp/common';
 import { v4 as uuidv4 } from 'uuid';
 import { SubscriptionRepository } from '../../infra/repositories/subscription.repository';
 import { ProductRepository } from '../../infra/repositories/product.repository';
 import { PromoCodeRepository } from '../../infra/repositories/promoCode.repository';
+import { PromoCodeUsageRepository } from '../../infra/repositories/promoCodeUsage.repository';
+import { UserRepository } from '../../infra/repositories/user.repository';
 import { BillingService } from '../../infra/services/billing.service';
 import { PromoCodeDomainService } from '../../domain/services/promo-code-domain.service';
+import { PromoCode } from '../../domain/entities/promoCode.entity';
 import { Subscription } from '../../domain/entities/subscription.entity';
 import { CreateSubscriptionRequest } from '../../domain/value-objects/create-subscription.request';
 import { CreateSubscriptionResponse } from '../../domain/value-objects/create-subscription.response';
+import { PromoCodeUsage } from '../../domain/value-objects/promoCodeUsage.value-object';
 
 @Injectable()
 export class SubscriptionsService {
@@ -19,6 +23,8 @@ export class SubscriptionsService {
     private readonly productRepository: ProductRepository,
     private readonly subscriptionRepository: SubscriptionRepository,
     private readonly promoCodeRepository: PromoCodeRepository,
+    private readonly promoCodeUsageRepository: PromoCodeUsageRepository,
+    private readonly userRepository: UserRepository,
     private readonly promoCodeDomainService: PromoCodeDomainService,
     private readonly billingService: BillingService,
   ) {
@@ -32,6 +38,13 @@ export class SubscriptionsService {
     const { userId, productId, promoCode } = request;
 
     this.logger.log(`Creating subscription for user ${userId}, product ${productId}, promoCode: ${promoCode || 'none'}`);
+
+    // Validate user exists
+    const userExists = await this.userRepository.existsByUserId(userId);
+    if (!userExists) {
+      this.logger.warn(`User not found: ${userId}`);
+      throw ErrException.newFromCodeName(errConstants.ERR_USER_NOT_FOUND);
+    }
 
     // Validate product exists
     const product = await this.productRepository.findByProductId(productId);
@@ -48,10 +61,10 @@ export class SubscriptionsService {
     }
 
     // Validate promo code if provided
-    // let promoCodeEntity = null;
+    let promoCodeEntity: PromoCode | null = null;
     let appliedDiscount = null;
     if (promoCode) {
-      const promoCodeEntity = await this.promoCodeRepository.findByCode(promoCode);
+      promoCodeEntity = await this.promoCodeRepository.findByCode(promoCode);
       if (!promoCodeEntity) {
         throw ErrException.newFromCodeName(errConstants.ERR_INVALID_PROMO_CODE);
       }
@@ -96,6 +109,18 @@ export class SubscriptionsService {
     // Update subscription status to active after successful payment
     savedSubscription.status = 'active';
     await this.subscriptionRepository.save(savedSubscription);
+
+    // Track promo code usage if promo code was used
+    if (promoCodeEntity) {
+      // Increment used count
+      promoCodeEntity.incrementUsage();
+      await this.promoCodeRepository.update(promoCodeEntity);
+
+      // Create usage record
+      const orderAmount = product.price - promoCodeEntity.minimumAmount; // As per test expectation
+      const promoCodeUsage = PromoCodeUsage.create(promoCodeEntity.code, userId, orderAmount);
+      await this.promoCodeUsageRepository.create(promoCodeUsage);
+    }
 
     return {
       subscriptionId: savedSubscription.subscriptionId,

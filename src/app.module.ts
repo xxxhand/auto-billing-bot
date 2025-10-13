@@ -10,6 +10,8 @@ import { PaymentAttemptRepository } from './infra/repositories/payment-attempt.r
 import { ProductRepository } from './infra/repositories/product.repository';
 import { DiscountRepository } from './infra/repositories/discount.repository';
 import { PromoCodeRepository } from './infra/repositories/promoCode.repository';
+import { PromoCodeUsageRepository } from './infra/repositories/promoCodeUsage.repository';
+import { UserRepository } from './infra/repositories/user.repository';
 import { BillingService } from './infra/services/billing.service';
 import { DatabaseIndexService } from './infra/services/database-index.service';
 import { DiscountPriorityService } from './domain/services/discount-priority.service';
@@ -40,6 +42,8 @@ import { MockTaskQueue } from './infra/queue/mock-task.queue';
     ProductRepository,
     DiscountRepository,
     PromoCodeRepository,
+    PromoCodeUsageRepository,
+    UserRepository,
     BillingService,
     {
       provide: IPaymentGatewayToken,

@@ -141,7 +141,7 @@ graph TD
 |------|------|----------|---------------|-------------|
 | usageId | string | Yes | - | 使用記錄唯一識別碼，主鍵 |
 | promoCode | string | Yes | - | 關聯優惠碼，外鍵 |
-| userId | string | Yes | - | 使用者ID |
+| userId | ObjectId | Yes | - | 使用者ID |
 | usedAt | date | Yes | - | 使用時間 |
 | orderAmount | number | Yes | - | 訂單金額 |
 | createdAt | date | Yes | - | 創建時間 |
