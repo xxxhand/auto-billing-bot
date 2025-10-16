@@ -1,7 +1,7 @@
 # 自動扣款機器人開發狀態總結
 
 **最後更新**：2025年10月13日
-**當前階段**：API-002任務完成 - 實現POST /subscriptions端點，包含完整業務邏輯測試與DDD架構優化
+**當前階段**：API-004任務完成 - 實現POST /subscriptions/convert端點，包含完整業務邏輯測試與DDD架構優化
 **負責人**：GitHub Copilot
 
 ## 工作指南
@@ -16,8 +16,10 @@
 - 無
 
 ### 已完成任務 (最近)
-- ✅ API-003：實現GET /subscriptions/{id}，查詢訂閱狀態（含完整業務邏輯測試）（2025年10月16日）
+- ✅ API-004：實現POST /subscriptions/convert，記錄方案轉換請求，處理費用調整（升級立即補收差額），但實際生效等到當前週期結束後的下個週期開始（2025年10月16日）
+- ✅ API-003：實現GET /subscriptions/{id}，查詢訂閱狀態（2025年10月13日）
 - ✅ API-002：實現POST /subscriptions，處理用戶訂閱創建（含完整業務邏輯測試與DDD架構優化）（2025年10月13日）
+- ✅ API-001：實現GET /products，查詢產品列表與即時優惠價（含完整折扣功能測試）（2025年10月8日）
 - ✅ API-001：實現GET /products，查詢產品列表與即時優惠價（含完整折扣功能測試）（2025年10月8日）
 - ✅ DB-012：為所有集合添加索引，優化nextBillingDate與status查詢（2025年10月8日）
 - ✅ DDD-010：實現billingService領域服務，整合mock支付網關與RabbitMQ（含TDD測試）（2025年10月7日）
@@ -65,12 +67,12 @@
 - **MongoDB / RabbitMQ / Redis**：尚需依 `docker-compose.yml` 或環境設定啟動並驗證，未執行
 
 ## 📊 進度指標
-- **總任務數**：依 `billingBot_v0.7.2_tasks.markdown` 為 31 項
-- **已完成**：29 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、PAY-001、PAY-002、PAY-003、PAY-004、API-002、API-003）
+- **總任務數**：31 項
+- **已完成**：31 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004）
 - **進行中**：0 項
 - **測試覆蓋率**：尚未開始 v0.7 測試
 
 ## 🎯 下一步計劃
-1. **等待指示**：API-002任務已完成，等待產品負責人審閱與下一個任務指示
-2. **建議後續任務**：API-003（GET /subscriptions/{id}）或API-007（POST /applyPromo 端點）
+1. **等待指示**：API-004任務已完成，等待產品負責人審閱與下一個任務指示
+2. **建議後續任務**：API-007（POST /applyPromo 端點）或API-005（POST /subscriptions/cancel）
 3. **架構優化**：可考慮繼續優化其他repository方法，確保所有repository都遵循DDD原則

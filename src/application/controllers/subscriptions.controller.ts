@@ -3,6 +3,7 @@ import { CommonService, ErrException, errConstants } from '@myapp/common';
 import { SubscriptionsService } from '../services/subscriptions.service';
 import { CreateSubscriptionRequest } from '../../domain/value-objects/create-subscription.request';
 import { GetSubscriptionResponse } from '../../domain/value-objects/get-subscription.response';
+import { ConvertSubscriptionRequest } from '../../domain/value-objects/convert-subscription.request';
 
 @Controller({
   path: 'subscriptions',
@@ -27,6 +28,12 @@ export class SubscriptionsController {
   @Get(':id')
   async getSubscription(@Param('id') subscriptionId: string): Promise<any> {
     const result = await this.subscriptionsService.getSubscription(subscriptionId);
+    return this.commonService.newResultInstance().withResult(result);
+  }
+
+  @Post('convert')
+  async convertSubscription(@Body() request: ConvertSubscriptionRequest): Promise<any> {
+    const result = await this.subscriptionsService.convertSubscription(request);
     return this.commonService.newResultInstance().withResult(result);
   }
 }

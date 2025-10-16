@@ -58,4 +58,28 @@ export const errCodes: CustomDefinition.ICodeStruct[] = [
     httpStatus: 400,
     message: 'Subscription not found',
   },
+  {
+    codeName: errConstants.ERR_INVALID_CYCLE_TYPE,
+    code: 20007,
+    httpStatus: 400,
+    message: 'Invalid cycle type',
+  },
+  {
+    codeName: errConstants.ERR_CONVERSION_ALREADY_PENDING,
+    code: 20008,
+    httpStatus: 400,
+    message: 'Subscription already has a pending conversion',
+  },
+  {
+    codeName: errConstants.ERR_SAME_CYCLE_TYPE,
+    code: 20009,
+    httpStatus: 400,
+    message: 'Cannot convert to the same cycle type',
+  },
+  {
+    codeName: errConstants.ERR_PAYMENT_FAILED,
+    code: 20010,
+    httpStatus: 400,
+    message: 'Payment failed',
+  },
 ];

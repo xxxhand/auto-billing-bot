@@ -1,4 +1,5 @@
-import { Injectable, LoggerService, BadRequestException } from '@nestjs/common';
+import { Injectable, LoggerService, BadRequestException, Inject } from '@nestjs/common';
+import { IPaymentGateway, IPaymentGatewayToken, PaymentRequest } from '../../domain/services/payment-gateway.interface';
 import { CommonService, ErrException, errConstants } from '@myapp/common';
 import { v4 as uuidv4 } from 'uuid';
 import { SubscriptionRepository } from '../../infra/repositories/subscription.repository';
@@ -13,6 +14,8 @@ import { Subscription } from '../../domain/entities/subscription.entity';
 import { CreateSubscriptionRequest } from '../../domain/value-objects/create-subscription.request';
 import { CreateSubscriptionResponse } from '../../domain/value-objects/create-subscription.response';
 import { GetSubscriptionResponse } from '../../domain/value-objects/get-subscription.response';
+import { ConvertSubscriptionRequest } from '../../domain/value-objects/convert-subscription.request';
+import { ConvertSubscriptionResponse } from '../../domain/value-objects/convert-subscription.response';
 import { PromoCodeUsage } from '../../domain/value-objects/promoCodeUsage.value-object';
 
 @Injectable()
@@ -28,6 +31,7 @@ export class SubscriptionsService {
     private readonly userRepository: UserRepository,
     private readonly promoCodeDomainService: PromoCodeDomainService,
     private readonly billingService: BillingService,
+    @Inject(IPaymentGatewayToken) private readonly paymentGateway: IPaymentGateway,
   ) {
     this.logger = this.commonService.getDefaultLogger(SubscriptionsService.name);
   }
@@ -163,6 +167,93 @@ export class SubscriptionsService {
   }
 
   /**
+   * Convert subscription to a new billing cycle
+   */
+  async convertSubscription(request: ConvertSubscriptionRequest): Promise<ConvertSubscriptionResponse> {
+    const { subscriptionId, newCycleType } = request;
+
+    this.logger.log(`Converting subscription ${subscriptionId} to cycle type ${newCycleType}`);
+
+    // Validate cycle type
+    const supportedCycleTypes = ['monthly', 'quarterly', 'yearly', 'weekly'];
+    if (!supportedCycleTypes.includes(newCycleType)) {
+      this.logger.warn(`Invalid cycle type: ${newCycleType}`);
+      throw ErrException.newFromCodeName(errConstants.ERR_INVALID_CYCLE_TYPE);
+    }
+
+    // Find subscription
+    const subscription = await this.subscriptionRepository.findById(subscriptionId);
+    if (!subscription) {
+      this.logger.warn(`Subscription not found: ${subscriptionId}`);
+      throw ErrException.newFromCodeName(errConstants.ERR_SUBSCRIPTION_NOT_FOUND);
+    }
+
+    // Check if already has pending conversion
+    if (subscription.pendingConversion) {
+      this.logger.warn(`Subscription ${subscriptionId} already has pending conversion`);
+      throw ErrException.newFromCodeName(errConstants.ERR_CONVERSION_ALREADY_PENDING);
+    }
+
+    // Check if converting to same cycle type
+    if (subscription.cycleType === newCycleType) {
+      this.logger.warn(`Cannot convert subscription ${subscriptionId} to same cycle type: ${newCycleType}`);
+      throw ErrException.newFromCodeName(errConstants.ERR_SAME_CYCLE_TYPE);
+    }
+
+    // Get product to calculate fee adjustment
+    const product = await this.productRepository.findByProductId(subscription.productId);
+    if (!product) {
+      this.logger.error(`Product not found for subscription ${subscriptionId}: ${subscription.productId}`);
+      throw ErrException.newFromCodeName(errConstants.ERR_PRODUCT_NOT_FOUND);
+    }
+
+    // Calculate fee adjustment
+    const feeAdjustment = this.calculateFeeAdjustment(subscription.cycleType, newCycleType, product.price);
+
+    // If upgrade (feeAdjustment > 0), charge immediately
+    if (feeAdjustment > 0) {
+      this.logger.log(`Processing immediate payment for upgrade: ${feeAdjustment}`);
+      try {
+        // Create payment request for fee adjustment
+        const paymentRequest: PaymentRequest = {
+          attemptId: uuidv4(),
+          userId: subscription.userId,
+          amount: feeAdjustment,
+          currency: 'TWD',
+          description: `Subscription upgrade fee adjustment for ${subscription.subscriptionId}`,
+        };
+
+        // Process payment using injected payment gateway
+        const paymentResult = await this.paymentGateway.charge(paymentRequest);
+        if (!paymentResult.success) {
+          this.logger.error(`Fee adjustment payment failed: ${paymentResult.errorMessage}`);
+          throw ErrException.newFromCodeName(errConstants.ERR_PAYMENT_FAILED);
+        }
+
+        this.logger.log(`Fee adjustment payment successful for subscription ${subscriptionId}: ${feeAdjustment}`);
+      } catch (error) {
+        this.logger.error(`Fee adjustment payment failed for subscription ${subscriptionId}: ${error.message}`);
+        throw ErrException.newFromCodeName(errConstants.ERR_PAYMENT_FAILED);
+      }
+    }
+
+    // Convert subscription (this records the conversion request)
+    const conversionResult = subscription.convertToNewCycle(newCycleType);
+
+    // Save updated subscription
+    await this.subscriptionRepository.save(subscription);
+
+    this.logger.log(`Subscription ${subscriptionId} conversion requested successfully`);
+
+    return {
+      subscriptionId,
+      newCycleType,
+      requestedAt: conversionResult.requestedAt,
+      feeAdjustment,
+    };
+  }
+
+  /**
    * Calculate next billing date based on cycle type
    */
   private calculateNextBillingDate(startDate: Date, cycleType: string): Date {
@@ -186,5 +277,33 @@ export class SubscriptionsService {
     }
 
     return nextDate;
+  }
+
+  /**
+   * Calculate fee adjustment for cycle conversion
+   * Positive value means customer needs to pay more (upgrade)
+   * Negative value means refund to customer (downgrade)
+   */
+  private calculateFeeAdjustment(currentCycleType: string, newCycleType: string, monthlyPrice: number): number {
+    // Define cycle multipliers (how many months each cycle represents)
+    const cycleMultipliers: { [key: string]: number } = {
+      weekly: 1 / 4.33, // Approximately 4.33 weeks per month
+      monthly: 1,
+      quarterly: 3,
+      yearly: 12,
+    };
+
+    const currentMultiplier = cycleMultipliers[currentCycleType];
+    const newMultiplier = cycleMultipliers[newCycleType];
+
+    if (!currentMultiplier || !newMultiplier) {
+      throw new Error(`Unsupported cycle type for fee calculation: ${currentCycleType} or ${newCycleType}`);
+    }
+
+    // Calculate the difference in monthly equivalents
+    const monthlyDifference = newMultiplier - currentMultiplier;
+
+    // Return the fee adjustment (positive for upgrade, negative for downgrade)
+    return monthlyDifference * monthlyPrice;
   }
 }
