@@ -508,7 +508,47 @@ stateDiagram-v2
     Invalid --> [*]
 ```
 
-### 6.3 退款流程 (Sequence Diagram)
+### 6.2 自動扣款排程流程 (Activity Diagram)
+```mermaid
+stateDiagram-v2
+    [*] --> CronTrigger: Cron Job Trigger (每小時)
+    CronTrigger --> AcquireLock: Acquire Distributed Lock
+    AcquireLock --> CheckLock: Lock Acquired?
+    CheckLock --> QuerySubscriptions: Yes, Query Active Subscriptions
+    CheckLock --> SkipExecution: No, Skip Execution
+    
+    QuerySubscriptions --> FilterDueSubscriptions: Filter nextBillingDate <= now
+    FilterDueSubscriptions --> CheckDueSubscriptions: Any Due Subscriptions?
+    CheckDueSubscriptions --> ProcessSubscriptions: Yes, Process Each Subscription
+    CheckDueSubscriptions --> LogNoSubscriptions: No, Log "No subscriptions due"
+    
+    ProcessSubscriptions --> EnqueueBillingTask: Enqueue Billing Task to RabbitMQ
+    EnqueueBillingTask --> LogTaskEnqueued: Log Task Enqueued
+    LogTaskEnqueued --> CheckMoreSubscriptions: More Subscriptions?
+    CheckMoreSubscriptions --> ProcessSubscriptions: Yes, Continue Processing
+    CheckMoreSubscriptions --> ReleaseLock: No, Release Distributed Lock
+    
+    ReleaseLock --> LogExecutionComplete: Log Execution Complete
+    LogExecutionComplete --> [*]
+    
+    LogNoSubscriptions --> ReleaseLock
+    SkipExecution --> [*]
+    
+    note right of AcquireLock
+        使用Redis等分布式鎖
+        避免多實例重複執行
+    end note
+    
+    note right of EnqueueBillingTask
+        包含subscriptionId, userId, amount等資訊
+        推送到billing-queue
+    end note
+```
+
+### 6.3 優惠應用流程 (Activity Diagram)
+```
+
+### 6.4 退款流程 (Sequence Diagram)
 ```mermaid
 sequenceDiagram
     participant User
@@ -525,7 +565,7 @@ sequenceDiagram
     API->>DB: Record Refund & Update Status
 ```
 
-### 6.4 優惠碼應用流程 (Sequence Diagram)
+### 6.5 優惠碼應用流程 (Sequence Diagram)
 ```mermaid
 sequenceDiagram
     participant User
@@ -549,7 +589,7 @@ sequenceDiagram
     end
 ```
 
-### 6.5 方案轉換流程 (Sequence Diagram)
+### 6.6 方案轉換流程 (Sequence Diagram)
 ```mermaid
 sequenceDiagram
     participant User
