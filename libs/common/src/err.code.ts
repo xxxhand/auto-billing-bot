@@ -52,4 +52,10 @@ export const errCodes: CustomDefinition.ICodeStruct[] = [
     httpStatus: 400,
     message: 'Invalid discount for this promo code',
   },
+  {
+    codeName: errConstants.ERR_SUBSCRIPTION_NOT_FOUND,
+    code: 20006,
+    httpStatus: 400,
+    message: 'Subscription not found',
+  },
 ];

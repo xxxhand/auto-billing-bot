@@ -12,6 +12,7 @@ import { PromoCode } from '../../domain/entities/promoCode.entity';
 import { Subscription } from '../../domain/entities/subscription.entity';
 import { CreateSubscriptionRequest } from '../../domain/value-objects/create-subscription.request';
 import { CreateSubscriptionResponse } from '../../domain/value-objects/create-subscription.response';
+import { GetSubscriptionResponse } from '../../domain/value-objects/get-subscription.response';
 import { PromoCodeUsage } from '../../domain/value-objects/promoCodeUsage.value-object';
 
 @Injectable()
@@ -132,6 +133,33 @@ export class SubscriptionsService {
       nextBillingDate: savedSubscription.nextBillingDate,
       // TODO: Add discount information when discount system is implemented
     };
+  }
+
+  /**
+   * Get subscription details by subscription ID
+   */
+  async getSubscription(subscriptionId: string): Promise<GetSubscriptionResponse> {
+    this.logger.log(`Getting subscription details for ${subscriptionId}`);
+
+    // Find subscription
+    const subscription = await this.subscriptionRepository.findById(subscriptionId);
+    if (!subscription) {
+      this.logger.warn(`Subscription not found: ${subscriptionId}`);
+      throw ErrException.newFromCodeName(errConstants.ERR_SUBSCRIPTION_NOT_FOUND);
+    }
+
+    return new GetSubscriptionResponse(
+      subscription.subscriptionId,
+      subscription.userId,
+      subscription.productId,
+      subscription.status,
+      subscription.cycleType,
+      subscription.startDate,
+      subscription.nextBillingDate,
+      subscription.renewalCount,
+      subscription.remainingDiscountPeriods,
+      subscription.pendingConversion,
+    );
   }
 
   /**

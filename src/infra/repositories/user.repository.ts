@@ -14,7 +14,7 @@ export class UserRepository {
     }
     const col = this.defMongoClient.getCollection(modelNames.USERS);
     let queryUserId: string | ObjectId = userId;
-    
+
     // Try to convert to ObjectId if it's a valid ObjectId string
     if (ObjectId.isValid(userId)) {
       try {
@@ -23,7 +23,7 @@ export class UserRepository {
         // If conversion fails, use the string as-is
       }
     }
-    
+
     const q = { userId: queryUserId };
     const count = await col.countDocuments(q);
     return count > 0;

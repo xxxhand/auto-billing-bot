@@ -16,8 +16,8 @@
 - 無
 
 ### 已完成任務 (最近)
+- ✅ API-003：實現GET /subscriptions/{id}，查詢訂閱狀態（含完整業務邏輯測試）（2025年10月16日）
 - ✅ API-002：實現POST /subscriptions，處理用戶訂閱創建（含完整業務邏輯測試與DDD架構優化）（2025年10月13日）
-- ✅ DDD-011：實現discountPriorityService領域服務，處理多重優惠優先級並檢查優惠是否適用於指定產品（含TDD測試）（2025年10月8日）
 - ✅ API-001：實現GET /products，查詢產品列表與即時優惠價（含完整折扣功能測試）（2025年10月8日）
 - ✅ DB-012：為所有集合添加索引，優化nextBillingDate與status查詢（2025年10月8日）
 - ✅ DDD-010：實現billingService領域服務，整合mock支付網關與RabbitMQ（含TDD測試）（2025年10月7日）
@@ -66,7 +66,7 @@
 
 ## 📊 進度指標
 - **總任務數**：依 `billingBot_v0.7.2_tasks.markdown` 為 31 項
-- **已完成**：28 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、PAY-001、PAY-002、PAY-003、PAY-004、API-002）
+- **已完成**：29 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、PAY-001、PAY-002、PAY-003、PAY-004、API-002、API-003）
 - **進行中**：0 項
 - **測試覆蓋率**：尚未開始 v0.7 測試
 

@@ -9,13 +9,7 @@ export class PromoCodeUsage {
   public usedAt: Date;
   public orderAmount: number;
 
-  constructor(
-    usageId: string,
-    promoCode: string,
-    userId: string,
-    usedAt: Date,
-    orderAmount: number,
-  ) {
+  constructor(usageId: string, promoCode: string, userId: string, usedAt: Date, orderAmount: number) {
     this.usageId = usageId;
     this.promoCode = promoCode;
     this.userId = userId;
@@ -28,13 +22,7 @@ export class PromoCodeUsage {
    */
   public static create(promoCode: string, userId: string, orderAmount: number): PromoCodeUsage {
     const { v4: uuidv4 } = require('uuid');
-    return new PromoCodeUsage(
-      uuidv4(),
-      promoCode,
-      userId,
-      new Date(),
-      orderAmount,
-    );
+    return new PromoCodeUsage(uuidv4(), promoCode, userId, new Date(), orderAmount);
   }
 
   /**
