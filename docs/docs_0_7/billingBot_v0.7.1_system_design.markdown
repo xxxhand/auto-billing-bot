@@ -480,7 +480,7 @@ sequenceDiagram
     API->>DB: Update Status
 ```
 
-### 6.2 優惠應用流程 (Activity Diagram)
+### 6.4 優惠應用流程 (Activity Diagram)
 ```mermaid
 stateDiagram-v2
     [*] --> QueryProducts: GET /products
@@ -619,34 +619,6 @@ stateDiagram-v2
         重新計算nextBillingDate
         清除pendingConversion標記
     end note
-```
-
-### 6.4 優惠應用流程 (Activity Diagram)
-```mermaid
-stateDiagram-v2
-    [*] --> QueryProducts: GET /products
-    QueryProducts --> CalculateDiscount: Fetch Discounts
-    CalculateDiscount --> CheckProductApplicability: Check if discount applies to product
-    CheckProductApplicability --> ApplyPriority: Applicable? Yes, Multi-Discount?
-    ApplyPriority --> SelectHighest: Same Priority? Choose Highest Amount
-    SelectHighest --> ReturnList: Return Discounted Prices
-    QueryProducts --> ReturnList: No Discounts
-
-    ReturnList --> ApplyPromo: POST /applyPromo
-    ApplyPromo --> ValidateUser: Check User ID Validity (專屬優惠碼驗證)
-    ValidateUser --> CheckOrderAmount: Valid User? Check Minimum Amount
-    CheckOrderAmount --> CheckProductApplicabilityPromo: Amount >= Minimum? Check Product Applicability
-    CheckProductApplicabilityPromo --> CheckUsageLimit: Applicable to Product? Check Usage Limits
-    CheckUsageLimit --> CheckUserHistory: Within Limits? Check User Usage History
-    CheckUserHistory --> ApplyDiscount: Not Used Before? Apply Discount & Record Usage
-    ApplyDiscount --> Success: Return Success
-    Success --> [*]
-    ValidateUser --> Invalid: Return Error
-    CheckOrderAmount --> Invalid
-    CheckProductApplicabilityPromo --> Invalid
-    CheckUsageLimit --> Invalid
-    CheckUserHistory --> Invalid
-    Invalid --> [*]
 ```
 
 ### 6.5 退款流程 (Sequence Diagram)
