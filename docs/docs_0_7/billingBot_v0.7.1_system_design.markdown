@@ -545,10 +545,111 @@ stateDiagram-v2
     end note
 ```
 
-### 6.3 優惠應用流程 (Activity Diagram)
+### 6.3 RabbitMQ任務處理流程 (Activity Diagram)
+```mermaid
+stateDiagram-v2
+    [*] --> TaskEnqueued: 任務推送到billing-queue
+    TaskEnqueued --> ConsumerPickUp: RabbitMQ Consumer接收任務
+    ConsumerPickUp --> ValidateTask: 驗證任務資料完整性
+    ValidateTask --> CheckTaskValid: 任務資料有效？
+    
+    CheckTaskValid --> ProcessPayment: 是，開始處理扣款
+    CheckTaskValid --> LogInvalidTask: 否，記錄無效任務並丟棄
+    
+    ProcessPayment --> AcquireLock: 獲取訂閱分布式鎖
+    AcquireLock --> CheckLockAcquired: 鎖獲取成功？
+    CheckLockAcquired --> LoadSubscription: 是，載入訂閱資料
+    CheckLockAcquired --> RetryLater: 否，重新排隊等待
+    
+    LoadSubscription --> CheckSubscriptionStatus: 檢查訂閱狀態
+    CheckSubscriptionStatus --> IsActive: 狀態為active？
+    IsActive --> CheckPendingConversion: 是，檢查是否有待生效的方案轉換
+    IsActive --> CancelProcessing: 否，取消處理
+    
+    CheckPendingConversion --> ApplyConversion: 有pendingConversion且到週期開始？
+    ApplyConversion --> UpdateCycleType: 是，應用新週期類型
+    UpdateCycleType --> ClearPendingConversion: 清除pendingConversion標記
+    ClearPendingConversion --> CalculateAmount: 繼續扣款流程
+    CheckPendingConversion --> CalculateAmount: 否，繼續正常扣款流程
+    
+    CalculateAmount --> ApplyDiscounts: 應用剩餘優惠期數
+    ApplyDiscounts --> CallPaymentGateway: 調用支付網關
+    CallPaymentGateway --> CheckPaymentResult: 支付成功？
+    
+    CheckPaymentResult --> PaymentSuccess: 是，支付成功
+    CheckPaymentResult --> PaymentFailed: 否，支付失敗
+    
+    PaymentSuccess --> UpdateSubscription: 更新訂閱狀態與續訂計數
+    UpdateSubscription --> CalculateNextBillingDate: 計算下次扣款日
+    CalculateNextBillingDate --> RecordSuccessLog: 記錄成功日誌
+    RecordSuccessLog --> ReleaseLock: 釋放分布式鎖
+    ReleaseLock --> TaskCompleted: 任務完成
+    
+    PaymentFailed --> DetermineFailureType: 判斷失敗類型
+    DetermineFailureType --> IsRetryable: 可重試？
+    IsRetryable --> ScheduleRetry: 是，排程重試（1小時後）
+    IsRetryable --> EnterGracePeriod: 否，進入寬限期
+    
+    EnterGracePeriod --> UpdateStatusToGrace: 更新狀態為grace
+    UpdateStatusToGrace --> SendNotification: 發送通知給用戶
+    SendNotification --> RecordFailureLog: 記錄失敗日誌
+    RecordFailureLog --> ReleaseLock
+    ReleaseLock --> TaskCompleted
+    
+    ScheduleRetry --> EnqueueRetryTask: 推送到retry-queue
+    EnqueueRetryTask --> RecordRetryLog: 記錄重試日誌
+    RecordRetryLog --> ReleaseLock
+    ReleaseLock --> TaskCompleted
+    
+    RetryLater --> TaskCompleted
+    CancelProcessing --> RecordCancelLog: 記錄取消日誌
+    RecordCancelLog --> ReleaseLock
+    ReleaseLock --> TaskCompleted
+    LogInvalidTask --> TaskCompleted
+    
+    TaskCompleted --> [*]
+    
+    note right of CheckPendingConversion
+        檢查pendingConversion是否存在
+        且是否到達請求的生效週期
+    end note
+    
+    note right of ApplyConversion
+        應用新的cycleType
+        重新計算nextBillingDate
+        清除pendingConversion標記
+    end note
 ```
 
-### 6.4 退款流程 (Sequence Diagram)
+### 6.4 優惠應用流程 (Activity Diagram)
+```mermaid
+stateDiagram-v2
+    [*] --> QueryProducts: GET /products
+    QueryProducts --> CalculateDiscount: Fetch Discounts
+    CalculateDiscount --> CheckProductApplicability: Check if discount applies to product
+    CheckProductApplicability --> ApplyPriority: Applicable? Yes, Multi-Discount?
+    ApplyPriority --> SelectHighest: Same Priority? Choose Highest Amount
+    SelectHighest --> ReturnList: Return Discounted Prices
+    QueryProducts --> ReturnList: No Discounts
+
+    ReturnList --> ApplyPromo: POST /applyPromo
+    ApplyPromo --> ValidateUser: Check User ID Validity (專屬優惠碼驗證)
+    ValidateUser --> CheckOrderAmount: Valid User? Check Minimum Amount
+    CheckOrderAmount --> CheckProductApplicabilityPromo: Amount >= Minimum? Check Product Applicability
+    CheckProductApplicabilityPromo --> CheckUsageLimit: Applicable to Product? Check Usage Limits
+    CheckUsageLimit --> CheckUserHistory: Within Limits? Check User Usage History
+    CheckUserHistory --> ApplyDiscount: Not Used Before? Apply Discount & Record Usage
+    ApplyDiscount --> Success: Return Success
+    Success --> [*]
+    ValidateUser --> Invalid: Return Error
+    CheckOrderAmount --> Invalid
+    CheckProductApplicabilityPromo --> Invalid
+    CheckUsageLimit --> Invalid
+    CheckUserHistory --> Invalid
+    Invalid --> [*]
+```
+
+### 6.5 退款流程 (Sequence Diagram)
 ```mermaid
 sequenceDiagram
     participant User
@@ -565,7 +666,7 @@ sequenceDiagram
     API->>DB: Record Refund & Update Status
 ```
 
-### 6.5 優惠碼應用流程 (Sequence Diagram)
+### 6.6 優惠碼應用流程 (Sequence Diagram)
 ```mermaid
 sequenceDiagram
     participant User
@@ -589,7 +690,7 @@ sequenceDiagram
     end
 ```
 
-### 6.6 方案轉換流程 (Sequence Diagram)
+### 6.7 方案轉換流程 (Sequence Diagram)
 ```mermaid
 sequenceDiagram
     participant User
