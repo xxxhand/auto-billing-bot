@@ -36,9 +36,9 @@
 | DDD-006 | 定義Discount實體，實現isApplicable、isApplicableToProduct與calculateDiscountedPrice方法（含TDD測試） | DB-004 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-007 | 定義PromoCode值物件，實現canBeUsed、incrementUsage、isApplicableToProduct方法（加入minimumAmount欄位，含TDD測試） | DB-005 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-008 | 定義PaymentAttempt實體，實現shouldRetry方法（含TDD測試） | DB-006 | 已完成 | 4.3 核心領域模型設計與方法 |
-| DDD-009 | 實現promoCodeDomainService領域服務，處理優惠碼業務邏輯（用戶重複使用檢查、消費門檻驗證、專屬優惠碼用戶綁定驗證及產品適用性檢查，含TDD測試） | DB-005, DB-011, DDD-007 | 已完成 | 4.3 核心領域模型設計與方法, 6.4 優惠碼應用流程 |
+| DDD-009 | 實現promoCodeDomainService領域服務，處理優惠碼業務邏輯（用戶重複使用檢查、消費門檻驗證、專屬優惠碼用戶綁定驗證及產品適用性檢查，含TDD測試） | DB-005, DB-011, DDD-007 | 已完成 | 4.3 核心領域模型設計與方法, 6.6 優惠碼應用流程 |
 | DDD-010 | 實現billingService領域服務，整合mock支付網關與RabbitMQ（含TDD測試） | DDD-001, DDD-004, DDD-008, PAY-001, PAY-004 | 已完成 | 4.3 核心領域模型設計與方法, 6.1 訂閱與扣款流程 |
-| DDD-011 | 實現discountPriorityService領域服務，處理多重優惠優先級並檢查優惠是否適用於指定產品（含TDD測試） | DDD-002, DDD-006 | 已完成 | 4.3 核心領域模型設計與方法, 6.2 優惠應用流程 |
+| DDD-011 | 實現discountPriorityService領域服務，處理多重優惠優先級並檢查優惠是否適用於指定產品（含TDD測試） | DDD-002, DDD-006 | 已完成 | 4.3 核心領域模型設計與方法, 6.4 優惠應用流程 |
 
 ---
 
@@ -50,9 +50,9 @@
 | API-002 | 實現POST /subscriptions，創建訂閱 | DB-003, DDD-001 | 已完成 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
 | API-003 | 實現GET /subscriptions/{id}，查詢訂閱狀態 | DB-003, DDD-001 | 已完成 | 5.1 RESTful API |
 | API-004 | 實現POST /subscriptions/convert，記錄方案轉換請求，處理費用調整（升級立即補收差額），但實際生效等到當前週期結束後的下個週期開始 | DDD-003 | 已完成 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
-| API-005 | 實現POST /subscriptions/cancel，取消訂閱與退款 | DB-007, DDD-001 | 待處理 | 5.1 RESTful API, 6.3 退款流程 |
-| API-006 | 實現GET /discounts，返回適用優惠列表 | DB-004, DDD-006 | 待處理 | 5.1 RESTful API, 6.2 優惠應用流程 |
-| API-007 | 實現POST /applyPromo，應用優惠碼（包含消費門檻檢查、用戶重複使用檢查及產品適用性檢查） | DB-005, DB-011, DDD-007, DDD-009 | 待處理 | 5.1 RESTful API, 6.4 優惠碼應用流程 |
+| API-005 | 實現POST /subscriptions/cancel，取消訂閱與退款 | DB-007, DDD-001 | 待處理 | 5.1 RESTful API, 6.5 退款流程 |
+| API-006 | 實現GET /discounts，返回適用優惠列表 | DB-004, DDD-006 | 待處理 | 5.1 RESTful API, 6.4 優惠應用流程 |
+| API-007 | 實現POST /discounts/{id}/apply，應用優惠到訂閱 | DB-004, DDD-006 | 待處理 | 5.1 RESTful API, 6.4 優惠應用流程 |
 | API-008 | 實現GET /userPromoCodes，返回用戶可用優惠碼（包含minimumAmount與applicableProducts欄位） | DB-005, DDD-007, DDD-009 | 待處理 | 5.1 RESTful API, 5.2 API 資料格式示例 |
 | API-009 | 實現GET /admin/promoCodes/{code}/usage，後台查詢優惠碼使用狀態與歷史 | DB-005, DB-011 | 待處理 | 5.1 RESTful API |
 | API-010 | 實現POST /payments/retry，手動補款 | DB-006, DDD-008 | 待處理 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
