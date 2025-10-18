@@ -26,6 +26,7 @@ import { IPaymentGatewayToken } from './domain/services/payment-gateway.interfac
 import { MockPaymentGateway } from './infra/payment/mock-payment.gateway';
 import { ITaskQueueToken } from './domain/services/task-queue.interface';
 import { MockTaskQueue } from './infra/queue/mock-task.queue';
+import { BillingConsumer } from './infra/billing-consumer';
 
 @Module({
   imports: [CommonModule, ScheduleModule.forRoot()],
@@ -45,6 +46,7 @@ import { MockTaskQueue } from './infra/queue/mock-task.queue';
     PromoCodeUsageRepository,
     UserRepository,
     BillingService,
+    BillingConsumer,
     {
       provide: IPaymentGatewayToken,
       useClass: MockPaymentGateway,

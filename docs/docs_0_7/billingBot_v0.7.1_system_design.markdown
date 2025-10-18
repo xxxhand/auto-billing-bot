@@ -97,7 +97,7 @@ graph TD
 | subscriptionId | string | Yes | - | 訂閱唯一識別碼，主鍵 |
 | userId | string | Yes | - | 關聯用戶ID，外鍵 |
 | productId | string | Yes | - | 關聯產品ID，外鍵 |
-| status | enum["pending", "active", "grace", "cancelled", "refunding"] | Yes | "pending" | 訂閱狀態 |
+| status | enum["pending", "active", "grace", "cancelled", "refunding", "aborted"] | Yes | "pending" | 訂閱狀態 |
 | cycleType | string | Yes | - | 扣款週期類型，與產品一致 |
 | startDate | date | Yes | - | 訂閱開始日期 |
 | nextBillingDate | date | Yes | - | 下次扣款日期 |
@@ -386,6 +386,39 @@ erDiagram
 - `discountPriorityService`: 處理多重優惠優先級，選擇最佳優惠，並檢查優惠是否適用於指定產品。
 - `promoCodeDomainService`: 處理優惠碼業務邏輯，包含用戶重複使用檢查、消費門檻驗證、專屬優惠碼用戶綁定驗證及產品適用性檢查。
 
+### 4.4 Subscription狀態機
+訂閱狀態機定義了訂閱生命週期的狀態轉換規則，確保業務邏輯的一致性。使用Mermaid呈現狀態圖。
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: 創建訂閱
+    pending --> active: 激活訂閱
+    active --> grace: 支付失敗（重試失敗）
+    grace --> active: 手動補款成功
+    grace --> cancelled: 寬限期結束
+    active --> cancelled: 用戶取消（無退款）
+    active --> refunding: 用戶取消並申請退款
+    refunding --> cancelled: 退款完成
+    active --> aborted: 產品不存在
+    cancelled --> [*]
+    aborted --> [*]
+    refunding --> [*]
+```
+
+**狀態說明**：
+- **pending**: 訂閱已創建，但尚未激活。
+- **active**: 訂閱正常運行，定期扣款。
+- **grace**: 支付失敗進入寬限期，用戶可手動補款。
+- **cancelled**: 訂閱已取消，終止狀態。
+- **refunding**: 用戶取消並申請退款中。
+- **aborted**: 因系統錯誤（如產品不存在）而中止訂閱，終止狀態。
+
+**轉換規則**：
+- 創建訂閱後進入pending，激活後進入active。
+- active狀態下支付失敗進入grace，grace內補款成功返回active，否則進入cancelled。
+- 用戶可從active取消進入cancelled或refunding。
+- 系統檢測到產品不存在時，從active進入aborted。
+
 ---
 
 ## 5. API 設計
@@ -569,8 +602,12 @@ stateDiagram-v2
     CheckPendingConversion --> ApplyConversion: 有pendingConversion且到週期開始？
     ApplyConversion --> UpdateCycleType: 是，應用新週期類型
     UpdateCycleType --> ClearPendingConversion: 清除pendingConversion標記
-    ClearPendingConversion --> CalculateAmount: 繼續扣款流程
-    CheckPendingConversion --> CalculateAmount: 否，繼續正常扣款流程
+    ClearPendingConversion --> CheckProductExists: 檢查產品是否存在
+    CheckPendingConversion --> CheckProductExists: 否，繼續正常扣款流程
+    
+    CheckProductExists --> ProductExists: 產品存在？
+    ProductExists --> CalculateAmount: 是，繼續扣款流程
+    ProductExists --> AbortSubscription: 否，更新訂閱狀態為aborted
     
     CalculateAmount --> ApplyDiscounts: 應用剩餘優惠期數
     ApplyDiscounts --> CallPaymentGateway: 調用支付網關
@@ -601,11 +638,9 @@ stateDiagram-v2
     RecordRetryLog --> ReleaseLock
     ReleaseLock --> TaskCompleted
     
-    RetryLater --> TaskCompleted
-    CancelProcessing --> RecordCancelLog: 記錄取消日誌
-    RecordCancelLog --> ReleaseLock
+    AbortSubscription --> RecordAbortLog: 記錄abort日誌
+    RecordAbortLog --> ReleaseLock
     ReleaseLock --> TaskCompleted
-    LogInvalidTask --> TaskCompleted
     
     TaskCompleted --> [*]
     

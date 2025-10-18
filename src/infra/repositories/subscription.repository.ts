@@ -36,6 +36,7 @@ export class SubscriptionRepository {
     const q = {
       status: 'active',
       nextBillingDate: { $lte: now },
+      pendingConversion: null,
     };
     const docs = (await col.find(q).toArray()) as ISubscriptionDocument[];
     return docs.map((doc) => {

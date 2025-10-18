@@ -5,8 +5,11 @@ import { IPaymentGateway, PaymentResponse } from '../../domain/services/payment-
 import { ITaskQueue, BillingTask } from '../../domain/services/task-queue.interface';
 import { SubscriptionRepository } from '../repositories/subscription.repository';
 import { PaymentAttemptRepository } from '../repositories/payment-attempt.repository';
+import { ProductRepository } from '../repositories/product.repository';
+import { DiscountRepository } from '../repositories/discount.repository';
 import { Subscription } from '../../domain/entities/subscription.entity';
-import { PaymentAttempt, PaymentAttemptStatus } from '../../domain/entities/payment-attempt.entity';
+import { ProductEntity } from '../../domain/entities/product.entity';
+import { Discount } from '../../domain/entities/discount.entity';
 
 describe('BillingService', () => {
   let service: BillingService;
@@ -14,7 +17,9 @@ describe('BillingService', () => {
   let taskQueue: jest.Mocked<ITaskQueue>;
   let subscriptionRepository: jest.Mocked<SubscriptionRepository>;
   let paymentAttemptRepository: jest.Mocked<PaymentAttemptRepository>;
+  let productRepository: jest.Mocked<ProductRepository>;
   let commonService: jest.Mocked<CommonService>;
+  let discountRepository: jest.Mocked<DiscountRepository>;
 
   beforeEach(async () => {
     const mockPaymentGateway = {
@@ -41,6 +46,18 @@ describe('BillingService', () => {
       findById: jest.fn(),
       findBySubscriptionId: jest.fn(),
       save: jest.fn(),
+    };
+
+    const mockProductRepository = {
+      findByProductId: jest.fn(),
+      findAll: jest.fn(),
+    };
+
+    const mockDiscountRepository = {
+      findAll: jest.fn(),
+      findByDiscountId: jest.fn(),
+      findApplicableDiscounts: jest.fn(),
+      findRenewalDiscounts: jest.fn(),
     };
 
     const mockCommonService = {
@@ -70,6 +87,14 @@ describe('BillingService', () => {
           useValue: mockPaymentAttemptRepository,
         },
         {
+          provide: ProductRepository,
+          useValue: mockProductRepository,
+        },
+        {
+          provide: DiscountRepository,
+          useValue: mockDiscountRepository,
+        },
+        {
           provide: CommonService,
           useValue: mockCommonService,
         },
@@ -81,7 +106,9 @@ describe('BillingService', () => {
     taskQueue = module.get('ITaskQueue');
     subscriptionRepository = module.get(SubscriptionRepository);
     paymentAttemptRepository = module.get(PaymentAttemptRepository);
+    productRepository = module.get(ProductRepository);
     commonService = module.get(CommonService);
+    discountRepository = module.get(DiscountRepository);
   });
 
   afterEach(() => {
@@ -91,6 +118,9 @@ describe('BillingService', () => {
   describe('processBilling', () => {
     it('should process successful payment', async () => {
       const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
+      const product = new ProductEntity();
+      product.productId = 'prod_123';
+      product.price = 100;
 
       const paymentResponse: PaymentResponse = {
         success: true,
@@ -98,6 +128,7 @@ describe('BillingService', () => {
       };
 
       subscriptionRepository.findById.mockResolvedValue(subscription);
+      productRepository.findByProductId.mockResolvedValue(product);
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       subscriptionRepository.save.mockResolvedValue(subscription);
@@ -112,6 +143,9 @@ describe('BillingService', () => {
 
     it('should handle payment failure and queue retry', async () => {
       const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
+      const product = new ProductEntity();
+      product.productId = 'prod_123';
+      product.price = 100;
 
       const paymentResponse: PaymentResponse = {
         success: false,
@@ -119,6 +153,7 @@ describe('BillingService', () => {
       };
 
       subscriptionRepository.findById.mockResolvedValue(subscription);
+      productRepository.findByProductId.mockResolvedValue(product);
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       taskQueue.publishTask.mockResolvedValue(undefined);
@@ -137,6 +172,54 @@ describe('BillingService', () => {
 
       expect(result.success).toBe(false);
       expect(result.errorCode).toBe('SUBSCRIPTION_NOT_FOUND');
+    });
+
+    it('should abort subscription if product not found', async () => {
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
+      subscriptionRepository.findById.mockResolvedValue(subscription);
+      productRepository.findByProductId.mockResolvedValue(undefined); // Product not found
+      subscriptionRepository.save.mockResolvedValue(subscription);
+
+      const result = await service.processBilling('sub_123');
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('PRODUCT_NOT_FOUND_ABORTED');
+      expect(subscription.status).toBe('aborted');
+      expect(subscriptionRepository.save).toHaveBeenCalledWith(subscription);
+    });
+
+    it('should apply renewal discount for second and subsequent renewals', async () => {
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active', 1); // renewalCount = 1
+      const product = new ProductEntity();
+      product.productId = 'prod_123';
+      product.price = 200;
+
+      const renewalDiscount = new Discount('renewal_123', 'fixed', 100, 1, new Date(0), new Date(9999, 11, 31), ['prod_123']);
+
+      const paymentResponse: PaymentResponse = {
+        success: true,
+        transactionId: 'txn_123',
+      };
+
+      subscriptionRepository.findById.mockResolvedValue(subscription);
+      productRepository.findByProductId.mockResolvedValue(product);
+      discountRepository.findRenewalDiscounts.mockResolvedValue([renewalDiscount]);
+      paymentGateway.charge.mockResolvedValue(paymentResponse);
+      paymentAttemptRepository.save.mockResolvedValue(undefined);
+      subscriptionRepository.save.mockResolvedValue(subscription);
+
+      const result = await service.processBilling('sub_123');
+
+      expect(result.success).toBe(true);
+      expect(result.transactionId).toBe('txn_123');
+      expect(discountRepository.findRenewalDiscounts).toHaveBeenCalledWith('prod_123');
+      expect(paymentGateway.charge).toHaveBeenCalledWith({
+        attemptId: expect.any(String),
+        userId: 'user_123',
+        amount: 100, // 200 - 100 discount
+        currency: 'TWD',
+        description: expect.stringContaining('Subscription billing for sub_123'),
+      });
     });
   });
 
@@ -168,6 +251,9 @@ describe('BillingService', () => {
   describe('processBillingTask', () => {
     it('should acknowledge successful task', async () => {
       const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
+      const product = new ProductEntity();
+      product.productId = 'prod_123';
+      product.price = 100;
 
       const paymentResponse: PaymentResponse = {
         success: true,
@@ -175,6 +261,7 @@ describe('BillingService', () => {
       };
 
       subscriptionRepository.findById.mockResolvedValue(subscription);
+      productRepository.findByProductId.mockResolvedValue(product);
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       subscriptionRepository.save.mockResolvedValue(subscription);
@@ -188,6 +275,9 @@ describe('BillingService', () => {
 
     it('should reject failed task', async () => {
       const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
+      const product = new ProductEntity();
+      product.productId = 'prod_123';
+      product.price = 100;
 
       const paymentResponse: PaymentResponse = {
         success: false,
@@ -195,6 +285,7 @@ describe('BillingService', () => {
       };
 
       subscriptionRepository.findById.mockResolvedValue(subscription);
+      productRepository.findByProductId.mockResolvedValue(product);
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       taskQueue.rejectTask.mockResolvedValue(undefined);

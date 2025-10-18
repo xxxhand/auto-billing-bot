@@ -6,6 +6,9 @@ import { ITaskQueue, BillingTask, ITaskQueueToken } from '../../domain/services/
 import { IBillingService, BillingResult } from '../../domain/services/billing.service.interface';
 import { SubscriptionRepository } from '../repositories/subscription.repository';
 import { PaymentAttemptRepository } from '../repositories/payment-attempt.repository';
+import { ProductRepository } from '../repositories/product.repository';
+import { DiscountRepository } from '../repositories/discount.repository';
+import { Discount } from '../../domain/entities/discount.entity';
 import { PaymentAttempt, PaymentAttemptStatus } from '../../domain/entities/payment-attempt.entity';
 
 @Injectable()
@@ -18,6 +21,8 @@ export class BillingService implements IBillingService {
     @Inject(ITaskQueueToken) private readonly taskQueue: ITaskQueue,
     private readonly subscriptionRepository: SubscriptionRepository,
     private readonly paymentAttemptRepository: PaymentAttemptRepository,
+    private readonly productRepository: ProductRepository,
+    private readonly discountRepository: DiscountRepository,
   ) {
     this._Logger = this.commonService.getDefaultLogger(BillingService.name);
   }
@@ -25,7 +30,7 @@ export class BillingService implements IBillingService {
   /**
    * Process billing for a subscription
    */
-  async processBilling(subscriptionId: string, isRetry = false): Promise<BillingResult> {
+  async processBilling(subscriptionId: string, isRetry = false, retryCount = 0): Promise<BillingResult> {
     this._Logger.log(`Processing billing for subscription ${subscriptionId}, isRetry: ${isRetry}`);
 
     // Find subscription
@@ -39,9 +44,59 @@ export class BillingService implements IBillingService {
       };
     }
 
+    // Check subscription status
+    if (subscription.status !== 'active') {
+      this._Logger.log(`Subscription ${subscriptionId} is not active, status: ${subscription.status}`);
+      // TODO: Record cancel log to billingLogs
+      // await this.billingLogRepository.save({ eventType: 'billing_cancelled', subscriptionId, details: { reason: 'inactive_status' } });
+      return {
+        success: false,
+        errorMessage: 'Subscription not active',
+        errorCode: 'SUBSCRIPTION_NOT_ACTIVE',
+      };
+    }
+
+    // Check and apply pending conversion if applicable
+    if (subscription.pendingConversion) {
+      this._Logger.log(`Applying pending conversion for subscription ${subscriptionId}`);
+      subscription.applyPendingConversion();
+      await this.subscriptionRepository.save(subscription);
+    }
+
+    // Find product to get price
+    const product = await this.productRepository.findByProductId(subscription.productId);
+    if (!product) {
+      this._Logger.error(`Product ${subscription.productId} not found, aborting subscription ${subscriptionId}`);
+      subscription.status = 'aborted';
+      await this.subscriptionRepository.save(subscription);
+      return {
+        success: false,
+        errorMessage: 'Product not found, subscription aborted',
+        errorCode: 'PRODUCT_NOT_FOUND_ABORTED',
+      };
+    }
+
+    // Calculate amount with discounts
+    let amount = product.price;
+    if (subscription.remainingDiscountPeriods > 0) {
+      amount = 0; // Free period
+      subscription.remainingDiscountPeriods -= 1;
+      await this.subscriptionRepository.save(subscription);
+    }
+
+    // Apply renewal discount for second and subsequent renewals
+    if (subscription.renewalCount >= 1) {
+      const renewalDiscounts = await this.discountRepository.findRenewalDiscounts(subscription.productId);
+      if (renewalDiscounts.length > 0) {
+        // Apply the highest priority renewal discount
+        const highestPriorityDiscount = renewalDiscounts[0];
+        amount = subscription.applyDiscount(highestPriorityDiscount, amount);
+      }
+    }
+
     // Create payment attempt
     const attemptId = uuidv4();
-    const paymentAttempt = new PaymentAttempt(attemptId, subscriptionId, PaymentAttemptStatus.PENDING, '', isRetry ? 1 : 0);
+    const paymentAttempt = new PaymentAttempt(attemptId, subscriptionId, PaymentAttemptStatus.PENDING, '', retryCount);
 
     await this.paymentAttemptRepository.save(paymentAttempt);
 
@@ -49,7 +104,7 @@ export class BillingService implements IBillingService {
     const paymentRequest: PaymentRequest = {
       attemptId,
       userId: subscription.userId,
-      amount: 100, // TODO: Get actual amount from product
+      amount,
       currency: 'TWD',
       description: `Subscription billing for ${subscription.subscriptionId}`,
     };
@@ -170,18 +225,47 @@ export class BillingService implements IBillingService {
   async processBillingTask(taskId: string, subscriptionId: string, taskType: 'billing' | 'retry' | 'manual_retry', retryCount: number): Promise<BillingResult> {
     this._Logger.log(`Processing billing task ${taskId} for subscription ${subscriptionId}, type: ${taskType}, retryCount: ${retryCount}`);
 
+    // Validate task data
+    if (!taskId || !subscriptionId || !taskType) {
+      this._Logger.error(`Invalid task data: taskId=${taskId}, subscriptionId=${subscriptionId}, taskType=${taskType}`);
+      await this.taskQueue.rejectTask(taskId, false);
+      return {
+        success: false,
+        errorMessage: 'Invalid task data',
+        errorCode: 'INVALID_TASK_DATA',
+      };
+    }
+
+    // TODO: Acquire distributed lock for subscription
+    // const lockAcquired = await this.distributedLock.acquire(`billing:${subscriptionId}`);
+    // if (!lockAcquired) {
+    //   this._Logger.warn(`Failed to acquire lock for subscription ${subscriptionId}, requeueing task`);
+    //   await this.taskQueue.rejectTask(taskId, true); // Requeue
+    //   return {
+    //     success: false,
+    //     errorMessage: 'Lock acquisition failed',
+    //     errorCode: 'LOCK_FAILED',
+    //   };
+    // }
+
     try {
-      const result = await this.processBilling(subscriptionId, taskType === 'retry' || taskType === 'manual_retry');
+      const result = await this.processBilling(subscriptionId, taskType === 'retry' || taskType === 'manual_retry', retryCount);
 
       if (result.success) {
         await this.taskQueue.acknowledgeTask(taskId);
         this._Logger.log(`Billing task ${taskId} completed successfully`);
+        // TODO: Record success log to billingLogs
+        // await this.billingLogRepository.save({ ... });
       } else if (result.queuedForRetry) {
         await this.taskQueue.acknowledgeTask(taskId);
         this._Logger.log(`Billing task ${taskId} queued for retry`);
+        // TODO: Record retry log
       } else {
         await this.taskQueue.rejectTask(taskId, false);
         this._Logger.log(`Billing task ${taskId} failed permanently`);
+        // TODO: Record failure log
+        // TODO: Send notification if entered grace period
+        // if (result.enteredGracePeriod) await this.notificationService.sendGracePeriodNotification(subscriptionId);
       }
 
       return result;
@@ -189,6 +273,9 @@ export class BillingService implements IBillingService {
       this._Logger.error(`Error processing billing task ${taskId}: ${error.message}`);
       await this.taskQueue.rejectTask(taskId, true); // Requeue on error
       throw error;
+    } finally {
+      // TODO: Release distributed lock
+      // await this.distributedLock.release(`billing:${subscriptionId}`);
     }
   }
 }

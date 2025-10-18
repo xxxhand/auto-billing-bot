@@ -5,7 +5,7 @@ import { RetryableFailureReason } from './payment-attempt.entity';
 /**
  * Subscription status enums as defined in the system design v0.7.1
  */
-export type SubscriptionStatus = 'pending' | 'active' | 'grace' | 'cancelled' | 'refunding';
+export type SubscriptionStatus = 'pending' | 'active' | 'grace' | 'cancelled' | 'refunding' | 'aborted';
 
 /**
  * Subscription aggregate root - the main entity controlling subscription lifecycle

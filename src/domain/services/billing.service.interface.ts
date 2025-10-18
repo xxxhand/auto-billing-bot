@@ -3,6 +3,8 @@
  * Defines the contracts for billing operations in the domain layer
  */
 
+export const IBillingServiceToken = 'IBillingService';
+
 /**
  * Billing result data structure
  */
