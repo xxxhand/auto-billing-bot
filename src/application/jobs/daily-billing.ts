@@ -17,7 +17,7 @@ export class DailyBillingJob {
     this._Logger = this.commonService.getDefaultLogger(DailyBillingJob.name);
   }
 
-  @Cron('0 * * * *') // Every hour at minute 0
+  @Cron(cmmConf.dailyBillingCron)
   async execute(): Promise<void> {
     this._Logger.log('Executing hourly billing cron job...');
 
