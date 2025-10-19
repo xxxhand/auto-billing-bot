@@ -4,6 +4,7 @@ import { SubscriptionsService } from '../services/subscriptions.service';
 import { CreateSubscriptionRequest } from '../../domain/value-objects/create-subscription.request';
 import { GetSubscriptionResponse } from '../../domain/value-objects/get-subscription.response';
 import { ConvertSubscriptionRequest } from '../../domain/value-objects/convert-subscription.request';
+import { CancelSubscriptionRequest } from '../../domain/value-objects/cancel-subscription.request';
 
 @Controller({
   path: 'subscriptions',
@@ -34,6 +35,13 @@ export class SubscriptionsController {
   @Post('convert')
   async convertSubscription(@Body() request: ConvertSubscriptionRequest): Promise<any> {
     const result = await this.subscriptionsService.convertSubscription(request);
+    return this.commonService.newResultInstance().withResult(result);
+  }
+
+  @Post(':id/cancel')
+  async cancelSubscription(@Param('id') subscriptionId: string): Promise<any> {
+    const request = new CancelSubscriptionRequest(subscriptionId);
+    const result = await this.subscriptionsService.cancelSubscription(request);
     return this.commonService.newResultInstance().withResult(result);
   }
 }

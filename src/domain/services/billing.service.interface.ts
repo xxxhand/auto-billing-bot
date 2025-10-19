@@ -33,9 +33,10 @@ export interface IBillingService {
    * This is the main entry point for billing operations
    * @param subscriptionId The subscription to bill
    * @param isRetry Whether this is a retry attempt
+   * @param retryCount Current retry count
    * @returns Promise resolving to billing result
    */
-  processBilling(subscriptionId: string, isRetry?: boolean): Promise<BillingResult>;
+  processBilling(subscriptionId: string, isRetry?: boolean, retryCount?: number): Promise<BillingResult>;
 
   /**
    * Handle payment failure for a subscription
@@ -46,6 +47,15 @@ export interface IBillingService {
    * @returns Promise resolving to handling result
    */
   handlePaymentFailure(subscriptionId: string, failureReason: string, retryCount: number): Promise<BillingResult>;
+
+  /**
+   * Process refund for a subscription
+   * @param subscriptionId The subscription to refund
+   * @param refundId Unique refund identifier
+   * @param amount Refund amount
+   * @returns Promise resolving to billing result
+   */
+  processRefund(subscriptionId: string, refundId: string, amount: number): Promise<BillingResult>;
 
   /**
    * Process a billing task from the queue

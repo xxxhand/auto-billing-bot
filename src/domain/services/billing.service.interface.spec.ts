@@ -9,6 +9,7 @@ describe('IBillingService Interface Contract', () => {
     processBilling: jest.fn(),
     handlePaymentFailure: jest.fn(),
     processBillingTask: jest.fn(),
+    processRefund: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -111,6 +112,35 @@ describe('IBillingService Interface Contract', () => {
       const response = await billingService.processBillingTask('task_123', 'sub_123', 'billing', 0);
       expect(response).toEqual(result);
       expect(response.success).toBe(true);
+    });
+  });
+
+  describe('processRefund', () => {
+    it('should define processRefund method', () => {
+      expect(typeof billingService.processRefund).toBe('function');
+    });
+
+    it('should accept subscriptionId, refundId, and amount parameters', async () => {
+      (billingService.processRefund as jest.Mock).mockResolvedValue({
+        success: true,
+        transactionId: 'refund_txn_123',
+      } as BillingResult);
+
+      await expect(billingService.processRefund('sub_123', 'refund_123', 50.00)).resolves.toBeDefined();
+    });
+
+    it('should return a BillingResult', async () => {
+      const result: BillingResult = {
+        success: true,
+        transactionId: 'refund_txn_123',
+      };
+
+      (billingService.processRefund as jest.Mock).mockResolvedValue(result);
+
+      const response = await billingService.processRefund('sub_123', 'refund_123', 50.00);
+      expect(response).toEqual(result);
+      expect(response.success).toBe(true);
+      expect(response.transactionId).toBe('refund_txn_123');
     });
   });
 

@@ -44,14 +44,14 @@ export class BillingService implements IBillingService {
       };
     }
 
-    // Check subscription status
-    if (subscription.status !== 'active') {
-      this._Logger.log(`Subscription ${subscriptionId} is not active, status: ${subscription.status}`);
+    // Check subscription status - allow pending for initial billing
+    if (subscription.status !== 'active' && subscription.status !== 'pending') {
+      this._Logger.log(`Subscription ${subscriptionId} is not active or pending, status: ${subscription.status}`);
       // TODO: Record cancel log to billingLogs
       // await this.billingLogRepository.save({ eventType: 'billing_cancelled', subscriptionId, details: { reason: 'inactive_status' } });
       return {
         success: false,
-        errorMessage: 'Subscription not active',
+        errorMessage: 'Subscription not active or pending',
         errorCode: 'SUBSCRIPTION_NOT_ACTIVE',
       };
     }
@@ -276,6 +276,40 @@ export class BillingService implements IBillingService {
     } finally {
       // TODO: Release distributed lock
       // await this.distributedLock.release(`billing:${subscriptionId}`);
+    }
+  }
+
+  /**
+   * Process refund for a subscription
+   */
+  async processRefund(subscriptionId: string, refundId: string, amount: number): Promise<BillingResult> {
+    this._Logger.log(`Processing refund ${refundId} for subscription ${subscriptionId}, amount: ${amount}`);
+
+    try {
+      // Call payment gateway to process refund
+      const refundResult = await this.paymentGateway.refund(refundId, amount, 'Subscription cancellation');
+
+      if (refundResult.success) {
+        this._Logger.log(`Refund ${refundId} processed successfully`);
+        return {
+          success: true,
+          transactionId: refundResult.transactionId,
+        };
+      } else {
+        this._Logger.error(`Refund ${refundId} failed: ${refundResult.errorMessage}`);
+        return {
+          success: false,
+          errorMessage: refundResult.errorMessage || 'Refund failed',
+          errorCode: refundResult.errorCode || 'REFUND_FAILED',
+        };
+      }
+    } catch (error) {
+      this._Logger.error(`Error processing refund ${refundId}: ${error.message}`);
+      return {
+        success: false,
+        errorMessage: error.message,
+        errorCode: 'REFUND_ERROR',
+      };
     }
   }
 }

@@ -218,6 +218,69 @@ export class Subscription extends BaseEntity {
   }
 
   /**
+   * Cancel the subscription and calculate refund amount
+   * @param currentDate The current date for refund calculation
+   * @returns Object containing cancellation details and refund amount
+   */
+  public cancel(currentDate: Date = new Date()): {
+    cancelledAt: Date;
+    refundAmount: number;
+    daysRemaining: number;
+  } {
+    if (this.status === 'cancelled') {
+      throw new Error('Subscription is already cancelled');
+    }
+
+    if (this.status === 'refunding') {
+      throw new Error('Subscription is currently being refunded');
+    }
+
+    const cancelledAt = new Date();
+
+    // Calculate days remaining in current billing cycle
+    const daysRemaining = Math.max(0, Math.ceil((this.nextBillingDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24)));
+
+    // Calculate refund amount based on remaining days
+    // This is a simplified calculation - in real scenarios, this might be more complex
+    // For now, we'll assume prorated refund based on days remaining
+    const refundAmount = this.calculateProratedRefund(currentDate);
+
+    // Update subscription status
+    this.status = 'cancelled';
+
+    return {
+      cancelledAt,
+      refundAmount,
+      daysRemaining,
+    };
+  }
+
+  /**
+   * Calculate prorated refund amount based on remaining time in billing cycle
+   * @param currentDate The current date
+   * @returns The prorated refund amount
+   */
+  private calculateProratedRefund(currentDate: Date): number {
+    // Calculate days remaining in current billing cycle
+    const daysRemaining = Math.max(0, Math.ceil((this.nextBillingDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24)));
+
+    // Calculate total days in billing cycle
+    const cycleStartDate = new Date(this.startDate);
+    const cycleEndDate = new Date(this.nextBillingDate);
+    const totalDaysInCycle = Math.ceil((cycleEndDate.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    // For now, assume a base monthly price of 100 for calculation
+    // In a real implementation, this would come from the product price and payment history
+    const monthlyPrice = 100;
+    const dailyRate = monthlyPrice / totalDaysInCycle;
+
+    // Calculate prorated refund
+    const refundAmount = Math.max(0, daysRemaining * dailyRate);
+
+    return Math.round(refundAmount * 100) / 100; // Round to 2 decimal places
+  }
+
+  /**
    * Renew the subscription by incrementing renewal count
    * This method is called when a successful payment occurs for a recurring subscription
    * @returns Object containing renewal information

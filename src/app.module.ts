@@ -12,6 +12,7 @@ import { DiscountRepository } from './infra/repositories/discount.repository';
 import { PromoCodeRepository } from './infra/repositories/promoCode.repository';
 import { PromoCodeUsageRepository } from './infra/repositories/promoCodeUsage.repository';
 import { UserRepository } from './infra/repositories/user.repository';
+import { RefundRepository } from './infra/repositories/refund.repository';
 import { BillingService } from './infra/services/billing.service';
 import { DatabaseIndexService } from './infra/services/database-index.service';
 import { DiscountPriorityService } from './domain/services/discount-priority.service';
@@ -27,6 +28,7 @@ import { MockPaymentGateway } from './infra/payment/mock-payment.gateway';
 import { ITaskQueueToken } from './domain/services/task-queue.interface';
 import { MockTaskQueue } from './infra/queue/mock-task.queue';
 import { BillingConsumer } from './infra/billing-consumer';
+import { IBillingServiceToken } from './domain/services/billing.service.interface';
 
 @Module({
   imports: [CommonModule, ScheduleModule.forRoot()],
@@ -45,8 +47,12 @@ import { BillingConsumer } from './infra/billing-consumer';
     PromoCodeRepository,
     PromoCodeUsageRepository,
     UserRepository,
-    BillingService,
+    RefundRepository,
     BillingConsumer,
+    {
+      provide: IBillingServiceToken,
+      useClass: BillingService,
+    },
     {
       provide: IPaymentGatewayToken,
       useClass: MockPaymentGateway,

@@ -63,6 +63,16 @@ export class MockPaymentGateway implements IPaymentGateway {
     // Simulate network delay
     await this.delay(150 + Math.random() * 100);
 
+    // Check for test-specific transactionIds to force specific outcomes
+    if (transactionId.includes('refund_fail')) {
+      return this.createFailureResponse('REFUND_FAILED', 'Refund processing failed');
+    }
+
+    // Check for test-specific amounts to force failure (for testing)
+    if (amount === 999.99) {
+      return this.createFailureResponse('REFUND_FAILED', 'Test refund failure');
+    }
+
     // Mock refunds are always successful for simplicity
     return {
       success: true,

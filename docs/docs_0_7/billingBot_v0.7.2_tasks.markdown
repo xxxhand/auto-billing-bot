@@ -50,7 +50,7 @@
 | API-002 | 實現POST /subscriptions，創建訂閱 | DB-003, DDD-001 | 已完成 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
 | API-003 | 實現GET /subscriptions/{id}，查詢訂閱狀態 | DB-003, DDD-001 | 已完成 | 5.1 RESTful API |
 | API-004 | 實現POST /subscriptions/convert，記錄方案轉換請求，處理費用調整（升級立即補收差額），但實際生效等到當前週期結束後的下個週期開始 | DDD-003 | 已完成 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
-| API-005 | 實現POST /subscriptions/cancel，取消訂閱與退款 | DB-007, DDD-001 | 待處理 | 5.1 RESTful API, 6.5 退款流程 |
+| API-005 | 實現POST /subscriptions/cancel，取消訂閱與退款 | DB-007, DDD-001 | 已完成 | 5.1 RESTful API, 6.5 退款流程 |
 | API-006 | 實現GET /discounts，返回適用優惠列表 | DB-004, DDD-006 | 待處理 | 5.1 RESTful API, 6.4 優惠應用流程 |
 | API-007 | 實現POST /discounts/{id}/apply，應用優惠到訂閱 | DB-004, DDD-006 | 待處理 | 5.1 RESTful API, 6.4 優惠應用流程 |
 | API-008 | 實現GET /userPromoCodes，返回用戶可用優惠碼（包含minimumAmount與applicableProducts欄位） | DB-005, DDD-007, DDD-009 | 待處理 | 5.1 RESTful API, 5.2 API 資料格式示例 |

@@ -82,4 +82,16 @@ export const errCodes: CustomDefinition.ICodeStruct[] = [
     httpStatus: 400,
     message: 'Payment failed',
   },
+  {
+    codeName: errConstants.ERR_SUBSCRIPTION_ALREADY_CANCELLED,
+    code: 20011,
+    httpStatus: 400,
+    message: 'Subscription is already cancelled',
+  },
+  {
+    codeName: errConstants.ERR_SUBSCRIPTION_REFUNDING,
+    code: 20012,
+    httpStatus: 400,
+    message: 'Subscription is currently being refunded',
+  },
 ];

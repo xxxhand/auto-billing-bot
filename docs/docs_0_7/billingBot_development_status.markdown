@@ -1,7 +1,7 @@
 # 自動扣款機器人開發狀態總結
 
-**最後更新**：2025年10月18日
-**當前階段**：所有v0.7.2任務完成 - 實現續訂優惠、aborted狀態與設計文件更新
+**最後更新**：2025年10月19日
+**當前階段**：所有v0.7.2任務完成 - 實現訂閱取消與退款功能
 **負責人**：GitHub Copilot
 
 ## 工作指南
@@ -16,6 +16,7 @@
 - 無
 
 ### 已完成任務 (最近)
+- ✅ API-005：實現POST /subscriptions/cancel，取消訂閱與退款（2025年10月19日）
 - ✅ QUEUE-002：實現retry機制，最多3次重試，間隔1小時（2025年10月18日）
 - ✅ CRON-002：調整daily billing cron，跳過有pendingConversion的訂閱（2025年10月18日）
 - ✅ DDD-010：調整billingService.processBilling，添加CheckSubscriptionStatus、CheckPendingConversion、LoadProduct、CalculateAmount、ApplyDiscounts，符合6.3流程（2025年10月18日）
@@ -79,5 +80,5 @@
 - **測試覆蓋率**：尚未開始 v0.7 測試
 
 ## 🎯 下一步計劃
-1. **等待指示**：QUEUE-001任務已完成，等待產品負責人審閱與下一個任務指示
+1. **等待指示**：API-005任務已完成，等待產品負責人審閱與下一個任務指示
 2. **建議後續任務**：可考慮實作剩餘API端點或整合測試

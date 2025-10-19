@@ -8,15 +8,20 @@ import { PromoCodeRepository } from '../../infra/repositories/promoCode.reposito
 import { PromoCodeUsageRepository } from '../../infra/repositories/promoCodeUsage.repository';
 import { UserRepository } from '../../infra/repositories/user.repository';
 import { BillingService } from '../../infra/services/billing.service';
+import { IBillingService, IBillingServiceToken } from '../../domain/services/billing.service.interface';
+import { RefundRepository } from '../../infra/repositories/refund.repository';
 import { PromoCodeDomainService } from '../../domain/services/promo-code-domain.service';
 import { PromoCode } from '../../domain/entities/promoCode.entity';
 import { Subscription } from '../../domain/entities/subscription.entity';
+import { Refund } from '../../domain/entities/refund.entity';
+import { PromoCodeUsage } from '../../domain/value-objects/promoCodeUsage.value-object';
 import { CreateSubscriptionRequest } from '../../domain/value-objects/create-subscription.request';
 import { CreateSubscriptionResponse } from '../../domain/value-objects/create-subscription.response';
 import { GetSubscriptionResponse } from '../../domain/value-objects/get-subscription.response';
 import { ConvertSubscriptionRequest } from '../../domain/value-objects/convert-subscription.request';
 import { ConvertSubscriptionResponse } from '../../domain/value-objects/convert-subscription.response';
-import { PromoCodeUsage } from '../../domain/value-objects/promoCodeUsage.value-object';
+import { CancelSubscriptionRequest } from '../../domain/value-objects/cancel-subscription.request';
+import { CancelSubscriptionResponse } from '../../domain/value-objects/cancel-subscription.response';
 
 @Injectable()
 export class SubscriptionsService {
@@ -29,8 +34,9 @@ export class SubscriptionsService {
     private readonly promoCodeRepository: PromoCodeRepository,
     private readonly promoCodeUsageRepository: PromoCodeUsageRepository,
     private readonly userRepository: UserRepository,
+    private readonly refundRepository: RefundRepository,
     private readonly promoCodeDomainService: PromoCodeDomainService,
-    private readonly billingService: BillingService,
+    @Inject(IBillingServiceToken) private readonly billingService: IBillingService,
     @Inject(IPaymentGatewayToken) private readonly paymentGateway: IPaymentGateway,
   ) {
     this.logger = this.commonService.getDefaultLogger(SubscriptionsService.name);
@@ -113,6 +119,8 @@ export class SubscriptionsService {
 
     // Update subscription status to active after successful payment
     savedSubscription.status = 'active';
+    // For initial billing, don't increment renewal count, just set next billing date
+    savedSubscription.nextBillingDate = savedSubscription.calculateNextBillingDate();
     await this.subscriptionRepository.save(savedSubscription);
 
     // Track promo code usage if promo code was used
@@ -305,5 +313,142 @@ export class SubscriptionsService {
 
     // Return the fee adjustment (positive for upgrade, negative for downgrade)
     return monthlyDifference * monthlyPrice;
+  }
+
+  /**
+   * Calculate prorated refund amount based on remaining time in billing cycle
+   * @param subscription The subscription entity
+   * @param productPrice The product price
+   * @returns The prorated refund amount
+   */
+  private calculateProratedRefund(subscription: Subscription, productPrice: number): number {
+    const currentDate = new Date();
+
+    // Calculate days remaining in current billing cycle
+    const daysRemaining = Math.max(0, Math.ceil((subscription.nextBillingDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24)));
+
+    // Calculate total days in billing cycle
+    const cycleStartDate = new Date(subscription.startDate);
+    const cycleEndDate = new Date(subscription.nextBillingDate);
+    const totalDaysInCycle = Math.ceil((cycleEndDate.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Calculate daily rate based on product price and cycle type
+    let cycleMultiplier = 1; // Default to monthly
+    switch (subscription.cycleType) {
+      case 'weekly':
+        cycleMultiplier = 1 / 4.33; // Approximately 4.33 weeks per month
+        break;
+      case 'monthly':
+        cycleMultiplier = 1;
+        break;
+      case 'quarterly':
+        cycleMultiplier = 3;
+        break;
+      case 'yearly':
+        cycleMultiplier = 12;
+        break;
+      default:
+        throw new Error(`Unsupported cycle type for refund calculation: ${subscription.cycleType}`);
+    }
+
+    const cyclePrice = productPrice * cycleMultiplier;
+    const dailyRate = cyclePrice / totalDaysInCycle;
+
+    // Calculate prorated refund
+    const refundAmount = Math.max(0, daysRemaining * dailyRate);
+
+    return Math.round(refundAmount * 100) / 100; // Round to 2 decimal places
+  }
+
+  /**
+   * Cancel subscription and process refund
+   */
+  async cancelSubscription(request: CancelSubscriptionRequest): Promise<CancelSubscriptionResponse> {
+    const { subscriptionId } = request;
+
+    this.logger.log(`Cancelling subscription ${subscriptionId}`);
+
+    // Find subscription
+    const subscription = await this.subscriptionRepository.findById(subscriptionId);
+    if (!subscription) {
+      this.logger.warn(`Subscription not found: ${subscriptionId}`);
+      throw ErrException.newFromCodeName(errConstants.ERR_SUBSCRIPTION_NOT_FOUND);
+    }
+
+    // Check if subscription can be cancelled
+    if (subscription.status === 'cancelled') {
+      this.logger.warn(`Subscription ${subscriptionId} is already cancelled`);
+      throw ErrException.newFromCodeName(errConstants.ERR_SUBSCRIPTION_ALREADY_CANCELLED);
+    }
+
+    if (subscription.status === 'refunding') {
+      this.logger.warn(`Subscription ${subscriptionId} is currently being refunded`);
+      throw ErrException.newFromCodeName(errConstants.ERR_SUBSCRIPTION_REFUNDING);
+    }
+
+    // Get product to calculate refund amount
+    const product = await this.productRepository.findByProductId(subscription.productId);
+    if (!product) {
+      this.logger.error(`Product not found for subscription ${subscriptionId}: ${subscription.productId}`);
+      throw ErrException.newFromCodeName(errConstants.ERR_PRODUCT_NOT_FOUND);
+    }
+
+    // Cancel subscription (this updates status and calculates refund)
+    const cancellationResult = subscription.cancel();
+
+    // Calculate actual refund amount based on product price
+    const refundAmount = this.calculateProratedRefund(subscription, product.price);
+
+    // Save updated subscription
+    await this.subscriptionRepository.save(subscription);
+
+    // Create refund record
+    const refund = new Refund(
+      uuidv4(),
+      subscriptionId,
+      refundAmount,
+      'pending',
+      new Date(),
+    );
+
+    const savedRefund = await this.refundRepository.create(refund);
+    const refundId = savedRefund.refundId;
+
+    // Process refund through payment gateway only if refund amount > 0
+    if (refundAmount > 0) {
+      const refundResult = await this.billingService.processRefund(subscriptionId, refundId, refundAmount);
+
+      if (refundResult.success) {
+        // Update refund status to completed
+        savedRefund.complete();
+        await this.refundRepository.update(savedRefund);
+        this.logger.log(`Refund ${refundId} processed successfully`);
+      } else {
+        // Update refund status to failed
+        savedRefund.fail();
+        await this.refundRepository.update(savedRefund);
+        this.logger.error(`Refund ${refundId} failed: ${refundResult.errorMessage}`);
+
+        // Cancel the subscription cancellation since refund failed
+        subscription.status = 'active'; // Revert status
+        await this.subscriptionRepository.save(subscription);
+
+        throw ErrException.newFromCodeName(errConstants.ERR_PAYMENT_FAILED);
+      }
+    } else {
+      // No refund needed, mark as completed
+      savedRefund.complete();
+      await this.refundRepository.update(savedRefund);
+      this.logger.log(`No refund needed for subscription ${subscriptionId}, refund record marked as completed`);
+    }
+
+    this.logger.log(`Subscription ${subscriptionId} cancelled successfully`);
+
+    return new CancelSubscriptionResponse(
+      subscriptionId,
+      cancellationResult.cancelledAt,
+      refundAmount,
+      refundId,
+    );
   }
 }
