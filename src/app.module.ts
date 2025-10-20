@@ -20,6 +20,7 @@ import { PromoCodeDomainService } from './domain/services/promo-code-domain.serv
 import { ProductsService } from './application/services/products.service';
 import { SubscriptionsService } from './application/services/subscriptions.service';
 import { PaymentsService } from './application/services/payments.service';
+import { DiscountsService } from './application/services/discounts.service';
 import { AppExceptionFilter } from './app-components/app-exception.filter';
 import { AppTracerMiddleware } from './app-components/app-tracer.middleware';
 import * as jobs from './application/jobs';
@@ -68,6 +69,7 @@ import { IBillingServiceToken } from './domain/services/billing.service.interfac
     ProductsService,
     SubscriptionsService,
     PaymentsService,
+    DiscountsService,
     ...Array.from(Object.keys(jobs)).map((key) => jobs[key]),
   ],
 })
