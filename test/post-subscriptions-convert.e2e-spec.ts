@@ -1,11 +1,7 @@
 import * as superTest from 'supertest';
 import { AppHelper, getNewMockContainer } from './__helpers__/app.helper';
 import { MongoHelper } from './__helpers__/mongo.helper';
-import {
-  IProductDocument,
-  ISubscriptionDocument,
-  IUserDocument,
-} from './__helpers__/shcema-interface.helper';
+import { IProductDocument, ISubscriptionDocument, IUserDocument } from './__helpers__/shcema-interface.helper';
 
 describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions/convert`, () => {
   let agent: superTest.SuperAgentTest;
@@ -82,7 +78,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions/convert
 
       const res = await agent.post(endpoint).send(requestBody);
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(404);
       expect(res.body.code).toBe(20006);
     });
 

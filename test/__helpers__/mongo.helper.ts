@@ -5,8 +5,8 @@ import { CustomMongoClient, CustomUtils } from '@xxxhand/app-common';
 export class MongoHelper {
   private _mongo: CustomMongoClient;
   constructor(postFix: string) {
-    cmmConf.defaultMongo.dbName = `${process.env.DEFAULT_MONGO_DB_NAME}_${postFix}`;
-    cmmConf.defaultMongo.uri = `${process.env.DEFAULT_MONGO_URI}_${postFix}`;
+    cmmConf.defaultMongo.dbName = postFix;
+    // uri remains the same
 
     this._mongo = new CustomMongoClient(cmmConf.defaultMongo.uri, {
       minPoolSize: Number.parseInt(process.env.DEFAULT_MONGO_MIN_POOL),

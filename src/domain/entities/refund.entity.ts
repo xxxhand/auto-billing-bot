@@ -16,14 +16,7 @@ export class Refund extends BaseEntity {
   public createdAt: Date;
   public processedAt?: Date;
 
-  constructor(
-    refundId: string,
-    subscriptionId: string,
-    amount: number,
-    status: RefundStatus = 'pending',
-    createdAt: Date = new Date(),
-    processedAt?: Date,
-  ) {
+  constructor(refundId: string, subscriptionId: string, amount: number, status: RefundStatus = 'pending', createdAt: Date = new Date(), processedAt?: Date) {
     super();
     this.refundId = refundId;
     this.subscriptionId = subscriptionId;

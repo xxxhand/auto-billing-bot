@@ -55,7 +55,7 @@ export const errCodes: CustomDefinition.ICodeStruct[] = [
   {
     codeName: errConstants.ERR_SUBSCRIPTION_NOT_FOUND,
     code: 20006,
-    httpStatus: 400,
+    httpStatus: 404,
     message: 'Subscription not found',
   },
   {
@@ -93,5 +93,17 @@ export const errCodes: CustomDefinition.ICodeStruct[] = [
     code: 20012,
     httpStatus: 400,
     message: 'Subscription is currently being refunded',
+  },
+  {
+    codeName: errConstants.ERR_SUBSCRIPTION_NOT_IN_GRACE,
+    code: 20013,
+    httpStatus: 400,
+    message: 'Subscription is not in grace period',
+  },
+  {
+    codeName: errConstants.ERR_SUBSCRIPTION_ID_EMPTY,
+    code: 20014,
+    httpStatus: 400,
+    message: 'Subscription ID is empty',
   },
 ];

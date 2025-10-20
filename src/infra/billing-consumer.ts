@@ -42,12 +42,7 @@ export class BillingConsumer implements OnModuleInit {
     this._Logger.log(`Processing billing task: ${task.taskId} for subscription: ${task.subscriptionId}`);
 
     try {
-      const result = await this.billingService.processBillingTask(
-        task.taskId,
-        task.subscriptionId,
-        task.taskType,
-        task.retryCount
-      );
+      const result = await this.billingService.processBillingTask(task.taskId, task.subscriptionId, task.taskType, task.retryCount);
 
       if (result.success) {
         this._Logger.log(`Billing task ${task.taskId} completed successfully`);

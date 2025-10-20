@@ -403,13 +403,7 @@ export class SubscriptionsService {
     await this.subscriptionRepository.save(subscription);
 
     // Create refund record
-    const refund = new Refund(
-      uuidv4(),
-      subscriptionId,
-      refundAmount,
-      'pending',
-      new Date(),
-    );
+    const refund = new Refund(uuidv4(), subscriptionId, refundAmount, 'pending', new Date());
 
     const savedRefund = await this.refundRepository.create(refund);
     const refundId = savedRefund.refundId;
@@ -444,11 +438,6 @@ export class SubscriptionsService {
 
     this.logger.log(`Subscription ${subscriptionId} cancelled successfully`);
 
-    return new CancelSubscriptionResponse(
-      subscriptionId,
-      cancellationResult.cancelledAt,
-      refundAmount,
-      refundId,
-    );
+    return new CancelSubscriptionResponse(subscriptionId, cancellationResult.cancelledAt, refundAmount, refundId);
   }
 }

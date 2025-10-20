@@ -19,6 +19,7 @@ import { DiscountPriorityService } from './domain/services/discount-priority.ser
 import { PromoCodeDomainService } from './domain/services/promo-code-domain.service';
 import { ProductsService } from './application/services/products.service';
 import { SubscriptionsService } from './application/services/subscriptions.service';
+import { PaymentsService } from './application/services/payments.service';
 import { AppExceptionFilter } from './app-components/app-exception.filter';
 import { AppTracerMiddleware } from './app-components/app-tracer.middleware';
 import * as jobs from './application/jobs';
@@ -66,6 +67,7 @@ import { IBillingServiceToken } from './domain/services/billing.service.interfac
     PromoCodeDomainService,
     ProductsService,
     SubscriptionsService,
+    PaymentsService,
     ...Array.from(Object.keys(jobs)).map((key) => jobs[key]),
   ],
 })

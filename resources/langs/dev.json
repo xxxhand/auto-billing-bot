@@ -1,5 +1,8 @@
 {
     "ERR_CLIENT_NAME_EMPTY": "Client name is empty",
     "ERR_CLIENT_CALLBACK_URL_EMPTY": "Client callback url is empty",
-    "ERR_CLIENT_DUPLICATED": "Client duplicated"
+    "ERR_CLIENT_DUPLICATED": "Client duplicated",
+    "ERR_SUBSCRIPTION_ID_EMPTY": "Subscription ID is empty",
+    "ERR_SUBSCRIPTION_NOT_FOUND": "Subscription not found",
+    "ERR_SUBSCRIPTION_NOT_IN_GRACE": "Subscription is not in grace period"
 }

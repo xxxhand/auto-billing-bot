@@ -55,7 +55,7 @@
 | API-007 | 實現POST /discounts/{id}/apply，應用優惠到訂閱 | DB-004, DDD-006 | 待處理 | 5.1 RESTful API, 6.4 優惠應用流程 |
 | API-008 | 實現GET /userPromoCodes，返回用戶可用優惠碼（包含minimumAmount與applicableProducts欄位） | DB-005, DDD-007, DDD-009 | 待處理 | 5.1 RESTful API, 5.2 API 資料格式示例 |
 | API-009 | 實現GET /admin/promoCodes/{code}/usage，後台查詢優惠碼使用狀態與歷史 | DB-005, DB-011 | 待處理 | 5.1 RESTful API |
-| API-010 | 實現POST /payments/retry，手動補款 | DB-006, DDD-008 | 待處理 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
+| API-010 | 實現POST /payments/retry，手動補款 | DB-006, DDD-008 | 已完成 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
 | API-011 | 實現GET /subscriptions/{id}/history，查詢訂閱與扣款歷史 | DB-008 | 待處理 | 5.1 RESTful API |
 | API-012 | 實現GET /admin/logs/export，導出CSV日誌 | DB-008 | 待處理 | 5.1 RESTful API |
 | API-013 | 實現JWT認證，包含userId與tenantId | 無 | 待處理 | 5.1 RESTful API |
@@ -70,7 +70,7 @@
 | CRON-002 | 調整daily billing cron，跳過有pendingConversion的訂閱 | CRON-001 | 已完成 | 6.1 訂閱與扣款流程, 7.3 可靠性 |
 | QUEUE-001 | 實現RabbitMQ retryQueue，處理扣款任務 | DDD-009 | 已完成 | 6.1 訂閱與扣款流程 |
 | QUEUE-002 | 實現重試邏輯（最多3次，間隔1小時） | QUEUE-001, DDD-004 | 已完成 | 6.1 訂閱與扣款流程 |
-| QUEUE-003 | 實現寬限期邏輯（7天），支援手動補款 | QUEUE-001, DDD-004, API-009 | 待處理 | 6.1 訂閱與扣款流程 |
+| QUEUE-003 | 實現寬限期邏輯（7天），支援手動補款 | QUEUE-001, DDD-004, API-010 | 進行中 | 6.1 訂閱與扣款流程 |
 
 ---
 
@@ -102,7 +102,7 @@
 - **總任務數**：34
 - **狀態分布**：
   - 已完成：34個任務
-  - 進行中：0個任務
+  - 進行中：1個任務
   - 待處理：0個任務
 - **額外實現**：
   - 實現續訂優惠邏輯（動態從DiscountRepository獲取適用續訂優惠）

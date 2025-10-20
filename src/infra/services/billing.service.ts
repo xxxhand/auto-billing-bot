@@ -44,14 +44,14 @@ export class BillingService implements IBillingService {
       };
     }
 
-    // Check subscription status - allow pending for initial billing
-    if (subscription.status !== 'active' && subscription.status !== 'pending') {
-      this._Logger.log(`Subscription ${subscriptionId} is not active or pending, status: ${subscription.status}`);
+    // Check subscription status - allow pending for initial billing, allow grace for retries
+    if (subscription.status !== 'active' && subscription.status !== 'pending' && !(subscription.status === 'grace' && isRetry)) {
+      this._Logger.log(`Subscription ${subscriptionId} is not active, pending, or in grace period for retry, status: ${subscription.status}`);
       // TODO: Record cancel log to billingLogs
       // await this.billingLogRepository.save({ eventType: 'billing_cancelled', subscriptionId, details: { reason: 'inactive_status' } });
       return {
         success: false,
-        errorMessage: 'Subscription not active or pending',
+        errorMessage: 'Subscription not active, pending, or in grace period for retry',
         errorCode: 'SUBSCRIPTION_NOT_ACTIVE',
       };
     }
@@ -106,7 +106,7 @@ export class BillingService implements IBillingService {
       userId: subscription.userId,
       amount,
       currency: 'TWD',
-      description: `Subscription billing for ${subscription.subscriptionId}`,
+      description: `Subscription billing${isRetry ? ' retry' : ''} for ${subscription.subscriptionId}`,
     };
 
     try {
@@ -119,7 +119,10 @@ export class BillingService implements IBillingService {
         await this.paymentAttemptRepository.save(paymentAttempt);
 
         // Update subscription
-        subscription.renew();
+        if (!isRetry) {
+          subscription.renew();
+        }
+        subscription.status = 'active';
         subscription.nextBillingDate = subscription.calculateNextBillingDate();
         await this.subscriptionRepository.save(subscription);
 

@@ -70,7 +70,7 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions/:id`, ()
 
       const res = await agent.get(endpoint);
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(404);
       expect(res.body.code).toBe(20006);
     });
   });

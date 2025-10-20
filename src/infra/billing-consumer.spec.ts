@@ -81,12 +81,7 @@ describe('BillingConsumer', () => {
 
       await capturedHandler!(mockTask);
 
-      expect(billingService.processBillingTask).toHaveBeenCalledWith(
-        'task-123',
-        'sub-123',
-        'billing',
-        0
-      );
+      expect(billingService.processBillingTask).toHaveBeenCalledWith('task-123', 'sub-123', 'billing', 0);
     });
 
     it('should handle billing task failure', async () => {
@@ -115,12 +110,7 @@ describe('BillingConsumer', () => {
 
       await capturedHandler!(mockTask);
 
-      expect(billingService.processBillingTask).toHaveBeenCalledWith(
-        'task-123',
-        'sub-123',
-        'retry',
-        1
-      );
+      expect(billingService.processBillingTask).toHaveBeenCalledWith('task-123', 'sub-123', 'retry', 1);
     });
 
     it('should handle task processing error', async () => {

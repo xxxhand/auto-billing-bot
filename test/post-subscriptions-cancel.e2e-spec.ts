@@ -1,12 +1,7 @@
 import * as superTest from 'supertest';
 import { AppHelper, getNewMockContainer } from './__helpers__/app.helper';
 import { MongoHelper } from './__helpers__/mongo.helper';
-import {
-  IProductDocument,
-  ISubscriptionDocument,
-  IUserDocument,
-  IRefundDocument,
-} from './__helpers__/shcema-interface.helper';
+import { IProductDocument, ISubscriptionDocument, IUserDocument, IRefundDocument } from './__helpers__/shcema-interface.helper';
 
 describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions/:id/cancel`, () => {
   let agent: superTest.SuperAgentTest;
@@ -77,8 +72,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions/:id/can
   };
 
   beforeAll(async () => {
-    const mockContainer = getNewMockContainer()
-      .set('IPaymentGateway', mockPaymentGateway);
+    const mockContainer = getNewMockContainer().set('IPaymentGateway', mockPaymentGateway);
     agent = await AppHelper.getAgentWithMockers(mockContainer);
     await db.tryConnect();
     // Don't insert shared data here - create per test instead
@@ -97,7 +91,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions/:id/can
 
       const res = await agent.post(endpoint).send({});
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(404);
       expect(res.body.code).toBe(20006);
     });
 
@@ -131,9 +125,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions/:id/can
   describe('Payment Errors', () => {
     it('[20010] should return error when refund fails', async () => {
       // Create a new agent with mocked billing service for this test
-      const testMockContainer = getNewMockContainer()
-        .set('IPaymentGateway', mockPaymentGateway)
-        .set('IBillingService', mockBillingService);
+      const testMockContainer = getNewMockContainer().set('IPaymentGateway', mockPaymentGateway).set('IBillingService', mockBillingService);
       const testAgent = await AppHelper.getAgentWithMockers(testMockContainer);
 
       // Create test data for this test
@@ -169,11 +161,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions/:id/can
         valid: true,
       };
 
-      await Promise.all([
-        db.getCollection(userCol).insertOne(testUser),
-        db.getCollection(productCol).insertOne(testProduct),
-        db.getCollection(subscriptionCol).insertOne(testSub),
-      ]);
+      await Promise.all([db.getCollection(userCol).insertOne(testUser), db.getCollection(productCol).insertOne(testProduct), db.getCollection(subscriptionCol).insertOne(testSub)]);
 
       // Mock refund to fail by mocking BillingService.processRefund
       mockBillingService.processRefund.mockResolvedValue({
@@ -235,11 +223,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions/:id/can
         valid: true,
       };
 
-      await Promise.all([
-        db.getCollection(userCol).insertOne(testUser),
-        db.getCollection(productCol).insertOne(testProduct),
-        db.getCollection(subscriptionCol).insertOne(testSub),
-      ]);
+      await Promise.all([db.getCollection(userCol).insertOne(testUser), db.getCollection(productCol).insertOne(testProduct), db.getCollection(subscriptionCol).insertOne(testSub)]);
 
       jest.spyOn(mockPaymentGateway, 'refund').mockResolvedValue({
         success: true,
@@ -303,11 +287,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions/:id/can
         valid: true,
       };
 
-      await Promise.all([
-        db.getCollection(userCol).insertOne(testUser),
-        db.getCollection(productCol).insertOne(testProduct),
-        db.getCollection(subscriptionCol).insertOne(testSub),
-      ]);
+      await Promise.all([db.getCollection(userCol).insertOne(testUser), db.getCollection(productCol).insertOne(testProduct), db.getCollection(subscriptionCol).insertOne(testSub)]);
 
       jest.spyOn(mockPaymentGateway, 'refund').mockResolvedValue({
         success: true,

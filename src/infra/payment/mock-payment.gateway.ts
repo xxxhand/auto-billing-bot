@@ -108,6 +108,8 @@ export class MockPaymentGateway implements IPaymentGateway {
       return 'declined';
     } else if (attemptId.includes('success')) {
       return 'success';
+    } else if (request.description.includes('retry')) {
+      return 'success'; // Force success for retry payments
     }
 
     // For non-test requests, use hash-based logic

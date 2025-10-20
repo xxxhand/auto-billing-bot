@@ -126,7 +126,7 @@ describe('IBillingService Interface Contract', () => {
         transactionId: 'refund_txn_123',
       } as BillingResult);
 
-      await expect(billingService.processRefund('sub_123', 'refund_123', 50.00)).resolves.toBeDefined();
+      await expect(billingService.processRefund('sub_123', 'refund_123', 50.0)).resolves.toBeDefined();
     });
 
     it('should return a BillingResult', async () => {
@@ -137,7 +137,7 @@ describe('IBillingService Interface Contract', () => {
 
       (billingService.processRefund as jest.Mock).mockResolvedValue(result);
 
-      const response = await billingService.processRefund('sub_123', 'refund_123', 50.00);
+      const response = await billingService.processRefund('sub_123', 'refund_123', 50.0);
       expect(response).toEqual(result);
       expect(response.success).toBe(true);
       expect(response.transactionId).toBe('refund_txn_123');

@@ -88,10 +88,7 @@ export class DiscountRepository {
       // Find renewal discounts that either apply to all products or include the specific product
       query = {
         ...baseQuery,
-        $or: [
-          { applicableProducts: { $size: 0 } },
-          { applicableProducts: productId },
-        ],
+        $or: [{ applicableProducts: { $size: 0 } }, { applicableProducts: productId }],
       };
     } else {
       // If no productId specified, only return global renewal discounts
