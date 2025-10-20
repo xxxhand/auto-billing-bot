@@ -59,6 +59,7 @@
 | API-011 | 實現GET /subscriptions/{id}/history，查詢訂閱與扣款歷史 | DB-008 | 待處理 | 5.1 RESTful API |
 | API-012 | 實現GET /admin/logs/export，導出CSV日誌 | DB-008 | 待處理 | 5.1 RESTful API |
 | API-013 | 實現JWT認證，包含userId與tenantId | 無 | 待處理 | 5.1 RESTful API |
+| API-014 | 實現POST /applyPromo，應用優惠碼（包含消費門檻、用戶重複使用檢查及產品適用性檢查） | DB-005, DDD-007, DDD-009 | 待處理 | 5.1 RESTful API, 6.6 優惠碼應用流程 |
 
 ---
 
@@ -90,20 +91,20 @@
 | 任務ID | 描述 | 依賴關係 | 狀態 | 設計書 |
 |--------|------|----------|------|--------|
 | TEST-001 | 為所有領域模型方法撰寫Jest單元測試 | DDD-001~DDD-011 | 待處理 | 4.3 核心領域模型設計與方法 |
-| TEST-002 | 為所有API端點撰寫Postman測試 | API-001~API-013 | 待處理 | 5.1 RESTful API |
+| TEST-002 | 為所有API端點撰寫Postman測試 | API-001~API-014 | 待處理 | 5.1 RESTful API |
 | TEST-003 | 為Cron與RabbitMQ邏輯撰寫整合測試 | CRON-001, QUEUE-001 | 待處理 | 6.1 訂閱與扣款流程 |
 | TEST-004 | 為mock支付網關撰寫測試，涵蓋成功與失敗案例 | PAY-002 | 待處理 | 6.1 訂閱與扣款流程 |
-| DOC-001 | 撰寫Markdown格式API文件，遵循OpenAPI 3.0 | API-001~API-013 | 待處理 | 5.1 RESTful API, 5.2 API 資料格式示例 |
+| DOC-001 | 撰寫Markdown格式API文件，遵循OpenAPI 3.0 | API-001~API-014 | 待處理 | 5.1 RESTful API, 5.2 API 資料格式示例 |
 | DOC-002 | 撰寫開發指南，包含領域模型與Cron實現細節 | DDD-001~DDD-010, CRON-001 | 待處理 | 4.3 核心領域模型設計與方法, 6.1 訂閱與扣款流程 |
 
 ---
 
 ## 7. 總計
-- **總任務數**：51
+- **總任務數**：52
 - **狀態分布**：
   - 已完成：39個任務
   - 進行中：0個任務
-  - 待處理：12個任務
+  - 待處理：13個任務
 - **額外實現**：
   - 實現寬限期邏輯（GracePeriodCheckerJob每小時檢查過期寬限期訂閱並自動取消）
   - 添加gracePeriodEndDate字段到Subscription實體和模型
