@@ -1,7 +1,7 @@
 import { DEFAULT_MONGO } from '@myapp/common';
 import { Inject, Injectable } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { CustomDefinition, CustomValidator, CustomMongoClient } from '@xxxhand/app-common';
+import { CustomDefinition, CustomValidator, CustomMongoClient, CustomUtils } from '@xxxhand/app-common';
 import { PromoCode } from '../../domain/entities/promoCode.entity';
 import { modelNames, IPromoCodeDocument } from '../models/models.definition';
 
@@ -51,33 +51,39 @@ export class PromoCodeRepository {
   public async findApplicablePromoCodes(userId: string, productId?: string): Promise<PromoCode[]> {
     const col = this.defMongoClient.getCollection(modelNames.PROMO_CODES);
 
-    // Base query: promo codes that can still be used
-    const baseQuery: any = {
-      $or: [{ usageLimit: null }, { $expr: { $lt: ['$usedCount', '$usageLimit'] } }],
-    };
+    // Base conditions: promo codes that can still be used
+    const baseConditions: any[] = [
+      { $or: [{ usageLimit: null }, { $expr: { $lt: ['$usedCount', '$usageLimit'] } }] },
+    ];
 
     // Add user assignment filter
     if (userId) {
-      baseQuery.$or = baseQuery.$or || [];
-      baseQuery.$or.push({ assignedUserId: userId }, { assignedUserId: { $exists: false } }, { assignedUserId: null });
+      baseConditions.push({
+        $or: [{ assignedUserId: CustomUtils.stringToObjectId(userId) }, { assignedUserId: { $exists: false } }, { assignedUserId: null }],
+      });
     }
 
     let query;
     if (productId) {
       // Find promo codes that either apply to all products (empty applicableProducts) or include the specific product
       query = {
-        ...baseQuery,
-        $or: [
-          ...(baseQuery.$or || []),
-          { applicableProducts: { $size: 0 } }, // Empty array means global applicable
-          { applicableProducts: productId },
+        $and: [
+          ...baseConditions,
+          {
+            $or: [
+              { applicableProducts: { $size: 0 } }, // Empty array means global applicable
+              { applicableProducts: productId },
+            ],
+          },
         ],
       };
     } else {
       // If no productId specified, only return global promo codes
       query = {
-        ...baseQuery,
-        applicableProducts: { $size: 0 },
+        $and: [
+          ...baseConditions,
+          { applicableProducts: { $size: 0 } },
+        ],
       };
     }
 
@@ -85,6 +91,7 @@ export class PromoCodeRepository {
     return docs.map((doc) => {
       const ent = plainToInstance(PromoCode, doc);
       ent.id = doc._id.toHexString();
+      ent.assignedUserId = doc.assignedUserId ? doc.assignedUserId.toHexString() : '';
       return ent;
     });
   }
@@ -98,7 +105,7 @@ export class PromoCodeRepository {
       isSingleUse: promoCode.isSingleUse,
       usedCount: promoCode.usedCount,
       minimumAmount: promoCode.minimumAmount,
-      assignedUserId: promoCode.assignedUserId,
+      assignedUserId: CustomValidator.nonEmptyString(promoCode.assignedUserId) ? CustomUtils.stringToObjectId(promoCode.assignedUserId) : null,
       applicableProducts: promoCode.applicableProducts,
       createdAt: new Date(),
       updatedAt: new Date(),

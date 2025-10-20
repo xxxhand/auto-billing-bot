@@ -132,7 +132,7 @@ graph TD
 | isSingleUse | boolean | Yes | false | 是否僅限單人使用 |
 | usedCount | number | Yes | 0 | 已使用次數 |
 | minimumAmount | number | No | 0 | 最低消費金額門檻 |
-| assignedUserId | string | No | null | 專屬用戶ID（專屬優惠碼時有效） |
+| assignedUserId | ObjectId | No | null | 專屬用戶ID（專屬優惠碼時有效） |
 | applicableProducts | array[string] | No | [] | 適用產品ID列表，為空表示全域適用 |
 | createdAt | date | Yes | - | 創建時間 |
 | updatedAt | date | Yes | - | 變更時間 |
@@ -281,7 +281,7 @@ erDiagram
         boolean isSingleUse
         number usedCount
         number minimumAmount
-        string assignedUserId
+        ObjectId assignedUserId
         array applicableProducts
         date createdAt
         date updatedAt

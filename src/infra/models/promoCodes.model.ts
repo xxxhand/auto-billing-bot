@@ -1,3 +1,4 @@
+import type { ObjectId } from 'mongodb';
 import { IBaseModel } from './base-model.interface';
 
 export interface IPromoCodeModel extends IBaseModel {
@@ -14,7 +15,7 @@ export interface IPromoCodeModel extends IBaseModel {
   /** Minimum order amount required */
   minimumAmount: number;
   /** Assigned user ID for exclusive promo codes (optional) */
-  assignedUserId?: string;
+  assignedUserId?: ObjectId;
   /** Applicable product IDs (empty array means all products) */
   applicableProducts: string[];
 }

@@ -53,7 +53,7 @@
 | API-005 | 實現POST /subscriptions/cancel，取消訂閱與退款 | DB-007, DDD-001 | 已完成 | 5.1 RESTful API, 6.5 退款流程 |
 | API-006 | 實現GET /discounts，返回適用優惠列表 | DB-004, DDD-006 | 已完成 | 5.1 RESTful API, 6.4 優惠應用流程 |
 | API-007 | 實現POST /discounts/{id}/apply，應用優惠到訂閱 | DB-004, DDD-006 | 已完成 | 5.1 RESTful API, 6.4 優惠應用流程 |
-| API-008 | 實現GET /userPromoCodes，返回用戶可用優惠碼（包含minimumAmount與applicableProducts欄位） | DB-005, DDD-007, DDD-009 | 待處理 | 5.1 RESTful API, 5.2 API 資料格式示例 |
+| API-008 | 實現GET /userPromoCodes，返回用戶可用優惠碼（包含minimumAmount與applicableProducts欄位） | DB-005, DDD-007, DDD-009 | 已完成 | 5.1 RESTful API, 5.2 API 資料格式示例 |
 | API-009 | 實現GET /admin/promoCodes/{code}/usage，後台查詢優惠碼使用狀態與歷史 | DB-005, DB-011 | 待處理 | 5.1 RESTful API |
 | API-010 | 實現POST /payments/retry，手動補款 | DB-006, DDD-008 | 已完成 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
 | API-011 | 實現GET /subscriptions/{id}/history，查詢訂閱與扣款歷史 | DB-008 | 待處理 | 5.1 RESTful API |
@@ -101,9 +101,9 @@
 ## 7. 總計
 - **總任務數**：51
 - **狀態分布**：
-  - 已完成：38個任務
+  - 已完成：39個任務
   - 進行中：0個任務
-  - 待處理：13個任務
+  - 待處理：12個任務
 - **額外實現**：
   - 實現寬限期邏輯（GracePeriodCheckerJob每小時檢查過期寬限期訂閱並自動取消）
   - 添加gracePeriodEndDate字段到Subscription實體和模型
