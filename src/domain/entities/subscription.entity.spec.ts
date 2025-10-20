@@ -489,7 +489,7 @@ describe('Subscription Entity', () => {
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-02-15');
       const gracePeriodEndDate = new Date('2024-01-25'); // Future date
-      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 0, 0, null, gracePeriodEndDate);
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 0, 0, null, null, gracePeriodEndDate);
 
       // Act - Test with a date before grace period end
       const testDate = new Date('2024-01-20');
@@ -504,7 +504,7 @@ describe('Subscription Entity', () => {
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-02-15');
       const gracePeriodEndDate = new Date('2024-01-10'); // Past date
-      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 0, 0, null, gracePeriodEndDate);
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 0, 0, null, null, gracePeriodEndDate);
 
       // Act
       const result = subscription.isGracePeriodExpired();
@@ -531,7 +531,7 @@ describe('Subscription Entity', () => {
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-02-15');
       const gracePeriodEndDate = new Date('2024-01-20');
-      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 0, 0, null, gracePeriodEndDate);
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 0, 0, null, null, gracePeriodEndDate);
 
       // Act - Test with date before grace period end
       const resultBefore = subscription.isGracePeriodExpired(new Date('2024-01-19'));
@@ -550,7 +550,7 @@ describe('Subscription Entity', () => {
       const startDate = new Date('2024-01-15');
       const nextBillingDate = new Date('2024-02-15');
       const gracePeriodEndDate = new Date('2024-01-22');
-      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 0, 0, null, gracePeriodEndDate);
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 0, 0, null, null, gracePeriodEndDate);
 
       // Act
       const result = subscription.expireGracePeriod();

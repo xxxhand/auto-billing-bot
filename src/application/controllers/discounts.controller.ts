@@ -1,7 +1,9 @@
-import { Controller, Get, LoggerService } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, LoggerService } from '@nestjs/common';
 import { CommonService } from '@myapp/common';
 import { CustomResult } from '@xxxhand/app-common';
 import { DiscountsService, DiscountResponse } from '../services/discounts.service';
+import { ApplyDiscountRequest } from '../../domain/value-objects/apply-discount.request';
+import { ApplyDiscountResponse } from '../../domain/value-objects/apply-discount.response';
 
 @Controller({
   path: 'discounts',
@@ -19,6 +21,15 @@ export class DiscountsController {
   @Get()
   async getDiscounts(): Promise<CustomResult<DiscountResponse[]>> {
     const data = await this.discountsService.getApplicableDiscounts();
+    return this.commonService.newResultInstance().withResult(data);
+  }
+
+  @Post(':id/apply')
+  async applyDiscount(
+    @Param('id') discountId: string,
+    @Body() request: ApplyDiscountRequest,
+  ): Promise<CustomResult<ApplyDiscountResponse>> {
+    const data = await this.discountsService.applyDiscountToSubscription(discountId, request);
     return this.commonService.newResultInstance().withResult(data);
   }
 }

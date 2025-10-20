@@ -78,10 +78,25 @@ export class BillingService implements IBillingService {
 
     // Calculate amount with discounts
     let amount = product.price;
-    if (subscription.remainingDiscountPeriods > 0) {
-      amount = 0; // Free period
-      subscription.remainingDiscountPeriods -= 1;
-      await this.subscriptionRepository.save(subscription);
+    if (subscription.remainingDiscountPeriods > 0 && subscription.appliedDiscountId) {
+      // Apply the stored discount for remaining discount periods
+      const appliedDiscount = await this.discountRepository.findByDiscountId(subscription.appliedDiscountId);
+      if (appliedDiscount && appliedDiscount.isApplicable(new Date())) {
+        amount = appliedDiscount.calculateDiscountedPrice(product.price);
+        subscription.remainingDiscountPeriods -= 1;
+
+        // Clear applied discount if no periods remaining
+        if (subscription.remainingDiscountPeriods <= 0) {
+          subscription.appliedDiscountId = null;
+        }
+
+        await this.subscriptionRepository.save(subscription);
+      } else {
+        // Discount no longer valid, clear it
+        subscription.appliedDiscountId = null;
+        subscription.remainingDiscountPeriods = 0;
+        await this.subscriptionRepository.save(subscription);
+      }
     }
 
     // Apply renewal discount for second and subsequent renewals

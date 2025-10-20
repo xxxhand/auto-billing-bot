@@ -106,4 +106,23 @@ export const errCodes: CustomDefinition.ICodeStruct[] = [
     httpStatus: 400,
     message: 'Subscription ID is empty',
   },
+  // Discount related errors
+  {
+    codeName: errConstants.ERR_DISCOUNT_NOT_FOUND,
+    code: 20015,
+    httpStatus: 404,
+    message: 'Discount not found',
+  },
+  {
+    codeName: errConstants.ERR_DISCOUNT_NOT_APPLICABLE,
+    code: 20016,
+    httpStatus: 400,
+    message: 'Discount is not applicable to this product',
+  },
+  {
+    codeName: errConstants.ERR_DISCOUNT_EXPIRED,
+    code: 20017,
+    httpStatus: 400,
+    message: 'Discount has expired',
+  },
 ];

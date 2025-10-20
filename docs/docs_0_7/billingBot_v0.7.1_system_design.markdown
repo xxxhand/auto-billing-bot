@@ -103,6 +103,7 @@ graph TD
 | nextBillingDate | date | Yes | - | 下次扣款日期 |
 | renewalCount | number | Yes | 0 | 續訂次數 |
 | remainingDiscountPeriods | number | Yes | 0 | 剩餘優惠期數 |
+| appliedDiscountId | string | No | null | 應用折扣的ID，用於扣款時計算正確價格 |
 | pendingConversion | object | No | null | 待生效的轉換請求（包含newCycleType, requestedAt） |
 | gracePeriodEndDate | date | No | null | 寬限期結束日期（當status為grace時有效） |
 | createdAt | date | Yes | - | 創建時間 |
@@ -252,6 +253,7 @@ erDiagram
         date nextBillingDate
         number renewalCount
         number remainingDiscountPeriods
+        string appliedDiscountId
         object pendingConversion
         date gracePeriodEndDate
         date createdAt
@@ -354,7 +356,7 @@ erDiagram
 基於DDD，定義核心聚合根（Subscription為主要聚合根），並提供領域方法。以下為TypeScript-like偽碼示例，TDD將先測試這些方法。
 
 - **Subscription (聚合根)**：
-  - 屬性：subscriptionId, userId, productId, status, cycleType, startDate, nextBillingDate, renewalCount, remainingDiscountPeriods, pendingConversion, gracePeriodEndDate
+  - 屬性：subscriptionId, userId, productId, status, cycleType, startDate, nextBillingDate, renewalCount, remainingDiscountPeriods, appliedDiscountId, pendingConversion, gracePeriodEndDate
   - 方法：
     - `calculateNextBillingDate()`: 基於cycleType計算下次扣款日，處理大小月/閏年。
     - `applyDiscount(discount: Discount)`: 應用優惠，更新remainingDiscountPeriods並計算折扣價。

@@ -129,6 +129,7 @@ describe('BillingService', () => {
 
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
+      discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       subscriptionRepository.save.mockResolvedValue(subscription);
@@ -154,6 +155,7 @@ describe('BillingService', () => {
 
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
+      discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       taskQueue.publishTask.mockResolvedValue(undefined);
@@ -203,6 +205,7 @@ describe('BillingService', () => {
 
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
+      discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
       discountRepository.findRenewalDiscounts.mockResolvedValue([renewalDiscount]);
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
@@ -220,6 +223,116 @@ describe('BillingService', () => {
         currency: 'TWD',
         description: expect.stringContaining('Subscription billing for sub_123'),
       });
+    });
+
+    it('should apply applied discount for remaining discount periods', async () => {
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
+      subscription.remainingDiscountPeriods = 2;
+      subscription.appliedDiscountId = 'disc_123';
+
+      const product = new ProductEntity();
+      product.productId = 'prod_123';
+      product.price = 100;
+
+      const appliedDiscount = new Discount('disc_123', 'percentage', 20, 1, new Date(0), new Date(9999, 11, 31), ['prod_123']); // 20% off
+
+      const paymentResponse: PaymentResponse = {
+        success: true,
+        transactionId: 'txn_123',
+      };
+
+      subscriptionRepository.findById.mockResolvedValue(subscription);
+      productRepository.findByProductId.mockResolvedValue(product);
+      discountRepository.findByDiscountId.mockResolvedValue(appliedDiscount);
+      paymentGateway.charge.mockResolvedValue(paymentResponse);
+      paymentAttemptRepository.save.mockResolvedValue(undefined);
+      subscriptionRepository.save.mockResolvedValue(subscription);
+
+      const result = await service.processBilling('sub_123');
+
+      expect(result.success).toBe(true);
+      expect(result.transactionId).toBe('txn_123');
+      expect(discountRepository.findByDiscountId).toHaveBeenCalledWith('disc_123');
+      expect(paymentGateway.charge).toHaveBeenCalledWith({
+        attemptId: expect.any(String),
+        userId: 'user_123',
+        amount: 80, // 100 * 0.8 = 80 (20% discount)
+        currency: 'TWD',
+        description: expect.stringContaining('Subscription billing for sub_123'),
+      });
+      expect(subscription.remainingDiscountPeriods).toBe(1); // Decreased by 1
+      expect(subscription.appliedDiscountId).toBe('disc_123'); // Still set
+      expect(subscriptionRepository.save).toHaveBeenCalled();
+    });
+
+    it('should clear applied discount when no periods remaining', async () => {
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
+      subscription.remainingDiscountPeriods = 1; // Last period
+      subscription.appliedDiscountId = 'disc_123';
+
+      const product = new ProductEntity();
+      product.productId = 'prod_123';
+      product.price = 100;
+
+      const appliedDiscount = new Discount('disc_123', 'percentage', 20, 1, new Date(0), new Date(9999, 11, 31), ['prod_123']);
+
+      const paymentResponse: PaymentResponse = {
+        success: true,
+        transactionId: 'txn_123',
+      };
+
+      subscriptionRepository.findById.mockResolvedValue(subscription);
+      productRepository.findByProductId.mockResolvedValue(product);
+      discountRepository.findByDiscountId.mockResolvedValue(appliedDiscount);
+      paymentGateway.charge.mockResolvedValue(paymentResponse);
+      paymentAttemptRepository.save.mockResolvedValue(undefined);
+      subscriptionRepository.save.mockResolvedValue(subscription);
+
+      const result = await service.processBilling('sub_123');
+
+      expect(result.success).toBe(true);
+      expect(subscription.remainingDiscountPeriods).toBe(0);
+      expect(subscription.appliedDiscountId).toBeNull(); // Cleared
+      expect(subscriptionRepository.save).toHaveBeenCalled();
+    });
+
+    it('should clear invalid applied discount', async () => {
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
+      subscription.remainingDiscountPeriods = 2;
+      subscription.appliedDiscountId = 'disc_123';
+
+      const product = new ProductEntity();
+      product.productId = 'prod_123';
+      product.price = 100;
+
+      // Discount is expired
+      const expiredDiscount = new Discount('disc_123', 'percentage', 20, 1, new Date(0), new Date(2000, 0, 1), ['prod_123']);
+
+      const paymentResponse: PaymentResponse = {
+        success: true,
+        transactionId: 'txn_123',
+      };
+
+      subscriptionRepository.findById.mockResolvedValue(subscription);
+      productRepository.findByProductId.mockResolvedValue(product);
+      discountRepository.findByDiscountId.mockResolvedValue(expiredDiscount);
+      paymentGateway.charge.mockResolvedValue(paymentResponse);
+      paymentAttemptRepository.save.mockResolvedValue(undefined);
+      subscriptionRepository.save.mockResolvedValue(subscription);
+
+      const result = await service.processBilling('sub_123');
+
+      expect(result.success).toBe(true);
+      expect(paymentGateway.charge).toHaveBeenCalledWith({
+        attemptId: expect.any(String),
+        userId: 'user_123',
+        amount: 100, // Full price, no discount applied
+        currency: 'TWD',
+        description: expect.stringContaining('Subscription billing for sub_123'),
+      });
+      expect(subscription.remainingDiscountPeriods).toBe(0); // Cleared
+      expect(subscription.appliedDiscountId).toBeNull(); // Cleared
+      expect(subscriptionRepository.save).toHaveBeenCalled();
     });
   });
 
@@ -262,6 +375,7 @@ describe('BillingService', () => {
 
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
+      discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       subscriptionRepository.save.mockResolvedValue(subscription);
@@ -286,6 +400,7 @@ describe('BillingService', () => {
 
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
+      discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       taskQueue.rejectTask.mockResolvedValue(undefined);

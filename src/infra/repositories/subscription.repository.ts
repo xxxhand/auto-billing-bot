@@ -98,6 +98,7 @@ export class SubscriptionRepository {
       nextBillingDate: entity.nextBillingDate,
       renewalCount: entity.renewalCount,
       remainingDiscountPeriods: entity.remainingDiscountPeriods,
+      appliedDiscountId: entity.appliedDiscountId,
       pendingConversion: entity.pendingConversion,
       gracePeriodEndDate: entity.gracePeriodEndDate,
     };

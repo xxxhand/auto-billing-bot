@@ -20,6 +20,7 @@ export class Subscription extends BaseEntity {
   public nextBillingDate: Date;
   public renewalCount: number;
   public remainingDiscountPeriods: number;
+  public appliedDiscountId?: string | null;
   public pendingConversion?: {
     newCycleType: string;
     requestedAt: Date;
@@ -36,6 +37,7 @@ export class Subscription extends BaseEntity {
     status: SubscriptionStatus = 'pending',
     renewalCount: number = 0,
     remainingDiscountPeriods: number = 0,
+    appliedDiscountId: string | null = null,
     pendingConversion: { newCycleType: string; requestedAt: Date } | null = null,
     gracePeriodEndDate: Date | null = null,
   ) {
@@ -49,6 +51,7 @@ export class Subscription extends BaseEntity {
     this.nextBillingDate = nextBillingDate;
     this.renewalCount = renewalCount;
     this.remainingDiscountPeriods = remainingDiscountPeriods;
+    this.appliedDiscountId = appliedDiscountId;
     this.pendingConversion = pendingConversion;
     this.gracePeriodEndDate = gracePeriodEndDate;
   }
@@ -127,6 +130,7 @@ export class Subscription extends BaseEntity {
   public applyDiscount(discount: Discount, originalPrice: number, discountPeriods?: number): number {
     if (discountPeriods !== undefined) {
       this.remainingDiscountPeriods = discountPeriods;
+      this.appliedDiscountId = discount.discountId;
     }
     return discount.calculateDiscountedPrice(originalPrice);
   }
