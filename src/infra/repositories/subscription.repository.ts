@@ -66,6 +66,21 @@ export class SubscriptionRepository {
   }
 
   /**
+   * Find subscriptions that are currently in grace period
+   */
+  public async findSubscriptionsInGracePeriod(): Promise<Subscription[]> {
+    const col = this.defMongoClient.getCollection(modelNames.SUBSCRIPTIONS);
+    const q = { status: 'grace' };
+    const docs = (await col.find(q).toArray()) as ISubscriptionDocument[];
+    return docs.map((doc) => {
+      const ent = plainToInstance(Subscription, doc);
+      ent.id = doc._id.toHexString();
+      ent.userId = doc.userId.toHexString();
+      return ent;
+    });
+  }
+
+  /**
    * Save subscription entity
    */
   public async save(entity: Subscription): Promise<CustomDefinition.TNullable<Subscription>> {
@@ -73,8 +88,9 @@ export class SubscriptionRepository {
       return undefined;
     }
 
-    const now = new Date();
-    const doc: Partial<ISubscriptionDocument> = {
+    const doc = {
+      subscriptionId: entity.subscriptionId,
+      userId: CustomUtils.stringToObjectId(entity.userId),
       productId: entity.productId,
       status: entity.status,
       cycleType: entity.cycleType,
@@ -83,22 +99,21 @@ export class SubscriptionRepository {
       renewalCount: entity.renewalCount,
       remainingDiscountPeriods: entity.remainingDiscountPeriods,
       pendingConversion: entity.pendingConversion,
-      updatedAt: now,
+      gracePeriodEndDate: entity.gracePeriodEndDate,
     };
 
     const col = this.defMongoClient.getCollection(modelNames.SUBSCRIPTIONS);
-    if (entity.isNew()) {
-      // New entity
-      doc.subscriptionId = entity.subscriptionId;
-      doc.userId = CustomUtils.stringToObjectId(entity.userId);
-      doc.createdAt = now;
-      const docRes = await col.insertOne(doc as ISubscriptionDocument);
+
+    if (!CustomValidator.nonEmptyString(entity.id)) {
+      // Insert new document
+      const docRes = await col.insertOne(doc);
       entity.id = docRes.insertedId.toHexString();
       return entity;
+    } else {
+      // Update existing document
+      const q = { _id: CustomUtils.stringToObjectId(entity.id) };
+      await col.updateOne(q, { $set: doc });
+      return entity;
     }
-    // Update existing
-    const q = { _id: CustomUtils.stringToObjectId(entity.id) };
-    await col.updateOne(q, { $set: doc });
-    return entity;
   }
 }

@@ -38,7 +38,7 @@ graph TD
 - **優惠管理模組**：管理優惠方案、優惠碼及優先級邏輯。
 - **支付處理模組**：處理扣款、重試與退款。
 - **日誌與監控模組**：記錄扣款歷史、異常與系統性能。
-- **自動化模組**：使用Cron job定時掃描到期訂閱，推送至RabbitMQ觸發扣款。
+- **自動化模組**：使用Cron job定時掃描到期訂閱，推送至RabbitMQ觸發扣款；另外包含寬限期檢查job，每小時檢查過期的寬限期訂閱並自動取消。
 
 多租戶模組及Webhook模組定義為未來擴展方向，詳見第9節。
 
@@ -104,6 +104,7 @@ graph TD
 | renewalCount | number | Yes | 0 | 續訂次數 |
 | remainingDiscountPeriods | number | Yes | 0 | 剩餘優惠期數 |
 | pendingConversion | object | No | null | 待生效的轉換請求（包含newCycleType, requestedAt） |
+| gracePeriodEndDate | date | No | null | 寬限期結束日期（當status為grace時有效） |
 | createdAt | date | Yes | - | 創建時間 |
 | updatedAt | date | Yes | - | 變更時間 |
 
@@ -252,6 +253,7 @@ erDiagram
         number renewalCount
         number remainingDiscountPeriods
         object pendingConversion
+        date gracePeriodEndDate
         date createdAt
         date updatedAt
         boolean valid 
@@ -352,12 +354,14 @@ erDiagram
 基於DDD，定義核心聚合根（Subscription為主要聚合根），並提供領域方法。以下為TypeScript-like偽碼示例，TDD將先測試這些方法。
 
 - **Subscription (聚合根)**：
-  - 屬性：subscriptionId, userId, productId, status, cycleType, startDate, nextBillingDate, renewalCount, remainingDiscountPeriods, pendingConversion
+  - 屬性：subscriptionId, userId, productId, status, cycleType, startDate, nextBillingDate, renewalCount, remainingDiscountPeriods, pendingConversion, gracePeriodEndDate
   - 方法：
     - `calculateNextBillingDate()`: 基於cycleType計算下次扣款日，處理大小月/閏年。
     - `applyDiscount(discount: Discount)`: 應用優惠，更新remainingDiscountPeriods並計算折扣價。
     - `convertToNewCycle(newCycleType: string)`: 方案轉換，記錄新週期類型並等到當前週期結束後的下個週期開始時生效。若新方案價格較高（升級），立即補收剩餘期間的費用差額；若較低（降級），下個週期生效無退款。承接剩餘優惠期數。
     - `handlePaymentFailure(failureReason: string)`: 根據原因決定重試或進入寬限期，更新status。
+    - `isGracePeriodExpired()`: 檢查寬限期是否已過期（當前時間是否超過gracePeriodEndDate）。
+    - `expireGracePeriod()`: 將寬限期訂閱狀態從grace更改為cancelled。
     - `renew()`: 增加renewalCount，檢查是否適用續訂優惠。
 
 - **Discount (實體)**：
@@ -575,6 +579,43 @@ stateDiagram-v2
     note right of EnqueueBillingTask
         包含subscriptionId, userId, amount等資訊
         推送到billing-queue
+    end note
+```
+
+### 6.2.1 寬限期檢查流程 (Activity Diagram)
+```mermaid
+stateDiagram-v2
+    [*] --> CronTrigger: Cron Job Trigger (每小時)
+    CronTrigger --> AcquireLock: Acquire Distributed Lock
+    AcquireLock --> CheckLock: Lock Acquired?
+    CheckLock --> QueryGraceSubscriptions: Yes, Query Grace Period Subscriptions
+    CheckLock --> SkipExecution: No, Skip Execution
+    
+    QueryGraceSubscriptions --> FilterExpiredGrace: Filter gracePeriodEndDate <= now
+    FilterExpiredGrace --> CheckExpiredSubscriptions: Any Expired Grace Subscriptions?
+    CheckExpiredSubscriptions --> ExpireSubscriptions: Yes, Expire Each Subscription
+    CheckExpiredSubscriptions --> LogNoExpired: No, Log "No expired grace periods"
+    
+    ExpireSubscriptions --> UpdateStatusToCancelled: Update Status to cancelled
+    UpdateStatusToCancelled --> RecordExpiryLog: Record Grace Period Expiry Log
+    RecordExpiryLog --> CheckMoreExpired: More Expired Subscriptions?
+    CheckMoreExpired --> ExpireSubscriptions: Yes, Continue Processing
+    CheckMoreExpired --> ReleaseLock: No, Release Distributed Lock
+    
+    ReleaseLock --> LogExecutionComplete: Log Execution Complete
+    LogExecutionComplete --> [*]
+    
+    LogNoExpired --> ReleaseLock
+    SkipExecution --> [*]
+    
+    note right of AcquireLock
+        使用Redis等分布式鎖
+        避免多實例重複執行
+    end note
+    
+    note right of ExpireSubscriptions
+        將status從grace更改為cancelled
+        記錄寬限期過期事件
     end note
 ```
 

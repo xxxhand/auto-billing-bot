@@ -30,4 +30,6 @@ export interface ISubscriptionModel extends IBaseModel {
     newCycleType: string;
     requestedAt: Date;
   } | null;
+  /** Grace period end date, set when entering grace status */
+  gracePeriodEndDate?: Date | null;
 }

@@ -470,6 +470,108 @@ describe('Subscription Entity', () => {
     });
   });
 
+  describe('isGracePeriodExpired', () => {
+    it('should return false for subscription not in grace period', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active');
+
+      // Act
+      const result = subscription.isGracePeriodExpired();
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    it('should return false for subscription in grace period with future end date', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const gracePeriodEndDate = new Date('2024-01-25'); // Future date
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 0, 0, null, gracePeriodEndDate);
+
+      // Act - Test with a date before grace period end
+      const testDate = new Date('2024-01-20');
+      const result = subscription.isGracePeriodExpired(testDate);
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    it('should return true for subscription in grace period with past end date', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const gracePeriodEndDate = new Date('2024-01-10'); // Past date
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 0, 0, null, gracePeriodEndDate);
+
+      // Act
+      const result = subscription.isGracePeriodExpired();
+
+      // Assert
+      expect(result).toBe(true);
+    });
+
+    it('should return false for subscription in grace period with null end date', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 0, 0, null, null);
+
+      // Act
+      const result = subscription.isGracePeriodExpired();
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    it('should use provided current date for comparison', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const gracePeriodEndDate = new Date('2024-01-20');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 0, 0, null, gracePeriodEndDate);
+
+      // Act - Test with date before grace period end
+      const resultBefore = subscription.isGracePeriodExpired(new Date('2024-01-19'));
+      // Act - Test with date after grace period end
+      const resultAfter = subscription.isGracePeriodExpired(new Date('2024-01-21'));
+
+      // Assert
+      expect(resultBefore).toBe(false);
+      expect(resultAfter).toBe(true);
+    });
+  });
+
+  describe('expireGracePeriod', () => {
+    it('should cancel subscription and return cancellation details', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const gracePeriodEndDate = new Date('2024-01-22');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'grace', 0, 0, null, gracePeriodEndDate);
+
+      // Act
+      const result = subscription.expireGracePeriod();
+
+      // Assert
+      expect(subscription.status).toBe('cancelled');
+      expect(result.cancelledAt).toBeInstanceOf(Date);
+      expect(result.reason).toBe('Grace period expired without successful payment');
+    });
+
+    it('should throw error if subscription is not in grace period', () => {
+      // Arrange
+      const startDate = new Date('2024-01-15');
+      const nextBillingDate = new Date('2024-02-15');
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', startDate, nextBillingDate, 'active');
+
+      // Act & Assert
+      expect(() => subscription.expireGracePeriod()).toThrow('Subscription is not in grace period');
+    });
+  });
+
   describe('renew', () => {
     it('should increment renewalCount when renewing subscription', () => {
       // Arrange

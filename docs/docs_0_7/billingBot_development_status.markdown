@@ -1,7 +1,7 @@
 # 自動扣款機器人開發狀態總結
 
 **最後更新**：2025年10月20日
-**當前階段**：API-010 完成 - 實現手動補款功能，準備開始寬限期邏輯
+**當前階段**：QUEUE-003 完成 - 實現寬限期邏輯，準備開始剩餘API端點
 **負責人**：GitHub Copilot
 
 ## 工作指南
@@ -13,9 +13,10 @@
 ## 📋 當前任務狀態
 
 ### 進行中任務
-- 🔄 QUEUE-003：實現寬限期邏輯（7天），支援手動補款
+- 無
 
 ### 已完成任務 (最近)
+- ✅ QUEUE-003：實現寬限期邏輯（7天），支援手動補款（2025年10月20日）
 - ✅ API-010：實現POST /payments/retry，手動補款（2025年10月20日）
 - ✅ API-005：實現POST /subscriptions/cancel，取消訂閱與退款（2025年10月19日）
 - ✅ QUEUE-002：實現retry機制，最多3次重試，間隔1小時（2025年10月18日）
@@ -58,14 +59,15 @@
 
 ### 待處理任務 (優先順序)
 1. 實作剩餘API端點（API-006~API-013）
-2. 實作測試與文件（TEST-001~TEST-004, DOC-001~DOC-002）
+2. 實作整合測試與文件（TEST-001~TEST-004, DOC-001~DOC-002）
+3. 實現JWT認證機制
 
 ## 🔧 技術狀態
 
 ### 當前架構
-- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根（含 calculateNextBillingDate、applyDiscount、convertToNewCycle、handlePaymentFailure、renew 方法）、Discount 實體（isApplicable、isApplicableToProduct、calculateDiscountedPrice）、PromoCode 值物件（canBeUsed、incrementUsage、isApplicableToProduct）、PaymentAttempt 實體（shouldRetry）、promoCodeDomainService 領域服務（優惠碼業務邏輯）、billingService 領域服務（扣款流程整合支付網關與任務隊列）、discountPriorityService 領域服務（多重優惠優先級選擇與產品適用性檢查）、paymentGateway 抽象層接口（支付網關契約）、taskQueue 抽象層接口（訊息隊列契約），並通過 TDD 測試驗證。Repository層已優化，PromoCodeUsageRepository.create方法現接收完整的PromoCodeUsage value object，符合DDD原則
-- **資料模型**：新增 `users` 模型（userId／tenantId／encryptedData）、`products` 模型（productId／name／price／cycleType／cycleValue／gracePeriodDays）、`subscriptions` 模型（subscriptionId／userId／productId／status／cycleType／startDate／nextBillingDate／renewalCount／remainingDiscountPeriods／pendingConversion）、`discounts` 模型（discountId／type／value／priority／startDate／endDate）、`promoCodes` 模型（code／discountId／usageLimit／isSingleUse／usedCount）、`promoCodeUsages` 模型（usageId／promoCode／userId／usedAt／orderAmount）、`paymentAttempts` 模型（attemptId／subscriptionId／status／failureReason／retryCount）、`refunds` 模型（refundId／subscriptionId／amount／status）、`billingLogs` 模型（logId／subscriptionId／eventType／details）、`config` 模型（configId／type／productId／gracePeriodDays／refundPolicy）、`rules` 模型（ruleId／type／conditions／actions），並完成所有集合的索引優化（nextBillingDate、status、subscriptionId 等關鍵欄位）
-- **文件**：v0.7 實作指南完成，提供模組拆解與開發順序
+- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根（含 calculateNextBillingDate、applyDiscount、convertToNewCycle、handlePaymentFailure、renew、isGracePeriodExpired、expireGracePeriod 方法）、Discount 實體（isApplicable、isApplicableToProduct、calculateDiscountedPrice）、PromoCode 值物件（canBeUsed、incrementUsage、isApplicableToProduct）、PaymentAttempt 實體（shouldRetry）、promoCodeDomainService 領域服務（優惠碼業務邏輯）、billingService 領域服務（扣款流程整合支付網關與任務隊列）、discountPriorityService 領域服務（多重優惠優先級選擇與產品適用性檢查）、paymentGateway 抽象層接口（支付網關契約）、taskQueue 抽象層接口（訊息隊列契約），並通過 TDD 測試驗證。Repository層已優化，PromoCodeUsageRepository.create方法現接收完整的PromoCodeUsage value object，符合DDD原則
+- **資料模型**：新增 `users` 模型（userId／tenantId／encryptedData）、`products` 模型（productId／name／price／cycleType／cycleValue／gracePeriodDays）、`subscriptions` 模型（subscriptionId／userId／productId／status／cycleType／startDate／nextBillingDate／renewalCount／remainingDiscountPeriods／pendingConversion／gracePeriodEndDate）、`discounts` 模型（discountId／type／value／priority／startDate／endDate）、`promoCodes` 模型（code／discountId／usageLimit／isSingleUse／usedCount）、`promoCodeUsages` 模型（usageId／promoCode／userId／usedAt／orderAmount）、`paymentAttempts` 模型（attemptId／subscriptionId／status／failureReason／retryCount）、`refunds` 模型（refundId／subscriptionId／amount／status）、`billingLogs` 模型（logId／subscriptionId／eventType／details）、`config` 模型（configId／type／productId／gracePeriodDays／refundPolicy）、`rules` 模型（ruleId／type／conditions／actions），並完成所有集合的索引優化（nextBillingDate、status、subscriptionId 等關鍵欄位）
+- **文件**：v0.7 實作指南完成，提供模組拆解與開發順序；系統設計文檔已更新，包含寬限期邏輯流程圖與GracePeriodCheckerJob描述
 
 ### 遇到的問題與解決方案
 - 尚無新問題，待後續任務展開時再記錄
@@ -76,10 +78,10 @@
 
 ## 📊 進度指標
 - **總任務數**：34 項
-- **已完成**：34 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、CRON-001、CRON-002、QUEUE-001、QUEUE-002）
-- **進行中**：1 項（QUEUE-003）
-- **測試覆蓋率**：單元測試 238/238 通過，E2E 測試 40/40 通過
+- **已完成**：35 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003）
+- **進行中**：0 項
+- **測試覆蓋率**：單元測試 250/250 通過，E2E 測試 40/40 通過
 
 ## 🎯 下一步計劃
-1. **進行中**：QUEUE-003 - 實現寬限期邏輯（7天），支援手動補款
-2. **建議後續任務**：完成剩餘API端點或整合測試
+1. **建議後續任務**：完成剩餘API端點（API-006~API-013）或整合測試（TEST-001~TEST-004）
+2. **長期目標**：實現監控與日誌功能，準備生產環境部署

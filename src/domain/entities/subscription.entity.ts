@@ -24,6 +24,7 @@ export class Subscription extends BaseEntity {
     newCycleType: string;
     requestedAt: Date;
   } | null;
+  public gracePeriodEndDate?: Date | null;
 
   constructor(
     subscriptionId: string,
@@ -36,6 +37,7 @@ export class Subscription extends BaseEntity {
     renewalCount: number = 0,
     remainingDiscountPeriods: number = 0,
     pendingConversion: { newCycleType: string; requestedAt: Date } | null = null,
+    gracePeriodEndDate: Date | null = null,
   ) {
     super();
     this.subscriptionId = subscriptionId;
@@ -48,6 +50,7 @@ export class Subscription extends BaseEntity {
     this.renewalCount = renewalCount;
     this.remainingDiscountPeriods = remainingDiscountPeriods;
     this.pendingConversion = pendingConversion;
+    this.gracePeriodEndDate = gracePeriodEndDate;
   }
 
   /**
@@ -207,6 +210,9 @@ export class Subscription extends BaseEntity {
     // Only enter grace period for non-retryable failures and active subscriptions
     if (!shouldRetry && this.status === 'active') {
       this.status = 'grace';
+      // Set grace period end date to 7 days from now
+      this.gracePeriodEndDate = new Date();
+      this.gracePeriodEndDate.setDate(this.gracePeriodEndDate.getDate() + 7);
       enteredGracePeriod = true;
     }
 
@@ -281,24 +287,49 @@ export class Subscription extends BaseEntity {
   }
 
   /**
-   * Renew the subscription by incrementing renewal count
-   * This method is called when a successful payment occurs for a recurring subscription
-   * @returns Object containing renewal information
+   * Check if the grace period has expired
+   * @param currentDate The current date to check against (defaults to now)
+   * @returns true if grace period has expired, false otherwise
    */
-  public renew(): {
-    renewalCount: number;
-    renewalDiscountEligible: boolean;
-  } {
-    // Increment renewal count
-    this.renewalCount += 1;
+  public isGracePeriodExpired(currentDate: Date = new Date()): boolean {
+    if (this.status !== 'grace' || !this.gracePeriodEndDate) {
+      return false;
+    }
+    return currentDate > this.gracePeriodEndDate;
+  }
 
-    // For now, renewal discount eligibility is always false
-    // This can be extended later based on business rules (e.g., every 5th renewal gets discount)
-    const renewalDiscountEligible = false;
+  /**
+   * Expire the grace period and cancel the subscription
+   * This should be called when the grace period ends without successful payment
+   * @returns Object containing cancellation details
+   */
+  public expireGracePeriod(): {
+    cancelledAt: Date;
+    reason: string;
+  } {
+    if (this.status !== 'grace') {
+      throw new Error('Subscription is not in grace period');
+    }
+
+    this.status = 'cancelled';
+    const cancelledAt = new Date();
 
     return {
+      cancelledAt,
+      reason: 'Grace period expired without successful payment',
+    };
+  }
+
+  /**
+   * Renew the subscription for another billing cycle
+   * Increments renewal count and calculates next billing date
+   */
+  public renew(): { renewalCount: number; renewalDiscountEligible: boolean } {
+    this.renewalCount += 1;
+    this.nextBillingDate = this.calculateNextBillingDate();
+    return {
       renewalCount: this.renewalCount,
-      renewalDiscountEligible,
+      renewalDiscountEligible: false, // Default behavior for basic renewal
     };
   }
 }
