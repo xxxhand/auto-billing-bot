@@ -158,6 +158,7 @@ graph TD
 | status | enum["success", "failed", "pending"] | Yes | "pending" | 扣款狀態 |
 | failureReason | string | No | null | 失敗原因（如"network_error"） |
 | retryCount | number | Yes | 0 | 重試次數 |
+| amount | number | Yes | - | 扣款金額 |
 | createdAt | date | Yes | - | 創建時間 |
 | updatedAt | date | Yes | - | 變更時間 |
 | valid | boolean | Yes | - | 有效否 |
@@ -305,6 +306,7 @@ erDiagram
         enum status
         string failureReason
         number retryCount
+        number amount
         date createdAt
         date updatedAt
         boolean valid
@@ -384,7 +386,7 @@ erDiagram
     - `isApplicableToProduct(productId: string)`: 檢查優惠碼是否適用於指定產品。
 
 - **PaymentAttempt (實體)**：
-  - 屬性：attemptId, subscriptionId, status, failureReason, retryCount, createdAt
+  - 屬性：attemptId, subscriptionId, status, failureReason, retryCount, amount, createdAt
   - 方法：
     - `shouldRetry()`: 基於retryCount與failureReason決定是否重試。
 

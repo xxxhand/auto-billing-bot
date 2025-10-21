@@ -134,8 +134,8 @@ export class SubscriptionsService {
 
     // Update subscription status to active after successful payment
     savedSubscription.status = 'active';
-    // For initial billing, don't increment renewal count, just set next billing date
-    savedSubscription.nextBillingDate = savedSubscription.calculateNextBillingDate();
+    // For initial billing, next billing date is already set correctly during creation
+    // No need to recalculate it here
     await this.subscriptionRepository.save(savedSubscription);
 
     // Track promo code usage if promo code was used

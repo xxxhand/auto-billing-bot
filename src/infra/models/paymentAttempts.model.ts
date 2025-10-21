@@ -13,4 +13,6 @@ export interface IPaymentAttemptModel extends IBaseModel {
   failureReason: string | null;
   /** Number of retries */
   retryCount: number;
+  /** Payment amount */
+  amount: number;
 }

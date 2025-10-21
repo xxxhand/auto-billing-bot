@@ -17,6 +17,7 @@ export class PaymentAttempt {
     public status: PaymentAttemptStatus = PaymentAttemptStatus.PENDING,
     public failureReason: string = '',
     public retryCount: number = 0,
+    public amount: number = 0,
   ) {}
 
   shouldRetry(): boolean {

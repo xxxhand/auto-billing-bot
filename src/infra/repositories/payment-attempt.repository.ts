@@ -53,6 +53,7 @@ export class PaymentAttemptRepository {
       status: entity.status,
       failureReason: entity.failureReason,
       retryCount: entity.retryCount,
+      amount: entity.amount,
       updatedAt: new Date(),
     };
 

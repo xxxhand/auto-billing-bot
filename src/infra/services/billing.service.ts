@@ -111,7 +111,7 @@ export class BillingService implements IBillingService {
 
     // Create payment attempt
     const attemptId = uuidv4();
-    const paymentAttempt = new PaymentAttempt(attemptId, subscriptionId, PaymentAttemptStatus.PENDING, '', retryCount);
+    const paymentAttempt = new PaymentAttempt(attemptId, subscriptionId, PaymentAttemptStatus.PENDING, '', retryCount, amount);
 
     await this.paymentAttemptRepository.save(paymentAttempt);
 

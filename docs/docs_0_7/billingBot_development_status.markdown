@@ -16,6 +16,7 @@
 - 無
 
 ### 已完成任務 (最近)
+- ✅ **PaymentAttempt 實體完善**：為 PaymentAttempt 實體添加 amount 字段，記錄每次支付嘗試的金額，並同步更新設計文件、模型接口和相關測試（2025年10月21日）
 - ✅ API-014：實現POST /promoCodes/applyPromo，應用優惠碼到訂單或訂閱，支援一次性折扣與長期訂閱折扣（2025年10月21日）
 - ✅ API-008：實現GET /userPromoCodes，返回用戶可用優惠碼列表（包含 minimumAmount 與 applicableProducts）（2025年10月21日）
 - ✅ API-007：實現POST /discounts/{id}/apply，應用優惠到訂閱並修復折扣計算邏輯錯誤（2025年10月21日）
@@ -69,22 +70,23 @@
 ## 🔧 技術狀態
 
 ### 當前架構
-- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根（含 calculateNextBillingDate、applyDiscount、convertToNewCycle、handlePaymentFailure、renew、isGracePeriodExpired、expireGracePeriod 方法）、Discount 實體（isApplicable、isApplicableToProduct、calculateDiscountedPrice）、PromoCode 值物件（canBeUsed、incrementUsage、isApplicableToProduct）、PaymentAttempt 實體（shouldRetry）、promoCodeDomainService 領域服務（優惠碼業務邏輯）、billingService 領域服務（扣款流程整合支付網關與任務隊列）、discountPriorityService 領域服務（多重優惠優先級選擇與產品適用性檢查）、paymentGateway 抽象層接口（支付網關契約）、taskQueue 抽象層接口（訊息隊列契約），並通過 TDD 測試驗證。Repository層已優化，PromoCodeUsageRepository.create方法現接收完整的PromoCodeUsage value object，符合DDD原則。**修復關鍵錯誤**：在Subscription實體與ISubscriptionModel介面中添加appliedDiscountId欄位，修復BillingService.processBilling邏輯錯誤（原先remainingDiscountPeriods > 0時錯誤設為amount = 0，現正確使用appliedDiscountId計算折扣價格）
-- **資料模型**：新增 `users` 模型（userId／tenantId／encryptedData）、`products` 模型（productId／name／price／cycleType／cycleValue／gracePeriodDays）、`subscriptions` 模型（subscriptionId／userId／productId／status／cycleType／startDate／nextBillingDate／renewalCount／remainingDiscountPeriods／appliedDiscountId／pendingConversion／gracePeriodEndDate）、`discounts` 模型（discountId／type／value／priority／startDate／endDate）、`promoCodes` 模型（code／discountId／usageLimit／isSingleUse／usedCount）、`promoCodeUsages` 模型（usageId／promoCode／userId／usedAt／orderAmount）、`paymentAttempts` 模型（attemptId／subscriptionId／status／failureReason／retryCount）、`refunds` 模型（refundId／subscriptionId／amount／status）、`billingLogs` 模型（logId／subscriptionId／eventType／details）、`config` 模型（configId／type／productId／gracePeriodDays／refundPolicy）、`rules` 模型（ruleId／type／conditions／actions），並完成所有集合的索引優化（nextBillingDate、status、subscriptionId 等關鍵欄位）
+- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根（含 calculateNextBillingDate、applyDiscount、convertToNewCycle、handlePaymentFailure、renew、isGracePeriodExpired、expireGracePeriod 方法）、Discount 實體（isApplicable、isApplicableToProduct、calculateDiscountedPrice）、PromoCode 值物件（canBeUsed、incrementUsage、isApplicableToProduct）、PaymentAttempt 實體（shouldRetry，含 amount 字段記錄支付金額）、promoCodeDomainService 領域服務（優惠碼業務邏輯）、billingService 領域服務（扣款流程整合支付網關與任務隊列）、discountPriorityService 領域服務（多重優惠優先級選擇與產品適用性檢查）、paymentGateway 抽象層接口（支付網關契約）、taskQueue 抽象層接口（訊息隊列契約），並通過 TDD 測試驗證。Repository層已優化，PromoCodeUsageRepository.create方法現接收完整的PromoCodeUsage value object，符合DDD原則。**修復關鍵錯誤**：在Subscription實體與ISubscriptionModel介面中添加appliedDiscountId欄位，修復BillingService.processBilling邏輯錯誤（原先remainingDiscountPeriods > 0時錯誤設為amount = 0，現正確使用appliedDiscountId計算折扣價格）
+- **資料模型**：新增 `users` 模型（userId／tenantId／encryptedData）、`products` 模型（productId／name／price／cycleType／cycleValue／gracePeriodDays）、`subscriptions` 模型（subscriptionId／userId／productId／status／cycleType／startDate／nextBillingDate／renewalCount／remainingDiscountPeriods／appliedDiscountId／pendingConversion／gracePeriodEndDate）、`discounts` 模型（discountId／type／value／priority／startDate／endDate）、`promoCodes` 模型（code／discountId／usageLimit／isSingleUse／usedCount）、`promoCodeUsages` 模型（usageId／promoCode／userId／usedAt／orderAmount）、`paymentAttempts` 模型（attemptId／subscriptionId／status／failureReason／retryCount／amount）、`refunds` 模型（refundId／subscriptionId／amount／status）、`billingLogs` 模型（logId／subscriptionId／eventType／details）、`config` 模型（configId／type／productId／gracePeriodDays／refundPolicy）、`rules` 模型（ruleId／type／conditions／actions），並完成所有集合的索引優化（nextBillingDate、status、subscriptionId 等關鍵欄位）
 - **文件**：v0.7 實作指南完成，提供模組拆解與開發順序；系統設計文檔已更新，包含寬限期邏輯流程圖與GracePeriodCheckerJob描述
 
 ### 遇到的問題與解決方案
-- 尚無新問題，待後續任務展開時再記錄
+- **PaymentAttempt 缺少 amount 字段**：在實現 BDD 測試時發現 PaymentAttempt 實體缺少 amount 字段，無法記錄每次支付嘗試的金額。解決方案：為 PaymentAttempt 實體、模型接口和 repository 添加 amount 字段，並同步更新設計文件和相關測試（2025年10月21日）
+- 尚無其他新問題，待後續任務展開時再記錄
 
 ### 環境配置
 - **Node.js**：建議 v18.x（依 `package.json` 與 NestJS 相容版本）
 - **MongoDB / RabbitMQ / Redis**：尚需依 `docker-compose.yml` 或環境設定啟動並驗證，未執行
 
 ## 📊 進度指標
-- **總任務數**：52 項
-- **已完成**：40 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-014、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003）
+- **總任務數**：53 項
+- **已完成**：41 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-014、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、PaymentAttempt完善）
 - **進行中**：0 項
-- **測試覆蓋率**：單元測試 250/250 通過，E2E 測試 61/61 通過
+- **測試覆蓋率**：單元測試 255/255 通過，E2E 測試 61/61 通過
 
 ## 🎯 下一步計劃
 1. **建議後續任務**：開始實作剩餘API端點（API-009~API-013）
