@@ -5,7 +5,7 @@ import { IProductDocument, IUserDocument, IPromoCodeDocument, IPromoCodeUsageDoc
 
 describe('GET /promoCodes/userPromoCodes (e2e)', () => {
   let agent: superTest.SuperAgentTest;
-  const baseEndpoint = `${process.env.DEFAULT_API_ROUTER_PREFIX}/promoCodes/userPromoCodes`;
+  const baseEndpoint = `${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/promoCodes/userPromoCodes`;
   const dbHelper = new MongoHelper('get_userPromoCodes');
   const db = dbHelper.mongo;
   const userCol = 'Users';

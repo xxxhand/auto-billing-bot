@@ -1,4 +1,5 @@
 import { PromoCode } from '../entities/promoCode.entity';
+import { Discount } from '../entities/discount.entity';
 
 /**
  * Validation result for promo code usage
@@ -6,6 +7,9 @@ import { PromoCode } from '../entities/promoCode.entity';
 export interface PromoCodeValidationResult {
   isValid: boolean;
   errorMessage?: string;
+  discountAmount?: number;
+  discountType?: 'fixed' | 'percentage';
+  discountValue?: number;
 }
 
 /**
@@ -16,16 +20,24 @@ export class PromoCodeDomainService {
   /**
    * Validate if a user can use a promo code for an order
    * Checks minimum amount, user usage history, and promo code availability
-   * HAND-NOTE: 做得不好，回傳值讓callers難判斷要不要接續。改為用CustomResult並定義錯誤碼
+   * Returns discount calculation if valid
    *
    * @param promoCode The promo code to validate
+   * @param discount The discount entity associated with the promo code
    * @param userId The user attempting to use the promo code
    * @param orderAmount The order amount
-   * @param productId The product ID for the order (optional)
+   * @param productIds The product IDs for the order
    * @param userUsageHistory Array of promo codes already used by this user
-   * @returns Validation result with success status and error message if applicable
+   * @returns Validation result with success status, error message, and discount details if applicable
    */
-  public validatePromoCodeUsage(promoCode: PromoCode, userId: string, orderAmount: number, productId?: string, userUsageHistory: string[] = []): PromoCodeValidationResult {
+  public validatePromoCodeUsage(
+    promoCode: PromoCode,
+    discount: Discount,
+    userId: string,
+    orderAmount: number,
+    productIds: string[],
+    userUsageHistory: string[] = []
+  ): PromoCodeValidationResult {
     // Check if promo code can be used at all
     if (!promoCode.canBeUsed()) {
       return {
@@ -43,10 +55,11 @@ export class PromoCodeDomainService {
     }
 
     // Check product applicability
-    if (productId && !promoCode.isApplicableToProduct(productId)) {
+    const hasApplicableProduct = productIds.some(productId => discount.isApplicableToProduct(productId));
+    if (!hasApplicableProduct) {
       return {
         isValid: false,
-        errorMessage: 'This promo code is not applicable to the selected product',
+        errorMessage: 'This promo code is not applicable to the selected products',
       };
     }
 
@@ -67,7 +80,17 @@ export class PromoCodeDomainService {
       };
     }
 
-    return { isValid: true };
+    // Calculate discount amount
+    const originalPrice = orderAmount;
+    const discountedPrice = discount.calculateDiscountedPrice(originalPrice);
+    const discountAmount = originalPrice - discountedPrice;
+
+    return {
+      isValid: true,
+      discountAmount,
+      discountType: discount.type,
+      discountValue: discount.value,
+    };
   }
 
   /**

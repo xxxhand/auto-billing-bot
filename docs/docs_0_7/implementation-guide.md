@@ -11,6 +11,8 @@ yarn test:cov
 此指南對應 `docs/docs_0_7/requirements_0.7.markdown`、`docs/docs_0_7/billingBot_v0.7.1_spec.markdown` 與 `docs/docs_0_7/billingBot_v0.7.1_system_design.markdown`，提供 v0.7 版實作的整體藍圖與落地步驟。v0.7 聚焦於「可用的訂閱扣款引擎」，涵蓋多週期訂閱、優惠優先權、扣款重試、寬限期、退款、RabbitMQ 任務佇列與 Cron 自動化。未來 v0.8 之後才會處理多租戶與 webhook 等延伸功能。
 
 > **開發守則**：持續遵循 Domain-Driven Design（DDD）與 Test-Driven Development（TDD），所有新邏輯須先定義領域模型與測試，再補齊應用層與基礎設施。
+> - POST 請求成功時始終返回 201 狀態碼
+> - 所有請求 DTO 使用 class-validator 進行驗證（無建構函式）
 >
 > **API 測試守則**：所有 API-* 任務的端點測試必須遵循以下規範：
 >

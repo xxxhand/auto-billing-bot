@@ -125,4 +125,23 @@ export const errCodes: CustomDefinition.ICodeStruct[] = [
     httpStatus: 400,
     message: 'Discount has expired',
   },
+  // Promo code application errors
+  {
+    codeName: errConstants.ERR_PROMO_CODE_NOT_FOUND,
+    code: 20018,
+    httpStatus: 404,
+    message: 'Promo code not found',
+  },
+  {
+    codeName: errConstants.ERR_ORDER_AMOUNT_INVALID,
+    code: 20019,
+    httpStatus: 400,
+    message: 'Order amount must be greater than 0',
+  },
+  {
+    codeName: errConstants.ERR_PRODUCT_IDS_REQUIRED,
+    code: 20020,
+    httpStatus: 400,
+    message: 'At least one product ID is required',
+  },
 ];

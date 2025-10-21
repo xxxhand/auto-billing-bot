@@ -6,6 +6,7 @@ import { SubscriptionRepository } from '../../infra/repositories/subscription.re
 import { ProductRepository } from '../../infra/repositories/product.repository';
 import { PromoCodeRepository } from '../../infra/repositories/promoCode.repository';
 import { PromoCodeUsageRepository } from '../../infra/repositories/promoCodeUsage.repository';
+import { DiscountRepository } from '../../infra/repositories/discount.repository';
 import { UserRepository } from '../../infra/repositories/user.repository';
 import { BillingService } from '../../infra/services/billing.service';
 import { IBillingService, IBillingServiceToken } from '../../domain/services/billing.service.interface';
@@ -33,6 +34,7 @@ export class SubscriptionsService {
     private readonly subscriptionRepository: SubscriptionRepository,
     private readonly promoCodeRepository: PromoCodeRepository,
     private readonly promoCodeUsageRepository: PromoCodeUsageRepository,
+    private readonly discountRepository: DiscountRepository,
     private readonly userRepository: UserRepository,
     private readonly refundRepository: RefundRepository,
     private readonly promoCodeDomainService: PromoCodeDomainService,
@@ -80,10 +82,23 @@ export class SubscriptionsService {
         throw ErrException.newFromCodeName(errConstants.ERR_INVALID_PROMO_CODE);
       }
 
+      // Get the discount entity associated with the promo code
+      const discount = await this.discountRepository.findByDiscountId(promoCodeEntity.discountId);
+      if (!discount) {
+        throw ErrException.newFromCodeName(errConstants.ERR_INVALID_DISCOUNT);
+      }
+
       // TODO: Get user's promo code usage history (for now, assume empty array)
       const userUsageHistory: string[] = [];
 
-      const promoCodeValidation = this.promoCodeDomainService.validatePromoCodeUsage(promoCodeEntity, userId, product.price, productId, userUsageHistory);
+      const promoCodeValidation = this.promoCodeDomainService.validatePromoCodeUsage(
+        promoCodeEntity,
+        discount,
+        userId,
+        product.price,
+        [productId],
+        userUsageHistory
+      );
 
       if (!promoCodeValidation.isValid) {
         throw ErrException.newFromCodeName(errConstants.ERR_INVALID_DISCOUNT);

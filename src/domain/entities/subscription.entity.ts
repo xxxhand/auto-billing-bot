@@ -136,6 +136,20 @@ export class Subscription extends BaseEntity {
   }
 
   /**
+   * Apply promo code discount to subscription for long-term use
+   * @param discountId The discount ID to apply
+   * @param discountPeriods The number of periods this discount applies to
+   */
+  public applyPromoCodeDiscount(discountId: string, discountPeriods: number): void {
+    if (this.appliedDiscountId && this.remainingDiscountPeriods > 0) {
+      throw new Error('Subscription already has an active discount applied');
+    }
+
+    this.appliedDiscountId = discountId;
+    this.remainingDiscountPeriods = discountPeriods;
+  }
+
+  /**
    * Request conversion to a new billing cycle, effective at the start of the next cycle
    * This records the conversion request without immediately applying it
    * @param newCycleType The new cycle type to convert to

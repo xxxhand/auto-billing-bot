@@ -8,6 +8,7 @@ import {
   IPromoCodeDocument,
   IPaymentAttemptDocument,
   IPromoCodeUsageDocument,
+  IDiscountDocument,
 } from './__helpers__/shcema-interface.helper';
 
 describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () => {
@@ -21,6 +22,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
   const promoCodeCol = 'PromoCodes';
   const paymentAttemptCol = 'PaymentAttempts';
   const promoCodeUsagesCol = 'PromoCodeUsages';
+  const discountCol = 'Discounts';
 
   //#region Test data
   const mockUser: IUserDocument = {
@@ -37,6 +39,18 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
     name: 'Monthly Plan',
     price: 100,
     cycleType: 'monthly',
+    valid: true,
+  };
+
+  const mockDiscount: IDiscountDocument = {
+    _id: dbHelper.newObjectId(),
+    discountId: 'disc-001',
+    type: 'fixed',
+    value: 20,
+    priority: 1,
+    startDate: new Date('2024-01-01'),
+    endDate: new Date('2025-12-31'),
+    applicableProducts: [],
     valid: true,
   };
 
@@ -66,6 +80,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
     await Promise.all([
       db.getCollection(userCol).insertOne(mockUser),
       db.getCollection(productCol).insertOne(mockProduct),
+      db.getCollection(discountCol).insertOne(mockDiscount),
       db.getCollection(promoCodeCol).insertOne(mockPromoCode),
     ]);
   });

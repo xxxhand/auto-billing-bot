@@ -360,6 +360,7 @@ erDiagram
   - 方法：
     - `calculateNextBillingDate()`: 基於cycleType計算下次扣款日，處理大小月/閏年。
     - `applyDiscount(discount: Discount)`: 應用優惠，更新remainingDiscountPeriods並計算折扣價。
+    - `applyPromoCodeDiscount(discountId: string, discountPeriods: number)`: 應用優惠碼折扣至訂閱，設置appliedDiscountId和remainingDiscountPeriods。
     - `convertToNewCycle(newCycleType: string)`: 方案轉換，記錄新週期類型並等到當前週期結束後的下個週期開始時生效。若新方案價格較高（升級），立即補收剩餘期間的費用差額；若較低（降級），下個週期生效無退款。承接剩餘優惠期數。
     - `handlePaymentFailure(failureReason: string)`: 根據原因決定重試或進入寬限期，更新status。
     - `isGracePeriodExpired()`: 檢查寬限期是否已過期（當前時間是否超過gracePeriodEndDate）。
@@ -390,7 +391,8 @@ erDiagram
 領域服務（Domain Services）：
 - `billingService`: 協調扣款流程，整合支付網關、RabbitMQ及Cron job觸發。
 - `discountPriorityService`: 處理多重優惠優先級，選擇最佳優惠，並檢查優惠是否適用於指定產品。
-- `promoCodeDomainService`: 處理優惠碼業務邏輯，包含用戶重複使用檢查、消費門檻驗證、專屬優惠碼用戶綁定驗證及產品適用性檢查。
+- `promoCodeDomainService`: 處理優惠碼業務邏輯，包含用戶重複使用檢查、消費門檻驗證、專屬優惠碼用戶綁定驗證及產品適用性檢查。支援將優惠碼折扣應用至訂閱的長期優惠。
+- `subscriptionDomainService`: 處理訂閱相關業務邏輯，包含優惠應用、狀態轉換等。
 
 ### 4.4 Subscription狀態機
 訂閱狀態機定義了訂閱生命週期的狀態轉換規則，確保業務邏輯的一致性。使用Mermaid呈現狀態圖。
@@ -442,7 +444,7 @@ stateDiagram-v2
     - `POST /subscriptions/cancel`：取消訂閱並申請退款。
   - **優惠管理**：
     - `GET /discounts`：返回適用優惠列表。
-    - `POST /applyPromo`：應用優惠碼，包含消費門檻、用戶重複使用檢查及產品適用性檢查。
+    - `POST /applyPromo`：應用優惠碼，包含消費門檻、用戶重複使用檢查及產品適用性檢查。支援一次性折扣或將折扣應用至訂閱的長期優惠。
     - `GET /userPromoCodes`：返回用戶可用優惠碼。
     - `GET /admin/promoCodes/{code}/usage`：後台查詢優惠碼使用狀態與歷史。
   - **支付管理**：
@@ -478,6 +480,39 @@ stateDiagram-v2
       "applicableProducts": ["prod_123", "prod_456"]
     }
   ]
+  ```
+- **POST /applyPromo**：
+  ```json
+  // Request
+  {
+    "userId": "user_123",
+    "promoCode": "SAVE30",
+    "orderAmount": 1000,
+    "productIds": ["prod_123"],
+    "applyToSubscription": true,
+    "subscriptionId": "sub_456"
+  }
+  
+  // Response (一次性折扣)
+  {
+    "code": "SAVE30",
+    "discountId": "disc_456",
+    "discountType": "percentage",
+    "discountValue": 30,
+    "originalAmount": 1000,
+    "discountedAmount": 700,
+    "savings": 300
+  }
+  
+  // Response (應用至訂閱)
+  {
+    "code": "SAVE30",
+    "discountId": "disc_456",
+    "appliedToSubscription": true,
+    "subscriptionId": "sub_456",
+    "remainingDiscountPeriods": 3,
+    "message": "優惠已應用至訂閱，將在接下來的3個週期中生效"
+  }
   ```
 
 ---
@@ -537,13 +572,20 @@ stateDiagram-v2
     CheckProductApplicabilityPromo --> CheckUsageLimit: Applicable to Product? Check Usage Limits
     CheckUsageLimit --> CheckUserHistory: Within Limits? Check User Usage History
     CheckUserHistory --> ApplyDiscount: Not Used Before? Apply Discount & Record Usage
-    ApplyDiscount --> Success: Return Success
+    ApplyDiscount --> CheckApplyToSubscription: Apply to Subscription?
+    CheckApplyToSubscription --> ValidateSubscription: Yes, Validate Subscription Ownership
+    ValidateSubscription --> UpdateSubscriptionDiscount: Valid? Update Subscription (appliedDiscountId, remainingDiscountPeriods)
+    UpdateSubscriptionDiscount --> ReturnSubscriptionResult: Return Success with Subscription Update
+    CheckApplyToSubscription --> ReturnOneTimeResult: No, Return One-time Discount Details
+    ReturnOneTimeResult --> Success: Return Success
+    ReturnSubscriptionResult --> Success
     Success --> [*]
     ValidateUser --> Invalid: Return Error
     CheckOrderAmount --> Invalid
     CheckProductApplicabilityPromo --> Invalid
     CheckUsageLimit --> Invalid
     CheckUserHistory --> Invalid
+    ValidateSubscription --> Invalid
     Invalid --> [*]
 ```
 
@@ -652,7 +694,7 @@ stateDiagram-v2
     ProductExists --> CalculateAmount: 是，繼續扣款流程
     ProductExists --> AbortSubscription: 否，更新訂閱狀態為aborted
     
-    CalculateAmount --> ApplyDiscounts: 應用剩餘優惠期數
+    CalculateAmount --> ApplyDiscounts: 應用剩餘優惠期數（包含從優惠碼應用而來的長期折扣）
     ApplyDiscounts --> CallPaymentGateway: 調用支付網關
     CallPaymentGateway --> CheckPaymentResult: 支付成功？
     
@@ -723,7 +765,7 @@ sequenceDiagram
     participant API as NestJS API
     participant DB as MongoDB
 
-    User->>API: POST /applyPromo (promoCode, orderAmount, productId)
+    User->>API: POST /applyPromo (promoCode, orderAmount, productId, applyToSubscription?, subscriptionId?)
     API->>DB: Get PromoCode & User Usage History
     DB-->>API: PromoCode Details & Usage Records
     API->>API: Validate User ID (專屬優惠碼檢查)
@@ -734,11 +776,27 @@ sequenceDiagram
         API->>DB: Record Usage in promoCodeUsages
         API->>DB: Update PromoCode usedCount
         API->>API: Calculate Discounted Price
-        API-->>User: Return Discount Details
+        alt applyToSubscription = true
+            API->>DB: Validate Subscription Ownership
+            API->>DB: Apply Discount to Subscription (set appliedDiscountId, remainingDiscountPeriods)
+            API->>API: Return Success with Subscription Update
+        else applyToSubscription = false
+            API->>API: Return One-time Discount Details
+        end
     else Validation Failed
         API-->>User: Return Error Message
     end
 ```
+
+### 6.6.1 優惠碼與訂閱整合流程
+當用戶選擇將優惠碼應用至訂閱時，系統會：
+1. 驗證用戶對該訂閱的所有權
+2. 檢查訂閱當前是否已有應用中的折扣（避免衝突）
+3. 設置訂閱的 `appliedDiscountId` 為優惠碼對應的折扣ID
+4. 設置 `remainingDiscountPeriods` 為折扣的持續期數（預設3期，或根據業務規則設定）
+5. 在後續的billing週期中，系統會自動應用此折扣直到期數用完
+
+此設計確保優惠碼不僅能提供一次性折扣，還能為用戶提供持續的訂閱優惠，提升用戶黏性。
 
 ### 6.7 方案轉換流程 (Sequence Diagram)
 ```mermaid
@@ -760,8 +818,15 @@ sequenceDiagram
     end
     API->>DB: Update Subscription (pendingConversion flag)
     API-->>User: Conversion Scheduled
-    Note over DB: At next cycle start, apply new cycleType & reset nextBillingDate
-```
+### 6.6.1 優惠碼與訂閱整合流程
+當用戶選擇將優惠碼應用至訂閱時，系統會：
+1. 驗證用戶對該訂閱的所有權
+2. 檢查訂閱當前是否已有應用中的折扣（避免衝突）
+3. 設置訂閱的 `appliedDiscountId` 為優惠碼對應的折扣ID
+4. 設置 `remainingDiscountPeriods` 為折扣的持續期數（預設3期，或根據業務規則設定）
+5. 在後續的billing週期中，系統會自動應用此折扣直到期數用完
+
+此設計確保優惠碼不僅能提供一次性折扣，還能為用戶提供持續的訂閱優惠，提升用戶黏性。
 
 ### 7.1 性能
 - **吞吐量**：支援每秒100次API請求。
@@ -821,3 +886,5 @@ sequenceDiagram
   - **緩解**：監控Cron執行，設定重試機制，並使用分布式鎖避免重複。
 - **風險**：優惠產品綁定邏輯複雜，導致用戶體驗不佳。
   - **緩解**：在API層提供清晰的錯誤訊息，說明優惠碼不適用於當前產品；在管理介面提供產品綁定的視覺化設定。
+- **風險**：優惠碼應用至訂閱的長期折扣邏輯複雜，可能導致重複應用或狀態不一致。
+  - **緩解**：在領域層實現嚴格的業務規則驗證，確保優惠碼只能應用到用戶擁有的訂閱；使用TDD確保狀態轉換的正確性；記錄所有優惠應用操作至日誌以便追蹤。

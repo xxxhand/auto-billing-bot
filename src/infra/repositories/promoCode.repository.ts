@@ -126,4 +126,14 @@ export class PromoCodeRepository {
     };
     await col.updateOne(q, updateDoc);
   }
+
+  public async incrementUsageCount(code: string): Promise<void> {
+    const col = this.defMongoClient.getCollection(modelNames.PROMO_CODES);
+    const q = { code };
+    const updateDoc = {
+      $inc: { usedCount: 1 },
+      $set: { updatedAt: new Date() },
+    };
+    await col.updateOne(q, updateDoc);
+  }
 }
