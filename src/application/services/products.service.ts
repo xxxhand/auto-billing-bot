@@ -60,6 +60,12 @@ export class ProductsService {
   }
 
   private async calculateDiscountedPrice(product: ProductEntity): Promise<number> {
+    // Apply first-time subscription discount first (highest priority)
+    const firstTimeDiscountPrice = this.applyFirstTimeSubscriptionDiscount(product);
+    if (firstTimeDiscountPrice !== product.price) {
+      return firstTimeDiscountPrice;
+    }
+
     // Get all applicable discounts for this product
     const applicableDiscounts = await this.getApplicableDiscounts(product);
 
@@ -75,6 +81,22 @@ export class ProductsService {
     }
 
     return bestDiscount.calculateDiscountedPrice(product.price);
+  }
+
+  /**
+   * Apply first-time subscription discount based on system rules
+   * - Yearly products before 2026/12/31: first year $1000
+   * - Monthly products: no discount
+   */
+  private applyFirstTimeSubscriptionDiscount(product: ProductEntity): number {
+    const now = new Date();
+    const discountEndDate = new Date('2026-12-31');
+
+    if (product.cycleType === 'yearly' && now <= discountEndDate) {
+      return 1000; // First year discount for yearly products
+    }
+
+    return product.price; // No discount for monthly products or yearly products after discount period
   }
 
   private async getApplicableDiscounts(product: ProductEntity): Promise<Discount[]> {

@@ -78,6 +78,12 @@ export class BillingService implements IBillingService {
 
     // Calculate amount with discounts
     let amount = product.price;
+
+    // Apply first-time subscription discount for initial billing (renewalCount === 0)
+    if (subscription.renewalCount === 0) {
+      amount = this.applyFirstTimeSubscriptionDiscount(product);
+    }
+
     if (subscription.remainingDiscountPeriods > 0 && subscription.appliedDiscountId) {
       // Apply the stored discount for remaining discount periods
       const appliedDiscount = await this.discountRepository.findByDiscountId(subscription.appliedDiscountId);
@@ -329,5 +335,21 @@ export class BillingService implements IBillingService {
         errorCode: 'REFUND_ERROR',
       };
     }
+  }
+
+  /**
+   * Apply first-time subscription discount based on system rules
+   * - Yearly products before 2026/12/31: first year $1000
+   * - Monthly products: no discount
+   */
+  private applyFirstTimeSubscriptionDiscount(product: any): number {
+    const now = new Date();
+    const discountEndDate = new Date('2026-12-31');
+
+    if (product.cycleType === 'yearly' && now <= discountEndDate) {
+      return 1000; // First year discount for yearly products
+    }
+
+    return product.price; // No discount for monthly products or yearly products after discount period
   }
 }

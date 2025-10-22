@@ -395,6 +395,89 @@ erDiagram
 - `discountPriorityService`: 處理多重優惠優先級，選擇最佳優惠，並檢查優惠是否適用於指定產品。
 - `promoCodeDomainService`: 處理優惠碼業務邏輯，包含用戶重複使用檢查、消費門檻驗證、專屬優惠碼用戶綁定驗證及產品適用性檢查。支援將優惠碼折扣應用至訂閱的長期優惠。
 - `subscriptionDomainService`: 處理訂閱相關業務邏輯，包含優惠應用、狀態轉換等。
+- `rulesEngineService`: 規則引擎服務，處理動態業務規則評估與執行。支援條件匹配與動作觸發，用於實現可配置的折扣邏輯（如首次訂閱折扣）。
+
+### 4.3.1 規則引擎服務詳述
+規則引擎服務用於處理動態業務規則，替代硬編碼的業務邏輯。核心組件包括：
+
+**規則結構**：
+- `ruleId`: 規則唯一識別碼
+- `type`: 規則類型（如"discount", "billing", "validation"）
+- `conditions`: 條件邏輯物件，支援複雜的條件組合
+- `actions`: 動作邏輯物件，定義規則觸發時的行為
+
+**條件運算子**：
+- 比較運算子：`eq`, `ne`, `gt`, `gte`, `lt`, `lte`
+- 邏輯運算子：`and`, `or`, `not`
+- 集合運算子：`in`, `nin`, `all`, `any`
+- 日期運算子：`before`, `after`, `between`
+
+**動作類型**：
+- `setDiscountPrice`: 設定折扣價格
+- `applyPercentageDiscount`: 應用百分比折扣
+- `setFixedDiscount`: 設定固定金額折扣
+- `skipProcessing`: 跳過處理
+- `logEvent`: 記錄事件
+
+**首次訂閱折扣規則示例**：
+```json
+{
+  "ruleId": "first_time_yearly_discount",
+  "type": "discount",
+  "conditions": {
+    "and": [
+      {"eq": ["$context.isFirstTimeSubscription", true]},
+      {"eq": ["$context.product.cycleType", "yearly"]},
+      {"lte": ["$context.currentDate", "2026-12-31T23:59:59Z"]}
+    ]
+  },
+  "actions": {
+    "setFixedDiscount": {
+      "amount": 1000,
+      "reason": "First time yearly subscription discount"
+    }
+  }
+}
+```
+
+**規則評估流程**：
+1. 載入適用規則（按type和有效期篩選）
+2. 依優先級排序規則
+3. 依序評估條件
+4. 執行匹配規則的動作
+5. 返回處理結果
+
+### 4.3.2 配置管理服務詳述
+配置服務用於管理全域與產品級設定，提供靈活的系統配置能力。
+
+**配置類型**：
+- `global`: 全域設定，適用於所有產品
+- `product`: 產品級設定，僅適用於指定產品
+
+**配置示例**：
+```json
+{
+  "configId": "yearly_product_discount_config",
+  "type": "product",
+  "productId": "yearly_plan",
+  "settings": {
+    "firstTimeDiscountEnabled": true,
+    "firstTimeDiscountEndDate": "2026-12-31",
+    "firstTimeDiscountPrice": 1000,
+    "gracePeriodDays": 7,
+    "refundPolicy": {
+      "allowRefund": true,
+      "refundPeriodDays": 30,
+      "refundPercentage": 100
+    }
+  }
+}
+```
+
+**配置查詢優先級**：
+1. 產品級配置（最高優先級）
+2. 全域配置（默認值）
+3. 系統硬編碼默認值（最低優先級）
 
 ### 4.4 Subscription狀態機
 訂閱狀態機定義了訂閱生命週期的狀態轉換規則，確保業務邏輯的一致性。使用Mermaid呈現狀態圖。
@@ -696,7 +779,7 @@ stateDiagram-v2
     ProductExists --> CalculateAmount: 是，繼續扣款流程
     ProductExists --> AbortSubscription: 否，更新訂閱狀態為aborted
     
-    CalculateAmount --> ApplyDiscounts: 應用剩餘優惠期數（包含從優惠碼應用而來的長期折扣）
+    CalculateAmount --> ApplyDiscounts: 應用剩餘優惠期數與規則引擎折扣（包含首次訂閱折扣、優惠碼長期折扣）
     ApplyDiscounts --> CallPaymentGateway: 調用支付網關
     CallPaymentGateway --> CheckPaymentResult: 支付成功？
     
@@ -741,6 +824,13 @@ stateDiagram-v2
         重新計算nextBillingDate
         清除pendingConversion標記
     end note
+    
+    note right of ApplyDiscounts
+        使用規則引擎評估折扣規則
+        包含首次訂閱折扣、長期優惠等
+        替代硬編碼的折扣邏輯
+    end note
+
 ```
 
 ### 6.5 退款流程 (Sequence Diagram)
@@ -799,6 +889,76 @@ sequenceDiagram
 5. 在後續的billing週期中，系統會自動應用此折扣直到期數用完
 
 此設計確保優惠碼不僅能提供一次性折扣，還能為用戶提供持續的訂閱優惠，提升用戶黏性。
+
+### 6.6.2 規則引擎應用流程 (Sequence Diagram)
+規則引擎用於處理動態業務規則，如首次訂閱折扣。以下為規則引擎處理首次訂閱折扣的流程：
+
+```mermaid
+sequenceDiagram
+    participant API as NestJS API
+    participant RulesEngine as RulesEngineService
+    participant DB as MongoDB
+    participant Context as RuleContext
+
+    API->>RulesEngine: evaluateRules(ruleType, context)
+    RulesEngine->>DB: Query applicable rules by type
+    DB-->>RulesEngine: List of active rules
+    RulesEngine->>RulesEngine: Sort rules by priority
+    loop For each rule
+        RulesEngine->>RulesEngine: Evaluate conditions against context
+        alt Conditions match
+            RulesEngine->>RulesEngine: Execute actions
+            RulesEngine->>Context: Update context with action results
+        end
+    end
+    RulesEngine-->>API: Return processed context
+```
+
+**規則引擎上下文示例**：
+```json
+{
+  "userId": "user_123",
+  "product": {
+    "productId": "yearly_plan",
+    "cycleType": "yearly",
+    "price": 2000
+  },
+  "subscription": {
+    "subscriptionId": "sub_456",
+    "isFirstTimeSubscription": true
+  },
+  "currentDate": "2025-10-22T10:00:00Z",
+  "discountedPrice": 2000
+}
+```
+
+**規則評估結果**：
+```json
+{
+  "userId": "user_123",
+  "product": {
+    "productId": "yearly_plan",
+    "cycleType": "yearly",
+    "price": 2000
+  },
+  "subscription": {
+    "subscriptionId": "sub_456",
+    "isFirstTimeSubscription": true
+  },
+  "currentDate": "2025-10-22T10:00:00Z",
+  "discountedPrice": 1000,
+  "appliedRules": ["first_time_yearly_discount"],
+  "discountReason": "First time yearly subscription discount"
+}
+```
+
+**重構現有服務**：
+實現規則引擎後，需要重構ProductsService和BillingService中的硬編碼折扣邏輯：
+
+- **ProductsService.getDiscountedPrice()**：移除applyFirstTimeSubscriptionDiscount私有方法，改為調用rulesEngineService.evaluateRules()
+- **BillingService.processBilling()**：同樣移除硬編碼邏輯，使用規則引擎計算首次訂閱折扣
+
+這樣可以消除代碼重複，提高維護性和可擴展性。
 
 ### 6.7 方案轉換流程 (Sequence Diagram)
 ```mermaid
