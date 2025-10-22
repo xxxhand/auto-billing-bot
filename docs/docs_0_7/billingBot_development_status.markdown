@@ -1,7 +1,7 @@
 # 自動扣款機器人開發狀態總結
 
 **最後更新**：2025年10月22日
-**當前階段**：已完成DDD-016重構，準備實現DDD-017
+**當前階段**：已完成DDD-017重構，規則引擎重構階段完成，準備進入API完善階段
 **負責人**：GitHub Copilot
 
 ## 工作指南
@@ -69,16 +69,15 @@
 
 
 ### 待處理任務 (優先順序)
-1. **DDD-017**：重構 BillingService 使用規則引擎
-2. **API-015~API-018**：實現配置與規則管理API
-5. 實作剩餘API端點（API-009~API-013）
-6. 實作整合測試與文件（TEST-001~TEST-004, DOC-001~DOC-002）
-7. 實現JWT認證機制
+1. **API-015~API-018**：實現配置與規則管理API
+2. 實作剩餘API端點（API-009~API-013）
+3. 實作整合測試與文件（TEST-001~TEST-004, DOC-001~DOC-002）
+4. 實現JWT認證機制
 
 ## 🔧 技術狀態
 
 ### 當前架構
-- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根（含 calculateNextBillingDate、applyDiscount、convertToNewCycle、handlePaymentFailure、renew、isGracePeriodExpired、expireGracePeriod 方法）、Discount 實體（isApplicable、isApplicableToProduct、calculateDiscountedPrice）、PromoCode 值物件（canBeUsed、incrementUsage、isApplicableToProduct）、PaymentAttempt 實體（shouldRetry，含 amount 字段記錄支付金額）、promoCodeDomainService 領域服務（優惠碼業務邏輯）、billingService 領域服務（扣款流程整合支付網關與任務隊列）、discountPriorityService 領域服務（多重優惠優先級選擇與產品適用性檢查）、paymentGateway 抽象層接口（支付網關契約）、taskQueue 抽象層接口（訊息隊列契約），並通過 TDD 測試驗證。Repository層已優化，PromoCodeUsageRepository.create方法現接收完整的PromoCodeUsage value object，符合DDD原則。**新增Config實體**：實現Config實體（處理全域與產品級設定，含寬限期管理、退款政策配置、產品適用性檢查與有效配置合併邏輯），通過TDD測試驗證。**新增Rules實體**：實現Rules實體（處理動態業務規則，含條件評估、動作執行、規則驗證、描述生成與複製功能），支援複雜的業務邏輯表達式，通過TDD測試驗證。**新增rulesEngineService**：實現rulesEngineService領域服務（處理規則評估與執行，含規則載入篩選、優先級排序、條件評估、動作執行與規則驗證），支援嵌套屬性訪問和複雜運算子，通過TDD測試驗證。**新增configService**：實現configService應用服務（處理配置管理與優先級查詢，含架構優化），通過TDD測試驗證。**完成DDD-016**：重構ProductsService使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（年費產品$1000折扣，截止2026/12/31），現通過RulesRepository和RulesEngineService動態管理，符合DDD原則。**完成DDD-017**：重構BillingService使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（年費產品$1000折扣，截止2026/12/31），現通過RulesRepository和RulesEngineService動態管理，符合DDD原則。
+- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根（含 calculateNextBillingDate、applyDiscount、convertToNewCycle、handlePaymentFailure、renew、isGracePeriodExpired、expireGracePeriod 方法）、Discount 實體（isApplicable、isApplicableToProduct、calculateDiscountedPrice）、PromoCode 值物件（canBeUsed、incrementUsage、isApplicableToProduct）、PaymentAttempt 實體（shouldRetry，含 amount 字段記錄支付金額）、promoCodeDomainService 領域服務（優惠碼業務邏輯）、billingService 領域服務（扣款流程整合支付網關與任務隊列）、discountPriorityService 領域服務（多重優惠優先級選擇與產品適用性檢查）、paymentGateway 抽象層接口（支付網關契約）、taskQueue 抽象層接口（訊息隊列契約），並通過 TDD 測試驗證。Repository層已優化，PromoCodeUsageRepository.create方法現接收完整的PromoCodeUsage value object，符合DDD原則。**新增Config實體**：實現Config實體（處理全域與產品級設定，含寬限期管理、退款政策配置、產品適用性檢查與有效配置合併邏輯），通過TDD測試驗證。**新增Rules實體**：實現Rules實體（處理動態業務規則，含條件評估、動作執行、規則驗證、描述生成與複製功能），支援複雜的業務邏輯表達式，通過TDD測試驗證。**新增rulesEngineService**：實現rulesEngineService領域服務（處理規則評估與執行，含規則載入篩選、優先級排序、條件評估、動作執行與規則驗證），支援嵌套屬性訪問和複雜運算子，通過TDD測試驗證。**新增configService**：實現configService應用服務（處理配置管理與優先級查詢，含架構優化），通過TDD測試驗證。**完成DDD-016**：重構ProductsService使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（年費產品$1000折扣，截止2026/12/31），現通過RulesRepository和RulesEngineService動態管理，符合DDD原則。**完成DDD-017**：重構BillingService使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（年費產品$1000折扣，截止2026/12/31），現通過RulesRepository和RulesEngineService動態管理，符合DDD原則。**完善BDD測試**：啟用並完善新用戶訂閱年付產品的BDD測試，驗證從產品展示、訂閱創建到扣款的完整業務流程，確保規則引擎在各環節正確應用折扣邏輯。
 - **資料模型**：新增 `users` 模型（userId／tenantId／encryptedData）、`products` 模型（productId／name／price／cycleType／cycleValue／gracePeriodDays）、`subscriptions` 模型（subscriptionId／userId／productId／status／cycleType／startDate／nextBillingDate／renewalCount／remainingDiscountPeriods／appliedDiscountId／pendingConversion／gracePeriodEndDate）、`discounts` 模型（discountId／type／value／priority／startDate／endDate）、`promoCodes` 模型（code／discountId／usageLimit／isSingleUse／usedCount）、`promoCodeUsages` 模型（usageId／promoCode／userId／usedAt／orderAmount）、`paymentAttempts` 模型（attemptId／subscriptionId／status／failureReason／retryCount／amount）、`refunds` 模型（refundId／subscriptionId／amount／status）、`billingLogs` 模型（logId／subscriptionId／eventType／details）、`config` 模型（configId／type／productId／gracePeriodDays／refundPolicy）、`rules` 模型（ruleId／type／conditions／actions），並完成所有集合的索引優化（nextBillingDate、status、subscriptionId 等關鍵欄位）
 - **文件**：v0.7 實作指南完成，提供模組拆解與開發順序；系統設計文檔已更新，包含寬限期邏輯流程圖與GracePeriodCheckerJob描述
 

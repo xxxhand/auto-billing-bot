@@ -13,7 +13,7 @@ export interface RuleEvaluationContext {
     cycleType: string;
   };
   subscription?: {
-    subscriptionId: string;
+    subscriptionId?: string;
     isFirstTimeSubscription?: boolean;
   };
   currentDate?: Date | string;

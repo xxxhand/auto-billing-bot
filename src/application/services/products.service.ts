@@ -79,8 +79,10 @@ export class ProductsService {
         price: product.price,
         cycleType: product.cycleType,
       },
-      isFirstTimeSubscription,
-      currentDate: new Date(),
+      subscription: {
+        isFirstTimeSubscription: isFirstTimeSubscription,
+      },
+      currentDate: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD string
       originalPrice: product.price,
       discountedPrice: product.price,
     };

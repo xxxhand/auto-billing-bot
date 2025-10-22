@@ -7,7 +7,7 @@ import {
 } from '../__helpers__/shcema-interface.helper';
 
 // TODO: Enable this BDD test after fixing Rules entity constructor issue
-describe.skip('BDD: 新用戶訂閱年付產品（無優惠碼）', () => {
+describe('BDD: 新用戶訂閱年付產品（無優惠碼）', () => {
   let agent: superTest.SuperAgentTest;
   const dbHelper = new MongoHelper('bdd_new_user_yearly_subscription');
   const db = dbHelper.mongo;

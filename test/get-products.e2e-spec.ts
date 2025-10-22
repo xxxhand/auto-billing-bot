@@ -47,9 +47,9 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/products`, () => {
     ruleId: 'first_time_yearly_discount',
     type: 'discount',
     conditions: {
-      isFirstTimeSubscription: true,
+      'subscription.isFirstTimeSubscription': true,
       'product.cycleType': 'yearly',
-      'currentDate': { operator: 'lte', value: new Date('2026-12-31T23:59:59Z') },
+      'currentDate': { operator: 'lte', value: '2026-12-31' },
     },
     actions: {
       discount: {
