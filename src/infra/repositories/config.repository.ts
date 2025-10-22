@@ -18,6 +18,7 @@ export class ConfigRepository {
     if (!entity) {
       return undefined;
     }
+    const now = new Date();
 
     if (!CustomValidator.nonEmptyString(entity.id)) {
       // Create new document
@@ -27,6 +28,9 @@ export class ConfigRepository {
         productId: entity.productId,
         gracePeriodDays: entity.gracePeriodDays,
         refundPolicy: entity.refundPolicy,
+        createdAt: now,
+        updatedAt: now,
+        valid: true,
       };
       const col = this.defMongoClient.getCollection(modelNames.CONFIG);
       const docRes = await col.insertOne(doc);
@@ -43,7 +47,8 @@ export class ConfigRepository {
         productId: entity.productId,
         gracePeriodDays: entity.gracePeriodDays,
         refundPolicy: entity.refundPolicy,
-        updatedAt: new Date(),
+        updatedAt: now,
+        valid: entity.valid
       },
     };
     const col = this.defMongoClient.getCollection(modelNames.CONFIG);

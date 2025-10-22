@@ -36,7 +36,7 @@
 - ✅ API-004：實現POST /subscriptions/convert，記錄方案轉換請求，處理費用調整（升級立即補收差額），但實際生效等到當前週期結束後的下個週期開始（2025年10月16日）
 - ✅ API-003：實現GET /subscriptions/{id}，查詢訂閱狀態（2025年10月13日）
 - ✅ API-002：實現POST /subscriptions，處理用戶訂閱創建（含完整業務邏輯測試與DDD架構優化）（2025年10月13日）
-- ✅ API-001：實現GET /products，查詢產品列表與即時優惠價（含完整折扣功能測試）（2025年10月8日）
+- ✅ API-001：實現GET /products，查詢產品列表與即時優惠價（含完整折扣功能測試與規則引擎整合）（2025年10月8日）
 - ✅ API-001：實現GET /products，查詢產品列表與即時優惠價（含完整折扣功能測試）（2025年10月8日）
 - ✅ DB-012：為所有集合添加索引，優化nextBillingDate與status查詢（2025年10月8日）
 - ✅ DDD-010：實現billingService領域服務，整合mock支付網關與RabbitMQ（含TDD測試）（2025年10月7日）
@@ -83,6 +83,7 @@
 ### 遇到的問題與解決方案
 - **PaymentAttempt 缺少 amount 字段**：在實現 BDD 測試時發現 PaymentAttempt 實體缺少 amount 字段，無法記錄每次支付嘗試的金額。解決方案：為 PaymentAttempt 實體、模型接口和 repository 添加 amount 字段，並同步更新設計文件和相關測試（2025年10月21日）
 - **硬編碼的first-time subscription discount邏輯**：目前ProductsService中存在重複的硬編碼折扣邏輯（yearly產品$1000，截止到2026/12/31），難以維護和擴展。解決方案：實現Rules和Config模型，使用規則引擎來處理動態折扣邏輯，並重構現有服務以使用規則引擎替代硬編碼邏輯（DDD-016，2025年10月22日）
+- **Rules實體構造函數兼容性問題**：Rules實體構造函數與plainToInstance不兼容，導致Repository無法正確從數據庫載入實例。解決方案：修改構造函數為可選參數，允許從plain object創建實例（2025年10月22日）
 - 尚無其他新問題，待後續任務展開時再記錄
 
 ### 環境配置

@@ -34,22 +34,26 @@ export class Rules extends BaseEntity {
   public type: string;
   public conditions: Record<string, any>;
   public actions: Record<string, any>;
+  public valid: boolean = true;
 
-  constructor(ruleId: string, type: string, conditions: Record<string, any>, actions: Record<string, any>) {
+  constructor(ruleId?: string, type?: string, conditions?: Record<string, any>, actions?: Record<string, any>) {
     super();
 
-    // Validate inputs
-    if (!ruleId || ruleId.trim() === '') {
-      throw new Error('Rule ID cannot be empty');
-    }
-    if (!type || type.trim() === '') {
-      throw new Error('Rule type cannot be empty');
-    }
+    // Allow creation from plain object (for plainToInstance)
+    if (ruleId !== undefined) {
+      // Validate inputs
+      if (!ruleId || ruleId.trim() === '') {
+        throw new Error('Rule ID cannot be empty');
+      }
+      if (!type || type.trim() === '') {
+        throw new Error('Rule type cannot be empty');
+      }
 
-    this.ruleId = ruleId;
-    this.type = type;
-    this.conditions = conditions;
-    this.actions = actions;
+      this.ruleId = ruleId;
+      this.type = type;
+      this.conditions = conditions || {};
+      this.actions = actions || {};
+    }
   }
 
   /**
@@ -336,11 +340,11 @@ export class Rules extends BaseEntity {
     const clonedConditions = JSON.parse(JSON.stringify(this.conditions));
     const clonedActions = JSON.parse(JSON.stringify(this.actions));
 
-    return new Rules(
-      newRuleId || this.ruleId,
-      this.type,
-      clonedConditions,
-      clonedActions
-    );
+    const clonedRule = new Rules();
+    clonedRule.ruleId = newRuleId || this.ruleId;
+    clonedRule.type = this.type;
+    clonedRule.conditions = clonedConditions;
+    clonedRule.actions = clonedActions;
+    return clonedRule;
   }
 }

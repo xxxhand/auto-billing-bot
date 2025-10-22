@@ -19,6 +19,7 @@ export class RulesRepository {
       return undefined;
     }
 
+    const now = new Date();
     if (!CustomValidator.nonEmptyString(entity.id)) {
       // Create new document
       const doc = <IRulesDocument>{
@@ -26,6 +27,9 @@ export class RulesRepository {
         type: entity.type,
         conditions: entity.conditions,
         actions: entity.actions,
+        createdAt: now,
+        updatedAt: now,
+        valid: true,
       };
       const col = this.defMongoClient.getCollection(modelNames.RULES);
       const docRes = await col.insertOne(doc);
@@ -41,7 +45,8 @@ export class RulesRepository {
         type: entity.type,
         conditions: entity.conditions,
         actions: entity.actions,
-        updatedAt: new Date(),
+        updatedAt: now,
+        valid: entity.valid
       },
     };
     const col = this.defMongoClient.getCollection(modelNames.RULES);

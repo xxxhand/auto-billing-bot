@@ -13,6 +13,7 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/products`, () => {
   const productCol = 'Products';
   const subscriptionCol = 'Subscriptions';
   const discountCol = 'Discounts';
+  const rulesCol = 'Rules';
   //#region Test data
   // 3 products. monthly, quarterly, yearly
   const mockProducts: IProductDocument[] = [];
@@ -39,12 +40,35 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/products`, () => {
     applicableProducts: ['ProductId-3'], // Only applies to yearly product
     valid: true,
   };
+
+  // First-time subscription discount rule for yearly products
+  const mockFirstTimeDiscountRule: any = {
+    _id: dbHelper.newObjectId(),
+    ruleId: 'first_time_yearly_discount',
+    type: 'discount',
+    conditions: {
+      isFirstTimeSubscription: true,
+      'product.cycleType': 'yearly',
+      'currentDate': { operator: 'lte', value: new Date('2026-12-31T23:59:59Z') },
+    },
+    actions: {
+      discount: {
+        type: 'fixed',
+        value: 1000,
+      },
+    },
+    valid: true,
+  };
   //#endregion Test data
 
   beforeAll(async () => {
     agent = await AppHelper.getAgent();
     await db.tryConnect();
-    await Promise.all([db.getCollection(productCol).insertMany(mockProducts), db.getCollection(discountCol).insertOne(mockDiscount)]);
+    await Promise.all([
+      db.getCollection(productCol).insertMany(mockProducts),
+      db.getCollection(discountCol).insertOne(mockDiscount),
+      db.getCollection(rulesCol).insertOne(mockFirstTimeDiscountRule)
+    ]);
   });
 
   afterAll(async () => {
@@ -97,6 +121,48 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/products`, () => {
     });
 
     it('should return 3 products where only yearly product has discount', async () => {
+      // Use a user with existing subscription to avoid first-time discount
+      const mockUserId = dbHelper.newObjectId();
+      const activeSubscription: Partial<ISubscriptionDocument> = {
+        _id: dbHelper.newObjectId(),
+        subscriptionId: 'Sub-regular-discount',
+        userId: mockUserId,
+        productId: 'ProductId-2', // Quarterly product
+        status: 'active',
+      };
+      await db.getCollection(subscriptionCol).insertOne(activeSubscription);
+
+      const res = await agent.get(endpoint).query({ userId: mockUserId.toHexString() });
+
+      expect(res.status).toBe(200);
+      expect(res.body.code).toBe(0);
+      expect(res.body.message).toBe('');
+      expect(res.body.result).toBeInstanceOf(Array);
+      expect(res.body.result).toHaveLength(2); // ProductId-2 filtered out
+
+      // Find remaining products
+      const monthlyProduct = res.body.result.find((p: any) => p.cycleType === 'monthly');
+      const yearlyProduct = res.body.result.find((p: any) => p.cycleType === 'yearly');
+
+      // Verify all products exist
+      expect(monthlyProduct).toBeDefined();
+      expect(yearlyProduct).toBeDefined();
+
+      // Verify prices
+      expect(monthlyProduct.originalPrice).toBe(10);
+      expect(yearlyProduct.originalPrice).toBe(30);
+
+      // Only yearly product should have regular discount (20% off = 30 * 0.8 = 24)
+      expect(monthlyProduct.discountedPrice).toBe(10); // No discount
+      expect(yearlyProduct.discountedPrice).toBe(24); // 20% discount applied
+
+      // Verify applicable discounts
+      expect(monthlyProduct.applicableDiscounts).toHaveLength(0);
+      expect(yearlyProduct.applicableDiscounts).toHaveLength(1);
+      expect(yearlyProduct.applicableDiscounts[0].discountId).toBe('yearly-discount-20');
+    });
+
+    it('should apply first-time subscription discount to yearly product for new users', async () => {
       const res = await agent.get(endpoint).query({ userId: dbHelper.newObjectAsString() });
 
       expect(res.status).toBe(200);
@@ -120,16 +186,48 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/products`, () => {
       expect(quarterlyProduct.originalPrice).toBe(20);
       expect(yearlyProduct.originalPrice).toBe(30);
 
-      // Only yearly product should have discount (20% off = 30 * 0.8 = 24)
+      // First-time discount has higher priority than regular discount
+      // Yearly product should get $1000 fixed discount (30 - 1000 = 0, but minimum 0)
       expect(monthlyProduct.discountedPrice).toBe(10); // No discount
       expect(quarterlyProduct.discountedPrice).toBe(20); // No discount
-      expect(yearlyProduct.discountedPrice).toBe(24); // 20% discount applied
+      expect(yearlyProduct.discountedPrice).toBe(0); // First-time discount applied (30 - 1000 = 0)
 
-      // Verify applicable discounts
+      // Verify applicable discounts (regular discount still shown)
       expect(monthlyProduct.applicableDiscounts).toHaveLength(0);
       expect(quarterlyProduct.applicableDiscounts).toHaveLength(0);
       expect(yearlyProduct.applicableDiscounts).toHaveLength(1);
       expect(yearlyProduct.applicableDiscounts[0].discountId).toBe('yearly-discount-20');
+    });
+
+    it('should not apply first-time discount to users with existing subscriptions', async () => {
+      // User with one active subscription
+      const mockUserId = dbHelper.newObjectId();
+      const activeSubscription: Partial<ISubscriptionDocument> = {
+        _id: dbHelper.newObjectId(),
+        subscriptionId: 'Sub-002',
+        userId: mockUserId,
+        productId: 'ProductId-1', // Monthly product
+        status: 'active',
+      };
+      await db.getCollection(subscriptionCol).insertOne(activeSubscription);
+
+      const res = await agent.get(endpoint).query({ userId: mockUserId.toHexString() });
+
+      expect(res.status).toBe(200);
+      expect(res.body.code).toBe(0);
+      expect(res.body.message).toBe('');
+      expect(res.body.result).toBeInstanceOf(Array);
+      expect(res.body.result).toHaveLength(2); // ProductId-1 filtered out
+
+      // Find remaining products
+      const quarterlyProduct = res.body.result.find((p: any) => p.cycleType === 'quarterly');
+      const yearlyProduct = res.body.result.find((p: any) => p.cycleType === 'yearly');
+
+      // Verify prices - no first-time discount since user has existing subscription
+      expect(quarterlyProduct.originalPrice).toBe(20);
+      expect(yearlyProduct.originalPrice).toBe(30);
+      expect(quarterlyProduct.discountedPrice).toBe(20); // No discount
+      expect(yearlyProduct.discountedPrice).toBe(24); // Only regular 20% discount applied
     });
   });
 });

@@ -14,6 +14,7 @@ export class Config extends BaseEntity {
   public productId: string | null;
   public gracePeriodDays: number;
   public refundPolicy: Record<string, any>;
+  valid: boolean = true;
 
   constructor(
     configId: string,

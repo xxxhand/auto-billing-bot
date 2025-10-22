@@ -52,7 +52,7 @@
 
 | 任務ID | 描述 | 依賴關係 | 狀態 | 設計書 |
 |--------|------|----------|------|--------|
-| API-001 | 實現GET /products，查詢產品列表與即時優惠價 | DB-002, DDD-006, DDD-010 | 已完成 | 5.1 RESTful API, 5.2 API 資料格式示例 |
+| API-001 | 實現GET /products，查詢產品列表與即時優惠價（含規則引擎整合測試） | DB-002, DDD-006, DDD-010 | 已完成 | 5.1 RESTful API, 5.2 API 資料格式示例 |
 | API-002 | 實現POST /subscriptions，創建訂閱 | DB-003, DDD-001 | 已完成 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
 | API-003 | 實現GET /subscriptions/{id}，查詢訂閱狀態 | DB-003, DDD-001 | 已完成 | 5.1 RESTful API |
 | API-004 | 實現POST /subscriptions/convert，記錄方案轉換請求，處理費用調整（升級立即補收差額），但實際生效等到當前週期結束後的下個週期開始 | DDD-003 | 已完成 | 5.1 RESTful API, 6.1 訂閱與扣款流程 |
