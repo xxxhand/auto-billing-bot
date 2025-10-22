@@ -41,7 +41,7 @@
 | DDD-011 | 實現discountPriorityService領域服務，處理多重優惠優先級並檢查優惠是否適用於指定產品（含TDD測試） | DDD-002, DDD-006 | 已完成 | 4.3 核心領域模型設計與方法, 6.4 優惠應用流程 |
 | DDD-012 | 實現Config實體，處理全域與產品級設定（含TDD測試） | DB-009 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-013 | 實現Rules實體，處理動態業務規則（含TDD測試） | DB-010 | 已完成 | 4.3 核心領域模型設計與方法 |
-| DDD-014 | 實現rulesEngineService領域服務，處理規則評估與執行（含TDD測試） | DDD-013 | 待處理 | 4.3 核心領域模型設計與方法 |
+| DDD-014 | 實現rulesEngineService領域服務，處理規則評估與執行（含TDD測試） | DDD-013 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-015 | 實現configService領域服務，處理配置管理（含TDD測試） | DDD-012 | 待處理 | 4.3 核心領域模型設計與方法 |
 | DDD-016 | 重構ProductsService，使用規則引擎替代硬編碼的first-time discount邏輯（含TDD測試） | DDD-014, API-001 | 待處理 | 4.3 核心領域模型設計與方法 |
 | DDD-017 | 重構BillingService，使用規則引擎替代硬編碼的first-time discount邏輯（含TDD測試） | DDD-014, DDD-010 | 待處理 | 4.3 核心領域模型設計與方法 |
@@ -112,9 +112,9 @@
 ## 7. 總計
 - **總任務數**：60
 - **狀態分布**：
-  - 已完成：42個任務
+  - 已完成：43個任務
   - 進行中：0個任務
-  - 待處理：18個任務
+  - 待處理：17個任務
 - **額外實現**：
   - 實現寬限期邏輯（GracePeriodCheckerJob每小時檢查過期寬限期訂閱並自動取消）
   - 添加gracePeriodEndDate字段到Subscription實體和模型

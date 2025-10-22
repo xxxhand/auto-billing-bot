@@ -74,13 +74,13 @@ export class Rules extends BaseEntity {
 
   /**
    * Evaluate a single condition
-   * @param key The condition key
+   * @param key The condition key (supports dot notation for nested properties)
    * @param condition The condition value (can be simple value or operator condition)
    * @param context The context data
    * @returns true if condition is met, false otherwise
    */
   private evaluateSingleCondition(key: string, condition: any, context: Record<string, any>): boolean {
-    const contextValue = context[key];
+    const contextValue = this.getNestedValue(context, key);
 
     // Handle operator conditions
     if (typeof condition === 'object' && condition !== null && 'operator' in condition) {
@@ -94,6 +94,16 @@ export class Rules extends BaseEntity {
 
     // Handle simple equality
     return contextValue === condition;
+  }
+
+  /**
+   * Get nested value from context using dot notation
+   * @param obj The object to traverse
+   * @param path The dot-separated path (e.g., "subscription.isFirstTimeSubscription")
+   * @returns The value at the path, or undefined if not found
+   */
+  private getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
   }
 
   /**
