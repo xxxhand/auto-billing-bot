@@ -14,10 +14,12 @@ import { PromoCodeUsageRepository } from './infra/repositories/promoCodeUsage.re
 import { UserRepository } from './infra/repositories/user.repository';
 import { RefundRepository } from './infra/repositories/refund.repository';
 import { ConfigRepository } from './infra/repositories/config.repository';
+import { RulesRepository } from './infra/repositories/rules.repository';
 import { BillingService } from './infra/services/billing.service';
 import { DatabaseIndexService } from './infra/services/database-index.service';
 import { DiscountPriorityService } from './domain/services/discount-priority.service';
 import { PromoCodeDomainService } from './domain/services/promo-code-domain.service';
+import { RulesEngineService } from './domain/services/rules-engine.service';
 import { ProductsService } from './application/services/products.service';
 import { SubscriptionsService } from './application/services/subscriptions.service';
 import { PaymentsService } from './application/services/payments.service';
@@ -54,6 +56,7 @@ import { IBillingServiceToken } from './domain/services/billing.service.interfac
     UserRepository,
     RefundRepository,
     ConfigRepository,
+    RulesRepository,
     BillingConsumer,
     {
       provide: IBillingServiceToken,
@@ -70,6 +73,7 @@ import { IBillingServiceToken } from './domain/services/billing.service.interfac
     DatabaseIndexService,
     DiscountPriorityService,
     PromoCodeDomainService,
+    RulesEngineService,
     ProductsService,
     SubscriptionsService,
     PaymentsService,

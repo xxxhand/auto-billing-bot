@@ -3,6 +3,8 @@ import { ProductRepository } from '../../infra/repositories/product.repository';
 import { SubscriptionRepository } from '../../infra/repositories/subscription.repository';
 import { DiscountRepository } from '../../infra/repositories/discount.repository';
 import { DiscountPriorityService } from '../../domain/services/discount-priority.service';
+import { RulesEngineService } from '../../domain/services/rules-engine.service';
+import { RulesRepository } from '../../infra/repositories/rules.repository';
 import { ProductEntity } from '../../domain/entities/product.entity';
 import { Discount } from '../../domain/entities/discount.entity';
 
@@ -22,6 +24,8 @@ export class ProductsService {
     private readonly subscriptionRepository: SubscriptionRepository,
     private readonly discountRepository: DiscountRepository,
     private readonly discountPriorityService: DiscountPriorityService,
+    private readonly rulesEngineService: RulesEngineService,
+    private readonly rulesRepository: RulesRepository,
   ) {}
 
   /**
@@ -43,7 +47,7 @@ export class ProductsService {
     const productsWithDiscounts: ProductWithDiscount[] = [];
 
     for (const product of availableProducts) {
-      const discountedPrice = await this.calculateDiscountedPrice(product);
+      const discountedPrice = await this.calculateDiscountedPrice(product, userId);
       const applicableDiscounts = await this.getApplicableDiscounts(product);
 
       productsWithDiscounts.push({
@@ -59,11 +63,32 @@ export class ProductsService {
     return productsWithDiscounts;
   }
 
-  private async calculateDiscountedPrice(product: ProductEntity): Promise<number> {
-    // Apply first-time subscription discount first (highest priority)
-    const firstTimeDiscountPrice = this.applyFirstTimeSubscriptionDiscount(product);
-    if (firstTimeDiscountPrice !== product.price) {
-      return firstTimeDiscountPrice;
+  private async calculateDiscountedPrice(product: ProductEntity, userId: string): Promise<number> {
+    // First, check if this is a first-time subscription for the user
+    const isFirstTimeSubscription = await this.isFirstTimeSubscription(userId);
+
+    // Apply rules-based discounts first (highest priority)
+    const discountRules = await this.rulesRepository.findByType('discount');
+    const applicableRules = this.rulesEngineService.filterApplicableRules(discountRules, 'discount');
+
+    const context = {
+      userId,
+      product: {
+        productId: product.productId,
+        name: product.name,
+        price: product.price,
+        cycleType: product.cycleType,
+      },
+      isFirstTimeSubscription,
+      currentDate: new Date(),
+      originalPrice: product.price,
+      discountedPrice: product.price,
+    };
+
+    const result = this.rulesEngineService.evaluateRules(applicableRules, context);
+
+    if (result.success && result.totalDiscount > 0) {
+      return Math.max(0, product.price - result.totalDiscount);
     }
 
     // Get all applicable discounts for this product
@@ -84,19 +109,14 @@ export class ProductsService {
   }
 
   /**
-   * Apply first-time subscription discount based on system rules
-   * - Yearly products before 2026/12/31: first year $1000
-   * - Monthly products: no discount
+   * Check if this is a first-time subscription for the user
+   * @param userId The user ID to check
+   * @returns true if the user has no active subscriptions, false otherwise
    */
-  private applyFirstTimeSubscriptionDiscount(product: ProductEntity): number {
-    const now = new Date();
-    const discountEndDate = new Date('2026-12-31');
-
-    if (product.cycleType === 'yearly' && now <= discountEndDate) {
-      return 1000; // First year discount for yearly products
-    }
-
-    return product.price; // No discount for monthly products or yearly products after discount period
+  private async isFirstTimeSubscription(userId: string): Promise<boolean> {
+    const userSubscriptions = await this.subscriptionRepository.findByUserId(userId);
+    const activeSubscriptions = userSubscriptions.filter((sub) => sub.status === 'active');
+    return activeSubscriptions.length === 0;
   }
 
   private async getApplicableDiscounts(product: ProductEntity): Promise<Discount[]> {
