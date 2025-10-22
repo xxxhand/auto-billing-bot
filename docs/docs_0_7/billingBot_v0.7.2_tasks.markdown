@@ -42,7 +42,7 @@
 | DDD-012 | 實現Config實體，處理全域與產品級設定（含TDD測試） | DB-009 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-013 | 實現Rules實體，處理動態業務規則（含TDD測試） | DB-010 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-014 | 實現rulesEngineService領域服務，處理規則評估與執行（含TDD測試） | DDD-013 | 已完成 | 4.3 核心領域模型設計與方法 |
-| DDD-015 | 實現configService領域服務，處理配置管理（含TDD測試） | DDD-012 | 待處理 | 4.3 核心領域模型設計與方法 |
+| DDD-015 | 實現configService應用服務，處理配置管理與優先級查詢（含架構優化） | DDD-012 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-016 | 重構ProductsService，使用規則引擎替代硬編碼的first-time discount邏輯（含TDD測試） | DDD-014, API-001 | 待處理 | 4.3 核心領域模型設計與方法 |
 | DDD-017 | 重構BillingService，使用規則引擎替代硬編碼的first-time discount邏輯（含TDD測試） | DDD-014, DDD-010 | 待處理 | 4.3 核心領域模型設計與方法 |
 

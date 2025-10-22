@@ -13,6 +13,7 @@ import { PromoCodeRepository } from './infra/repositories/promoCode.repository';
 import { PromoCodeUsageRepository } from './infra/repositories/promoCodeUsage.repository';
 import { UserRepository } from './infra/repositories/user.repository';
 import { RefundRepository } from './infra/repositories/refund.repository';
+import { ConfigRepository } from './infra/repositories/config.repository';
 import { BillingService } from './infra/services/billing.service';
 import { DatabaseIndexService } from './infra/services/database-index.service';
 import { DiscountPriorityService } from './domain/services/discount-priority.service';
@@ -22,6 +23,7 @@ import { SubscriptionsService } from './application/services/subscriptions.servi
 import { PaymentsService } from './application/services/payments.service';
 import { DiscountsService } from './application/services/discounts.service';
 import { PromoCodeService } from './application/services/promoCode.service';
+import { ConfigService } from './application/services/config.service';
 import { AppExceptionFilter } from './app-components/app-exception.filter';
 import { AppTracerMiddleware } from './app-components/app-tracer.middleware';
 import * as jobs from './application/jobs';
@@ -51,6 +53,7 @@ import { IBillingServiceToken } from './domain/services/billing.service.interfac
     PromoCodeUsageRepository,
     UserRepository,
     RefundRepository,
+    ConfigRepository,
     BillingConsumer,
     {
       provide: IBillingServiceToken,
@@ -72,6 +75,7 @@ import { IBillingServiceToken } from './domain/services/billing.service.interfac
     PaymentsService,
     DiscountsService,
     PromoCodeService,
+    ConfigService,
     ...Array.from(Object.keys(jobs)).map((key) => jobs[key]),
   ],
 })
