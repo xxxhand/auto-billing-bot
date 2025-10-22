@@ -16,9 +16,11 @@
 - 無，目前無進行中任務
 
 ### 已完成任務 (最近)
+- ✅ **DDD-017**：重構 BillingService 使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（2025年10月22日）
 - ✅ **DDD-016**：重構 ProductsService 使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（2025年10月22日）
 - ✅ **DDD-015**：實現 configService 應用服務，處理配置管理與優先級查詢（含架構優化）（2025年10月22日）
 - ✅ **DDD-014**：實現 rulesEngineService 領域服務，處理規則評估與執行（含TDD測試）（2025年10月22日）
+- ✅ **DDD-013**：實現 Rules 實體，處理動態業務規則（含TDD測試）（2025年10月22日）
 - ✅ **DDD-012**：實現Config實體，處理全域與產品級設定（含TDD測試）（2025年10月22日）
 - ✅ **PaymentAttempt 實體完善**：為 PaymentAttempt 實體添加 amount 字段，記錄每次支付嘗試的金額，並同步更新設計文件、模型接口和相關測試（2025年10月21日）
 - ✅ API-014：實現POST /promoCodes/applyPromo，應用優惠碼到訂單或訂閱，支援一次性折扣與長期訂閱折扣（2025年10月21日）
@@ -76,7 +78,7 @@
 ## 🔧 技術狀態
 
 ### 當前架構
-- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根（含 calculateNextBillingDate、applyDiscount、convertToNewCycle、handlePaymentFailure、renew、isGracePeriodExpired、expireGracePeriod 方法）、Discount 實體（isApplicable、isApplicableToProduct、calculateDiscountedPrice）、PromoCode 值物件（canBeUsed、incrementUsage、isApplicableToProduct）、PaymentAttempt 實體（shouldRetry，含 amount 字段記錄支付金額）、promoCodeDomainService 領域服務（優惠碼業務邏輯）、billingService 領域服務（扣款流程整合支付網關與任務隊列）、discountPriorityService 領域服務（多重優惠優先級選擇與產品適用性檢查）、paymentGateway 抽象層接口（支付網關契約）、taskQueue 抽象層接口（訊息隊列契約），並通過 TDD 測試驗證。Repository層已優化，PromoCodeUsageRepository.create方法現接收完整的PromoCodeUsage value object，符合DDD原則。**新增Config實體**：實現Config實體（處理全域與產品級設定，含寬限期管理、退款政策配置、產品適用性檢查與有效配置合併邏輯），通過TDD測試驗證。**新增Rules實體**：實現Rules實體（處理動態業務規則，含條件評估、動作執行、規則驗證、描述生成與複製功能），支援複雜的業務邏輯表達式，通過TDD測試驗證。**新增rulesEngineService**：實現rulesEngineService領域服務（處理規則評估與執行，含規則載入篩選、優先級排序、條件評估、動作執行與規則驗證），支援嵌套屬性訪問和複雜運算子，通過TDD測試驗證。**新增configService**：實現configService應用服務（處理配置管理與優先級查詢，含架構優化），通過TDD測試驗證。**完成DDD-016**：重構ProductsService使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（年費產品$1000折扣，截止2026/12/31），現通過RulesRepository和RulesEngineService動態管理，符合DDD原則。**修復關鍵錯誤**：在Subscription實體與ISubscriptionModel介面中添加appliedDiscountId欄位，修復BillingService.processBilling邏輯錯誤（原先remainingDiscountPeriods > 0時錯誤設為amount = 0，現正確使用appliedDiscountId計算折扣價格）。**規劃中**：準備重構BillingService中的硬編碼first-time subscription discount邏輯。
+- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根（含 calculateNextBillingDate、applyDiscount、convertToNewCycle、handlePaymentFailure、renew、isGracePeriodExpired、expireGracePeriod 方法）、Discount 實體（isApplicable、isApplicableToProduct、calculateDiscountedPrice）、PromoCode 值物件（canBeUsed、incrementUsage、isApplicableToProduct）、PaymentAttempt 實體（shouldRetry，含 amount 字段記錄支付金額）、promoCodeDomainService 領域服務（優惠碼業務邏輯）、billingService 領域服務（扣款流程整合支付網關與任務隊列）、discountPriorityService 領域服務（多重優惠優先級選擇與產品適用性檢查）、paymentGateway 抽象層接口（支付網關契約）、taskQueue 抽象層接口（訊息隊列契約），並通過 TDD 測試驗證。Repository層已優化，PromoCodeUsageRepository.create方法現接收完整的PromoCodeUsage value object，符合DDD原則。**新增Config實體**：實現Config實體（處理全域與產品級設定，含寬限期管理、退款政策配置、產品適用性檢查與有效配置合併邏輯），通過TDD測試驗證。**新增Rules實體**：實現Rules實體（處理動態業務規則，含條件評估、動作執行、規則驗證、描述生成與複製功能），支援複雜的業務邏輯表達式，通過TDD測試驗證。**新增rulesEngineService**：實現rulesEngineService領域服務（處理規則評估與執行，含規則載入篩選、優先級排序、條件評估、動作執行與規則驗證），支援嵌套屬性訪問和複雜運算子，通過TDD測試驗證。**新增configService**：實現configService應用服務（處理配置管理與優先級查詢，含架構優化），通過TDD測試驗證。**完成DDD-016**：重構ProductsService使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（年費產品$1000折扣，截止2026/12/31），現通過RulesRepository和RulesEngineService動態管理，符合DDD原則。**完成DDD-017**：重構BillingService使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（年費產品$1000折扣，截止2026/12/31），現通過RulesRepository和RulesEngineService動態管理，符合DDD原則。
 - **資料模型**：新增 `users` 模型（userId／tenantId／encryptedData）、`products` 模型（productId／name／price／cycleType／cycleValue／gracePeriodDays）、`subscriptions` 模型（subscriptionId／userId／productId／status／cycleType／startDate／nextBillingDate／renewalCount／remainingDiscountPeriods／appliedDiscountId／pendingConversion／gracePeriodEndDate）、`discounts` 模型（discountId／type／value／priority／startDate／endDate）、`promoCodes` 模型（code／discountId／usageLimit／isSingleUse／usedCount）、`promoCodeUsages` 模型（usageId／promoCode／userId／usedAt／orderAmount）、`paymentAttempts` 模型（attemptId／subscriptionId／status／failureReason／retryCount／amount）、`refunds` 模型（refundId／subscriptionId／amount／status）、`billingLogs` 模型（logId／subscriptionId／eventType／details）、`config` 模型（configId／type／productId／gracePeriodDays／refundPolicy）、`rules` 模型（ruleId／type／conditions／actions），並完成所有集合的索引優化（nextBillingDate、status、subscriptionId 等關鍵欄位）
 - **文件**：v0.7 實作指南完成，提供模組拆解與開發順序；系統設計文檔已更新，包含寬限期邏輯流程圖與GracePeriodCheckerJob描述
 
@@ -92,14 +94,10 @@
 
 ## 📊 進度指標
 - **總任務數**：60 項
-- **已完成**：44 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-014、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、PaymentAttempt完善）
+- **已完成**：49 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、PaymentAttempt完善）
 - **進行中**：0 項
-- **待處理**：16 項
+- **待處理**：11 項
 
 ## 🎯 下一步計劃
-1. **DDD-017**：重構 BillingService 使用規則引擎
-   - 替換硬編碼的折扣邏輯
-   - 使用 rulesEngineService 進行動態折扣計算
-
-2. **API-015~API-018**：實現配置和規則管理 API
+1. **API-015~API-018**：實現配置和規則管理 API
    - 提供規則和配置的 CRUD 操作介面

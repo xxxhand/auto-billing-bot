@@ -7,6 +7,8 @@ import { SubscriptionRepository } from '../repositories/subscription.repository'
 import { PaymentAttemptRepository } from '../repositories/payment-attempt.repository';
 import { ProductRepository } from '../repositories/product.repository';
 import { DiscountRepository } from '../repositories/discount.repository';
+import { RulesRepository } from '../repositories/rules.repository';
+import { RulesEngineService } from '../../domain/services/rules-engine.service';
 import { Subscription } from '../../domain/entities/subscription.entity';
 import { ProductEntity } from '../../domain/entities/product.entity';
 import { Discount } from '../../domain/entities/discount.entity';
@@ -20,6 +22,8 @@ describe('BillingService', () => {
   let productRepository: jest.Mocked<ProductRepository>;
   let commonService: jest.Mocked<CommonService>;
   let discountRepository: jest.Mocked<DiscountRepository>;
+  let rulesRepository: jest.Mocked<RulesRepository>;
+  let rulesEngineService: jest.Mocked<RulesEngineService>;
 
   beforeEach(async () => {
     const mockPaymentGateway = {
@@ -60,6 +64,21 @@ describe('BillingService', () => {
       findRenewalDiscounts: jest.fn(),
     };
 
+    const mockRulesRepository = {
+      findByRuleId: jest.fn(),
+      findByType: jest.fn(),
+      findAll: jest.fn(),
+      save: jest.fn(),
+      deleteByRuleId: jest.fn(),
+      deleteById: jest.fn(),
+    };
+
+    const mockRulesEngineService = {
+      evaluateRules: jest.fn(),
+      filterApplicableRules: jest.fn(),
+      validateRules: jest.fn(),
+    };
+
     const mockCommonService = {
       getDefaultLogger: jest.fn().mockReturnValue({
         log: jest.fn(),
@@ -95,6 +114,14 @@ describe('BillingService', () => {
           useValue: mockDiscountRepository,
         },
         {
+          provide: RulesRepository,
+          useValue: mockRulesRepository,
+        },
+        {
+          provide: RulesEngineService,
+          useValue: mockRulesEngineService,
+        },
+        {
           provide: CommonService,
           useValue: mockCommonService,
         },
@@ -109,6 +136,8 @@ describe('BillingService', () => {
     productRepository = module.get(ProductRepository);
     commonService = module.get(CommonService);
     discountRepository = module.get(DiscountRepository);
+    rulesRepository = module.get(RulesRepository);
+    rulesEngineService = module.get(RulesEngineService);
   });
 
   afterEach(() => {
@@ -130,6 +159,15 @@ describe('BillingService', () => {
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
       discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
+      rulesRepository.findByType.mockResolvedValue([]); // No discount rules
+      rulesEngineService.filterApplicableRules.mockReturnValue([]);
+      rulesEngineService.evaluateRules.mockReturnValue({
+        context: {},
+        appliedRules: [],
+        totalDiscount: 0,
+        totalBonus: 0,
+        success: true,
+      });
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       subscriptionRepository.save.mockResolvedValue(subscription);
@@ -156,6 +194,15 @@ describe('BillingService', () => {
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
       discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
+      rulesRepository.findByType.mockResolvedValue([]); // No discount rules
+      rulesEngineService.filterApplicableRules.mockReturnValue([]);
+      rulesEngineService.evaluateRules.mockReturnValue({
+        context: {},
+        appliedRules: [],
+        totalDiscount: 0,
+        totalBonus: 0,
+        success: true,
+      });
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       taskQueue.publishTask.mockResolvedValue(undefined);
@@ -207,6 +254,15 @@ describe('BillingService', () => {
       productRepository.findByProductId.mockResolvedValue(product);
       discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
       discountRepository.findRenewalDiscounts.mockResolvedValue([renewalDiscount]);
+      rulesRepository.findByType.mockResolvedValue([]); // No discount rules for first-time
+      rulesEngineService.filterApplicableRules.mockReturnValue([]);
+      rulesEngineService.evaluateRules.mockReturnValue({
+        context: {},
+        appliedRules: [],
+        totalDiscount: 0,
+        totalBonus: 0,
+        success: true,
+      });
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       subscriptionRepository.save.mockResolvedValue(subscription);
@@ -244,6 +300,15 @@ describe('BillingService', () => {
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
       discountRepository.findByDiscountId.mockResolvedValue(appliedDiscount);
+      rulesRepository.findByType.mockResolvedValue([]); // No discount rules for first-time
+      rulesEngineService.filterApplicableRules.mockReturnValue([]);
+      rulesEngineService.evaluateRules.mockReturnValue({
+        context: {},
+        appliedRules: [],
+        totalDiscount: 0,
+        totalBonus: 0,
+        success: true,
+      });
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       subscriptionRepository.save.mockResolvedValue(subscription);
@@ -284,6 +349,15 @@ describe('BillingService', () => {
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
       discountRepository.findByDiscountId.mockResolvedValue(appliedDiscount);
+      rulesRepository.findByType.mockResolvedValue([]); // No discount rules for first-time
+      rulesEngineService.filterApplicableRules.mockReturnValue([]);
+      rulesEngineService.evaluateRules.mockReturnValue({
+        context: {},
+        appliedRules: [],
+        totalDiscount: 0,
+        totalBonus: 0,
+        success: true,
+      });
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       subscriptionRepository.save.mockResolvedValue(subscription);
@@ -316,6 +390,15 @@ describe('BillingService', () => {
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
       discountRepository.findByDiscountId.mockResolvedValue(expiredDiscount);
+      rulesRepository.findByType.mockResolvedValue([]); // No discount rules for first-time
+      rulesEngineService.filterApplicableRules.mockReturnValue([]);
+      rulesEngineService.evaluateRules.mockReturnValue({
+        context: {},
+        appliedRules: [],
+        totalDiscount: 0,
+        totalBonus: 0,
+        success: true,
+      });
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       subscriptionRepository.save.mockResolvedValue(subscription);
@@ -376,6 +459,15 @@ describe('BillingService', () => {
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
       discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
+      rulesRepository.findByType.mockResolvedValue([]); // No discount rules
+      rulesEngineService.filterApplicableRules.mockReturnValue([]);
+      rulesEngineService.evaluateRules.mockReturnValue({
+        context: {},
+        appliedRules: [],
+        totalDiscount: 0,
+        totalBonus: 0,
+        success: true,
+      });
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       subscriptionRepository.save.mockResolvedValue(subscription);
@@ -401,6 +493,15 @@ describe('BillingService', () => {
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
       discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
+      rulesRepository.findByType.mockResolvedValue([]); // No discount rules
+      rulesEngineService.filterApplicableRules.mockReturnValue([]);
+      rulesEngineService.evaluateRules.mockReturnValue({
+        context: {},
+        appliedRules: [],
+        totalDiscount: 0,
+        totalBonus: 0,
+        success: true,
+      });
       paymentGateway.charge.mockResolvedValue(paymentResponse);
       paymentAttemptRepository.save.mockResolvedValue(undefined);
       taskQueue.rejectTask.mockResolvedValue(undefined);

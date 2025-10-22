@@ -8,6 +8,8 @@ import { SubscriptionRepository } from '../repositories/subscription.repository'
 import { PaymentAttemptRepository } from '../repositories/payment-attempt.repository';
 import { ProductRepository } from '../repositories/product.repository';
 import { DiscountRepository } from '../repositories/discount.repository';
+import { RulesRepository } from '../repositories/rules.repository';
+import { RulesEngineService, RuleEvaluationContext } from '../../domain/services/rules-engine.service';
 import { Discount } from '../../domain/entities/discount.entity';
 import { PaymentAttempt, PaymentAttemptStatus } from '../../domain/entities/payment-attempt.entity';
 
@@ -23,6 +25,8 @@ export class BillingService implements IBillingService {
     private readonly paymentAttemptRepository: PaymentAttemptRepository,
     private readonly productRepository: ProductRepository,
     private readonly discountRepository: DiscountRepository,
+    private readonly rulesRepository: RulesRepository,
+    private readonly rulesEngineService: RulesEngineService,
   ) {
     this._Logger = this.commonService.getDefaultLogger(BillingService.name);
   }
@@ -81,7 +85,7 @@ export class BillingService implements IBillingService {
 
     // Apply first-time subscription discount for initial billing (renewalCount === 0)
     if (subscription.renewalCount === 0) {
-      amount = this.applyFirstTimeSubscriptionDiscount(product);
+      amount = await this.calculateFirstTimeSubscriptionDiscount(product, subscription);
     }
 
     if (subscription.remainingDiscountPeriods > 0 && subscription.appliedDiscountId) {
@@ -338,18 +342,40 @@ export class BillingService implements IBillingService {
   }
 
   /**
-   * Apply first-time subscription discount based on system rules
-   * - Yearly products before 2026/12/31: first year $1000
-   * - Monthly products: no discount
+   * Calculate first-time subscription discount using rules engine
    */
-  private applyFirstTimeSubscriptionDiscount(product: any): number {
-    const now = new Date();
-    const discountEndDate = new Date('2026-12-31');
+  private async calculateFirstTimeSubscriptionDiscount(product: any, subscription: any): Promise<number> {
+    // Get discount rules from repository
+    const discountRules = await this.rulesRepository.findByType('discount');
+    const applicableRules = this.rulesEngineService.filterApplicableRules(discountRules, 'discount');
 
-    if (product.cycleType === 'yearly' && now <= discountEndDate) {
-      return 1000; // First year discount for yearly products
+    // Create evaluation context
+    const context: RuleEvaluationContext = {
+      userId: subscription.userId,
+      productId: product.productId,
+      product: {
+        productId: product.productId,
+        name: product.name,
+        price: product.price,
+        cycleType: product.cycleType,
+      },
+      subscription: {
+        subscriptionId: subscription.subscriptionId,
+        isFirstTimeSubscription: subscription.renewalCount === 0,
+      },
+      currentDate: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD string
+      originalPrice: product.price,
+      discountedPrice: product.price,
+    };
+
+    // Evaluate rules
+    const result = this.rulesEngineService.evaluateRules(applicableRules, context);
+
+    if (result.success && result.totalDiscount > 0) {
+      return Math.max(0, product.price - result.totalDiscount);
     }
 
-    return product.price; // No discount for monthly products or yearly products after discount period
+    // Return original price if no rules apply
+    return product.price;
   }
 }

@@ -23,6 +23,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
   const paymentAttemptCol = 'PaymentAttempts';
   const promoCodeUsagesCol = 'PromoCodeUsages';
   const discountCol = 'Discounts';
+  const rulesCol = 'Rules';
 
   //#region Test data
   const mockUser: IUserDocument = {
@@ -39,6 +40,34 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
     name: 'Monthly Plan',
     price: 100,
     cycleType: 'monthly',
+    valid: true,
+  };
+
+  const mockYearlyProduct: IProductDocument = {
+    _id: dbHelper.newObjectId(),
+    productId: 'yearly-prod-001',
+    name: 'Yearly Plan',
+    price: 2490,
+    cycleType: 'yearly',
+    valid: true,
+  };
+
+  // First-time yearly subscription discount rule for billing
+  const firstTimeYearlyDiscountRule = {
+    _id: dbHelper.newObjectId(),
+    ruleId: 'first-time-yearly-discount-billing',
+    type: 'discount',
+    conditions: {
+      'product.cycleType': 'yearly',
+      'subscription.isFirstTimeSubscription': true,
+      'currentDate': { operator: 'lte', value: '2026-12-31' }
+    },
+    actions: {
+      discount: {
+        type: 'fixed',
+        value: 1490 // 2490 - 1490 = 1000 (first year discount)
+      }
+    },
     valid: true,
   };
 
@@ -80,8 +109,10 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
     await Promise.all([
       db.getCollection(userCol).insertOne(mockUser),
       db.getCollection(productCol).insertOne(mockProduct),
+      db.getCollection(productCol).insertOne(mockYearlyProduct),
       db.getCollection(discountCol).insertOne(mockDiscount),
       db.getCollection(promoCodeCol).insertOne(mockPromoCode),
+      db.getCollection(rulesCol).insertOne(firstTimeYearlyDiscountRule),
     ]);
   });
 
@@ -299,6 +330,53 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
       expect(dbPromoUsages).toHaveLength(1);
       expect(dbPromoUsages[0].userId.toHexString()).toBe(newUser.userId.toHexString());
       expect(dbPromoUsages[0].orderAmount).toBe(50); // after product.price - promoCode.minimumAmount
+    });
+
+    it('[0] should create yearly subscription with rules engine discount for first-time subscription', async () => {
+      jest.spyOn(mockPaymentGateway, 'charge').mockResolvedValue({
+        success: true,
+        transactionId: 'txn-yearly-discount',
+      });
+
+      // Create a new user for yearly subscription
+      const yearlyUser: IUserDocument = {
+        _id: dbHelper.newObjectId(),
+        userId: dbHelper.newObjectId(),
+        tenantId: 'tenant-yearly',
+        encryptedData: 'encrypted-data-yearly',
+        valid: true,
+      };
+      await db.getCollection(userCol).insertOne(yearlyUser);
+
+      const requestBody = {
+        userId: yearlyUser.userId.toHexString(),
+        productId: mockYearlyProduct.productId,
+      };
+
+      const res = await agent.post(endpoint).send(requestBody);
+
+      expect(res.status).toBe(201);
+      expect(res.body.code).toBe(0);
+      expect(res.body.result).toBeDefined();
+      expect(res.body.result.subscriptionId).toBeTruthy();
+      expect(res.body.result.status).toBe('active');
+      expect(res.body.result.productId).toBe(mockYearlyProduct.productId);
+
+      // Check database
+      const dbSub = (await db.getCollection(subscriptionCol).findOne({ subscriptionId: res.body.result.subscriptionId })) as ISubscriptionDocument;
+      expect(dbSub).toBeTruthy();
+      expect(dbSub.userId.toHexString()).toBe(yearlyUser.userId.toHexString());
+      expect(dbSub.productId).toBe(mockYearlyProduct.productId);
+      expect(dbSub.status).toBe('active');
+      expect(dbSub.cycleType).toBe('yearly');
+
+      // Check payment attempt - should be charged with discount (2490 - 1490 = 1000)
+      const dbAttempts = (await db.getCollection(paymentAttemptCol).findOne({ subscriptionId: dbSub.subscriptionId })) as IPaymentAttemptDocument;
+      expect(dbAttempts).toBeTruthy();
+      expect(dbAttempts.status).toBe('success');
+      expect(dbAttempts.amount).toBe(1000); // Original price 2490 - discount 1490 = 1000
+      expect(dbAttempts.failureReason).toBe('');
+      expect(dbAttempts.retryCount).toBe(0);
     });
   });
 });
