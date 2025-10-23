@@ -99,6 +99,7 @@ export class SubscriptionRepository {
       renewalCount: entity.renewalCount,
       remainingDiscountPeriods: entity.remainingDiscountPeriods,
       appliedDiscountId: entity.appliedDiscountId,
+      promoCode: entity.promoCode,
       pendingConversion: entity.pendingConversion,
       gracePeriodEndDate: entity.gracePeriodEndDate,
     };

@@ -21,6 +21,7 @@ export class Subscription extends BaseEntity {
   public renewalCount: number;
   public remainingDiscountPeriods: number;
   public appliedDiscountId?: string | null;
+  public promoCode?: string | null;
   public pendingConversion?: {
     newCycleType: string;
     requestedAt: Date;
@@ -38,6 +39,7 @@ export class Subscription extends BaseEntity {
     renewalCount: number = 0,
     remainingDiscountPeriods: number = 0,
     appliedDiscountId: string | null = null,
+    promoCode: string | null = null,
     pendingConversion: { newCycleType: string; requestedAt: Date } | null = null,
     gracePeriodEndDate: Date | null = null,
   ) {
@@ -52,6 +54,7 @@ export class Subscription extends BaseEntity {
     this.renewalCount = renewalCount;
     this.remainingDiscountPeriods = remainingDiscountPeriods;
     this.appliedDiscountId = appliedDiscountId;
+    this.promoCode = promoCode;
     this.pendingConversion = pendingConversion;
     this.gracePeriodEndDate = gracePeriodEndDate;
   }
@@ -147,6 +150,13 @@ export class Subscription extends BaseEntity {
 
     this.appliedDiscountId = discountId;
     this.remainingDiscountPeriods = discountPeriods;
+  }
+
+  /**
+   * Clear the promo code field to ensure promo codes are only used for initial subscription
+   */
+  public clearPromoCode(): void {
+    this.promoCode = null;
   }
 
   /**

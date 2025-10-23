@@ -113,7 +113,7 @@ export class SubscriptionsService {
 
     // Create subscription entity
     const startDate = new Date();
-    const subscription = new Subscription(subscriptionId, userId, productId, product.cycleType, startDate, this.calculateNextBillingDate(startDate, product.cycleType));
+    const subscription = new Subscription(subscriptionId, userId, productId, product.cycleType, startDate, this.calculateNextBillingDate(startDate, product.cycleType), 'pending', 0, 0, null, promoCode);
 
     // Save subscription
     const savedSubscription = await this.subscriptionRepository.save(subscription);

@@ -1,7 +1,7 @@
 # 自動扣款機器人開發狀態總結
 
-**最後更新**：2025年10月22日
-**當前階段**：已完成DDD-017重構，規則引擎重構階段完成，準備進入API完善階段
+**最後更新**：2025年10月23日
+**當前階段**：BDD測試完善階段，正在修復和完善端到端測試
 **負責人**：GitHub Copilot
 
 ## 工作指南
@@ -13,7 +13,7 @@
 ## 📋 當前任務狀態
 
 ### 進行中任務
-- 無，目前無進行中任務
+- 🔄 **BDD測試完善**：正在修復和完善端到端測試，特別是POST /promoCodes/applyPromo相關測試案例（TEST-002進行中）
 
 ### 已完成任務 (最近)
 - ✅ **DDD-017**：重構 BillingService 使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（2025年10月22日）
@@ -82,6 +82,7 @@
 - **文件**：v0.7 實作指南完成，提供模組拆解與開發順序；系統設計文檔已更新，包含寬限期邏輯流程圖與GracePeriodCheckerJob描述
 
 ### 遇到的問題與解決方案
+- **BDD測試修復中**：POST /promoCodes/applyPromo特定測試案例仍在修復中，但整體端到端測試套件已通過（yarn test:e2e成功），表示核心功能正常（2025年10月23日）
 - **PaymentAttempt 缺少 amount 字段**：在實現 BDD 測試時發現 PaymentAttempt 實體缺少 amount 字段，無法記錄每次支付嘗試的金額。解決方案：為 PaymentAttempt 實體、模型接口和 repository 添加 amount 字段，並同步更新設計文件和相關測試（2025年10月21日）
 - **硬編碼的first-time subscription discount邏輯**：目前ProductsService中存在重複的硬編碼折扣邏輯（yearly產品$1000，截止到2026/12/31），難以維護和擴展。解決方案：實現Rules和Config模型，使用規則引擎來處理動態折扣邏輯，並重構現有服務以使用規則引擎替代硬編碼邏輯（DDD-016，2025年10月22日）
 - **Rules實體構造函數兼容性問題**：Rules實體構造函數與plainToInstance不兼容，導致Repository無法正確從數據庫載入實例。解決方案：修改構造函數為可選參數，允許從plain object創建實例（2025年10月22日）
@@ -94,9 +95,10 @@
 ## 📊 進度指標
 - **總任務數**：60 項
 - **已完成**：49 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、PaymentAttempt完善）
-- **進行中**：0 項
-- **待處理**：11 項
+- **進行中**：1 項
+- **待處理**：10 項
 
 ## 🎯 下一步計劃
-1. **API-015~API-018**：實現配置和規則管理 API
-   - 提供規則和配置的 CRUD 操作介面
+1. **完成BDD測試修復**：修復POST /promoCodes/applyPromo測試案例，確保所有端到端測試通過
+2. **API-015~API-018**：實現配置和規則管理API
+   - 提供規則和配置的CRUD操作介面

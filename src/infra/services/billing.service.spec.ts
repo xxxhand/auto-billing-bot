@@ -370,17 +370,12 @@ describe('BillingService', () => {
       expect(subscriptionRepository.save).toHaveBeenCalled();
     });
 
-    it('should clear invalid applied discount', async () => {
+    it('should clear promoCode after first successful payment', async () => {
       const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
-      subscription.remainingDiscountPeriods = 2;
-      subscription.appliedDiscountId = 'disc_123';
-
+      subscription.promoCode = 'PROMO123'; // Set promo code
       const product = new ProductEntity();
       product.productId = 'prod_123';
       product.price = 100;
-
-      // Discount is expired
-      const expiredDiscount = new Discount('disc_123', 'percentage', 20, 1, new Date(0), new Date(2000, 0, 1), ['prod_123']);
 
       const paymentResponse: PaymentResponse = {
         success: true,
@@ -389,8 +384,8 @@ describe('BillingService', () => {
 
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
-      discountRepository.findByDiscountId.mockResolvedValue(expiredDiscount);
-      rulesRepository.findByType.mockResolvedValue([]); // No discount rules for first-time
+      discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
+      rulesRepository.findByType.mockResolvedValue([]); // No discount rules
       rulesEngineService.filterApplicableRules.mockReturnValue([]);
       rulesEngineService.evaluateRules.mockReturnValue({
         context: {},
@@ -406,15 +401,85 @@ describe('BillingService', () => {
       const result = await service.processBilling('sub_123');
 
       expect(result.success).toBe(true);
-      expect(paymentGateway.charge).toHaveBeenCalledWith({
-        attemptId: expect.any(String),
-        userId: 'user_123',
-        amount: 100, // Full price, no discount applied
-        currency: 'TWD',
-        description: expect.stringContaining('Subscription billing for sub_123'),
+      expect(result.transactionId).toBe('txn_123');
+      expect(subscription.promoCode).toBeNull(); // Promo code should be cleared
+      expect(paymentGateway.charge).toHaveBeenCalled();
+      expect(subscriptionRepository.save).toHaveBeenCalled();
+    });
+
+    it('should clear promoCode on retry payment success for first-time subscription', async () => {
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active');
+      subscription.promoCode = 'PROMO123'; // Set promo code
+      const product = new ProductEntity();
+      product.productId = 'prod_123';
+      product.price = 100;
+
+      const paymentResponse: PaymentResponse = {
+        success: true,
+        transactionId: 'txn_123',
+      };
+
+      subscriptionRepository.findById.mockResolvedValue(subscription);
+      productRepository.findByProductId.mockResolvedValue(product);
+      discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
+      rulesRepository.findByType.mockResolvedValue([]); // No discount rules
+      rulesEngineService.filterApplicableRules.mockReturnValue([]);
+      rulesEngineService.evaluateRules.mockReturnValue({
+        context: {},
+        appliedRules: [],
+        totalDiscount: 0,
+        totalBonus: 0,
+        success: true,
       });
-      expect(subscription.remainingDiscountPeriods).toBe(0); // Cleared
-      expect(subscription.appliedDiscountId).toBeNull(); // Cleared
+      paymentGateway.charge.mockResolvedValue(paymentResponse);
+      paymentAttemptRepository.save.mockResolvedValue(undefined);
+      subscriptionRepository.save.mockResolvedValue(subscription);
+
+      const result = await service.processBilling('sub_123', true, 1); // isRetry = true
+
+      expect(result.success).toBe(true);
+      expect(result.transactionId).toBe('txn_123');
+      expect(subscription.promoCode).toBeNull(); // Promo code should be cleared even on retry for first-time subscription
+      expect(paymentGateway.charge).toHaveBeenCalled();
+      expect(subscriptionRepository.save).toHaveBeenCalled();
+    });
+
+    it('should not clear promoCode on renewal payment success', async () => {
+      const subscription = new Subscription('sub_123', 'user_123', 'prod_123', 'monthly', new Date(), new Date(), 'active', 1); // renewalCount = 1 (already renewed once)
+      subscription.promoCode = null; // Promo code should already be cleared
+      const product = new ProductEntity();
+      product.productId = 'prod_123';
+      product.price = 100;
+
+      const paymentResponse: PaymentResponse = {
+        success: true,
+        transactionId: 'txn_123',
+      };
+
+      subscriptionRepository.findById.mockResolvedValue(subscription);
+      productRepository.findByProductId.mockResolvedValue(product);
+      discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
+      discountRepository.findRenewalDiscounts.mockResolvedValue([]);
+      rulesRepository.findByType.mockResolvedValue([]); // No discount rules
+      rulesEngineService.filterApplicableRules.mockReturnValue([]);
+      rulesEngineService.evaluateRules.mockReturnValue({
+        context: {},
+        appliedRules: [],
+        totalDiscount: 0,
+        totalBonus: 0,
+        success: true,
+      });
+      paymentGateway.charge.mockResolvedValue(paymentResponse);
+      paymentAttemptRepository.save.mockResolvedValue(undefined);
+      subscriptionRepository.save.mockResolvedValue(subscription);
+
+      const result = await service.processBilling('sub_123'); // isRetry = false
+
+      expect(result.success).toBe(true);
+      expect(result.transactionId).toBe('txn_123');
+      expect(subscription.promoCode).toBeNull(); // Promo code should remain null for renewals
+      expect(subscription.renewalCount).toBe(2); // Should be incremented
+      expect(paymentGateway.charge).toHaveBeenCalled();
       expect(subscriptionRepository.save).toHaveBeenCalled();
     });
   });

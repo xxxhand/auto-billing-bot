@@ -32,7 +32,7 @@ export class ProductsService {
    * Get all available products for a user with real-time discount prices
    * Filters out products the user is already subscribed to
    */
-  async getAvailableProducts(userId: string): Promise<ProductWithDiscount[]> {
+  async getAvailableProducts(userId: string, promoCode?: string): Promise<ProductWithDiscount[]> {
     // Get all products
     const allProducts = await this.productRepository.findAll();
 
@@ -47,7 +47,7 @@ export class ProductsService {
     const productsWithDiscounts: ProductWithDiscount[] = [];
 
     for (const product of availableProducts) {
-      const discountedPrice = await this.calculateDiscountedPrice(product, userId);
+      const discountedPrice = await this.calculateDiscountedPrice(product, userId, promoCode);
       const applicableDiscounts = await this.getApplicableDiscounts(product);
 
       productsWithDiscounts.push({
@@ -63,7 +63,7 @@ export class ProductsService {
     return productsWithDiscounts;
   }
 
-  private async calculateDiscountedPrice(product: ProductEntity, userId: string): Promise<number> {
+  private async calculateDiscountedPrice(product: ProductEntity, userId: string, promoCode?: string): Promise<number> {
     // First, check if this is a first-time subscription for the user
     const isFirstTimeSubscription = await this.isFirstTimeSubscription(userId);
 
@@ -82,6 +82,9 @@ export class ProductsService {
       subscription: {
         isFirstTimeSubscription: isFirstTimeSubscription,
       },
+      promoCode: promoCode ? {
+        code: promoCode,
+      } : undefined,
       currentDate: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD string
       originalPrice: product.price,
       discountedPrice: product.price,

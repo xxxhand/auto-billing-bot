@@ -17,8 +17,8 @@ export class ProductsController {
   }
 
   @Get()
-  async getProducts(@Query('userId') userId: string): Promise<CustomResult<ProductWithDiscount[]>> {
-    const data = await this.productsService.getAvailableProducts(userId);
+  async getProducts(@Query('userId') userId: string, @Query('promoCode') promoCode?: string): Promise<CustomResult<ProductWithDiscount[]>> {
+    const data = await this.productsService.getAvailableProducts(userId, promoCode);
     return this.commonService.newResultInstance().withResult(data);
   }
 }

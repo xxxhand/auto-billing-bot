@@ -34,9 +34,10 @@ export class Rules extends BaseEntity {
   public type: string;
   public conditions: Record<string, any>;
   public actions: Record<string, any>;
+  public priority: number = 1;
   public valid: boolean = true;
 
-  constructor(ruleId?: string, type?: string, conditions?: Record<string, any>, actions?: Record<string, any>) {
+  constructor(ruleId?: string, type?: string, conditions?: Record<string, any>, actions?: Record<string, any>, priority?: number) {
     super();
 
     // Allow creation from plain object (for plainToInstance)
@@ -53,6 +54,7 @@ export class Rules extends BaseEntity {
       this.type = type;
       this.conditions = conditions || {};
       this.actions = actions || {};
+      this.priority = priority || 1;
     }
   }
 
@@ -345,6 +347,7 @@ export class Rules extends BaseEntity {
     clonedRule.type = this.type;
     clonedRule.conditions = clonedConditions;
     clonedRule.actions = clonedActions;
+    clonedRule.priority = this.priority;
     return clonedRule;
   }
 }

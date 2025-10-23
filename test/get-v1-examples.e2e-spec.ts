@@ -2,11 +2,13 @@ import * as superTest from 'supertest';
 import { InjectionToken } from '@nestjs/common';
 import { DEFAULT_HTTP_CLIENT } from '@myapp/common';
 import { AppHelper } from './__helpers__/app.helper';
+import { MongoHelper } from './__helpers__/mongo.helper';
 
 describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/examples spec`, () => {
   const endpoint = `${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/examples`;
   let agent: superTest.SuperAgentTest;
   beforeAll(async () => {
+    new MongoHelper('get_examples');
     const mockedHttpClient = {
       tryGetJson: jest.fn().mockResolvedValue({
         result: 'I am from mock',

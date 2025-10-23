@@ -162,8 +162,8 @@ describe('RulesEngineService', () => {
       expect(result.totalDiscount).toBe(15);
     });
 
-    it('should accumulate discounts from multiple rules', () => {
-      // Arrange
+    it('should apply only the highest priority discount rule (single discount principle)', () => {
+      // Arrange - Create two discount rules with same priority (will be sorted by ruleId)
       const rule1 = new Rules(
         'discount_10',
         'discount',
@@ -186,11 +186,11 @@ describe('RulesEngineService', () => {
       // Act
       const result = service.evaluateRules([rule1, rule2], context);
 
-      // Assert
+      // Assert - Only the highest priority rule (discount_10, lexicographically first) should be applied
       expect(result.success).toBe(true);
-      expect(result.appliedRules).toEqual(['discount_10', 'discount_5_percent']);
-      expect(result.totalDiscount).toBe(15); // 10 + 5% of 100 = 15
-      expect(result.context.finalPrice).toBe(85);
+      expect(result.appliedRules).toEqual(['discount_10']); // Only one rule applied
+      expect(result.totalDiscount).toBe(10); // Only the fixed discount of 10
+      expect(result.context.finalPrice).toBe(90); // 100 - 10
     });
 
     it('should handle rule evaluation errors gracefully', () => {

@@ -16,6 +16,15 @@ export interface RuleEvaluationContext {
     subscriptionId?: string;
     isFirstTimeSubscription?: boolean;
   };
+  promoCode?: {
+    code?: string;
+  };
+  appliedDiscount?: {
+    discountId?: string;
+    type?: string;
+    value?: number;
+    remainingPeriods?: number;
+  };
   currentDate?: Date | string;
   originalPrice?: number;
   discountedPrice?: number;
@@ -47,7 +56,7 @@ export interface RuleEvaluationResult {
 export class RulesEngineService {
   /**
    * Evaluate rules against a given context and return the processed result
-   * Rules are evaluated in priority order, and actions are applied sequentially
+   * Rules are evaluated in priority order, and only the highest priority applicable rule is applied
    *
    * @param rules Array of rules to evaluate
    * @param context The evaluation context containing business data
@@ -69,10 +78,9 @@ export class RulesEngineService {
 
     try {
       // Sort rules by priority (assuming higher priority number means higher priority)
-      // For now, we'll evaluate in the order provided, but this can be enhanced
       const sortedRules = this.sortRulesByPriority(rules);
 
-      // Evaluate each rule in order
+      // Evaluate rules in order and apply only the first (highest priority) applicable rule
       for (const rule of sortedRules) {
         try {
           if (rule.evaluateConditions(resultContext)) {
@@ -85,6 +93,11 @@ export class RulesEngineService {
             // Track applied rule
             appliedRules.push(rule.ruleId);
             resultContext.appliedRules = appliedRules;
+
+            // For discount rules, only apply the highest priority one
+            if (rule.type === 'discount') {
+              break; // Stop after applying the first (highest priority) discount rule
+            }
           }
         } catch (error) {
           // Log error but continue with other rules
@@ -139,9 +152,13 @@ export class RulesEngineService {
    * @returns Sorted array of rules
    */
   private sortRulesByPriority(rules: Rules[]): Rules[] {
-    // For now, sort by ruleId lexicographically
-    // This can be enhanced to use actual priority fields if added to Rules entity
-    return [...rules].sort((a, b) => a.ruleId.localeCompare(b.ruleId));
+    // Sort by priority (higher priority first), then by ruleId lexicographically for ties
+    return [...rules].sort((a, b) => {
+      if (a.priority !== b.priority) {
+        return b.priority - a.priority; // Higher priority first
+      }
+      return a.ruleId.localeCompare(b.ruleId);
+    });
   }
 
   /**

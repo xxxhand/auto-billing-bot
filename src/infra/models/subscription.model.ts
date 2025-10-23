@@ -27,6 +27,8 @@ export interface ISubscriptionModel extends IBaseModel {
   remainingDiscountPeriods: number;
   /** Applied discount ID for current discount periods */
   appliedDiscountId?: string | null;
+  /** Promo code used for this subscription */
+  promoCode?: string | null;
   /** Pending conversion request (contains newCycleType, requestedAt), effective next cycle */
   pendingConversion?: {
     newCycleType: string;

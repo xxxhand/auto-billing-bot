@@ -103,7 +103,8 @@ graph TD
 | nextBillingDate | date | Yes | - | 下次扣款日期 |
 | renewalCount | number | Yes | 0 | 續訂次數 |
 | remainingDiscountPeriods | number | Yes | 0 | 剩餘優惠期數 |
-| appliedDiscountId | string | No | null | 應用折扣的ID，用於扣款時計算正確價格 |
+| appliedDiscountId | string | No | null | 應用折扣的ID，用於長期折扣應用(續訂) |
+| promoCode | string | No | null | 創建時使用的優惠碼，第一次成功支付後清除(首訂) |
 | pendingConversion | object | No | null | 待生效的轉換請求（包含newCycleType, requestedAt） |
 | gracePeriodEndDate | date | No | null | 寬限期結束日期（當status為grace時有效） |
 | createdAt | date | Yes | - | 創建時間 |
@@ -358,7 +359,7 @@ erDiagram
 基於DDD，定義核心聚合根（Subscription為主要聚合根），並提供領域方法。以下為TypeScript-like偽碼示例，TDD將先測試這些方法。
 
 - **Subscription (聚合根)**：
-  - 屬性：subscriptionId, userId, productId, status, cycleType, startDate, nextBillingDate, renewalCount, remainingDiscountPeriods, appliedDiscountId, pendingConversion, gracePeriodEndDate
+  - 屬性：subscriptionId, userId, productId, status, cycleType, startDate, nextBillingDate, renewalCount, remainingDiscountPeriods, appliedDiscountId, promoCode, pendingConversion, gracePeriodEndDate
   - 方法：
     - `calculateNextBillingDate()`: 基於cycleType計算下次扣款日，處理大小月/閏年。
     - `applyDiscount(discount: Discount)`: 應用優惠，更新remainingDiscountPeriods並計算折扣價。
@@ -367,7 +368,8 @@ erDiagram
     - `handlePaymentFailure(failureReason: string)`: 根據原因決定重試或進入寬限期，更新status。
     - `isGracePeriodExpired()`: 檢查寬限期是否已過期（當前時間是否超過gracePeriodEndDate）。
     - `expireGracePeriod()`: 將寬限期訂閱狀態從grace更改為cancelled。
-    - `renew()`: 增加renewalCount，檢查是否適用續訂優惠。
+    - `renew()`: 增加renewalCount，檢查是否適用續訂優惠。第一次成功支付後清除promoCode欄位。
+    - `clearPromoCode()`: 清除promoCode欄位，確保優惠碼僅用於初始訂閱。
 
 - **Discount (實體)**：
   - 屬性：discountId, type, value, priority, startDate, endDate, applicableProducts
@@ -442,10 +444,16 @@ erDiagram
 
 **規則評估流程**：
 1. 載入適用規則（按type和有效期篩選）
-2. 依優先級排序規則
-3. 依序評估條件
+2. 依優先級排序規則（用戶手動優惠 > 其他優惠 > 系統自動優惠）
+3. 依序評估條件，只應用第一個（最高優先級）匹配的規則
 4. 執行匹配規則的動作
 5. 返回處理結果
+
+**單一優惠原則**：
+系統遵循「僅套用單一優惠」的設計原則。當多個優惠同時適用時：
+- 依優先級順序選擇最高優先級的優惠
+- 同優先級時選擇計算後金額較高的優惠
+- 不允許優惠疊加，避免複雜的折扣計算邏輯
 
 ### 4.3.2 配置管理服務詳述
 配置服務用於管理全域與產品級設定，提供靈活的系統配置能力。
@@ -478,6 +486,38 @@ erDiagram
 1. 產品級配置（最高優先級）
 2. 全域配置（默認值）
 3. 系統硬編碼默認值（最低優先級）
+
+### 4.3.3 三種折扣機制區別
+系統實現了三種不同的折扣機制，每種機制有不同的適用場景和生命週期：
+
+#### 1. PromoCode（一次性優惠碼）
+- **觸發方式**：訂閱創建時使用優惠碼
+- **適用時機**：僅限初始訂閱（首次訂閱）
+- **生命週期**：第一次成功支付後自動清除（`promoCode` 欄位設為 null）
+- **儲存位置**：訂閱實體的 `promoCode` 欄位
+- **應用邏輯**：在訂閱創建時應用，僅用於首筆支付
+- **清除時機**：`renewalCount === 0` 且支付成功後清除
+
+#### 2. Applied Discounts（API設置的長期折扣）
+- **觸發方式**：通過 `POST /applyPromo` API 設置
+- **適用時機**：所有訂閱週期（包括續訂）
+- **生命週期**：持續多個週期，直到 `remainingDiscountPeriods` 耗盡
+- **儲存位置**：訂閱實體的 `appliedDiscountId` 和 `remainingDiscountPeriods` 欄位
+- **應用邏輯**：在每次扣款時檢查並應用，直到剩餘期數為0
+- **清除時機**：`remainingDiscountPeriods` 減為0時自動失效
+
+#### 3. Renewal Discounts（系統自動續訂折扣）
+- **觸發方式**：系統規則引擎自動觸發
+- **適用時機**：續訂時（`renewalCount > 0`）
+- **生命週期**：基於規則配置的條件動態決定
+- **儲存位置**：不儲存在訂閱實體中，由規則引擎即時計算
+- **應用邏輯**：通過規則引擎評估條件，自動應用符合條件的續訂折扣
+- **清除時機**：不符合規則條件時自動失效
+
+**區別總結**：
+- **PromoCode**：一次性使用，僅限首訂，支付成功後清除
+- **Applied Discounts**：長期應用，通過API設置，適用所有週期直到期數耗盡
+- **Renewal Discounts**：系統自動，基於規則動態應用，不占用訂閱欄位
 
 ### 4.4 Subscription狀態機
 訂閱狀態機定義了訂閱生命週期的狀態轉換規則，確保業務邏輯的一致性。使用Mermaid呈現狀態圖。
@@ -529,7 +569,7 @@ stateDiagram-v2
     - `POST /subscriptions/cancel`：取消訂閱並申請退款。
   - **優惠管理**：
     - `GET /discounts`：返回適用優惠列表。
-    - `POST /applyPromo`：應用優惠碼，包含消費門檻、用戶重複使用檢查及產品適用性檢查。支援一次性折扣或將折扣應用至訂閱的長期優惠。
+    - `POST /applyPromo`：應用優惠碼，包含消費門檻、用戶重複使用檢查及產品適用性檢查。支援一次性折扣或將折扣應用至訂閱的長期優惠。遵循單一優惠原則，不允許優惠疊加。
     - `GET /userPromoCodes`：返回用戶可用優惠碼。
     - `GET /admin/promoCodes/{code}/usage`：後台查詢優惠碼使用狀態與歷史。
   - **支付管理**：
@@ -780,14 +820,15 @@ stateDiagram-v2
     ProductExists --> AbortSubscription: 否，更新訂閱狀態為aborted
     
     CalculateAmount --> ApplyDiscounts: 應用剩餘優惠期數與規則引擎折扣（包含首次訂閱折扣、優惠碼長期折扣）
-    ApplyDiscounts --> CallPaymentGateway: 調用支付網關
+    ApplyDiscounts --> CallPaymentGateway: 調用支付網關（使用規則引擎計算的折扣價格）
     CallPaymentGateway --> CheckPaymentResult: 支付成功？
     
     CheckPaymentResult --> PaymentSuccess: 是，支付成功
     CheckPaymentResult --> PaymentFailed: 否，支付失敗
     
     PaymentSuccess --> UpdateSubscription: 更新訂閱狀態與續訂計數
-    UpdateSubscription --> CalculateNextBillingDate: 計算下次扣款日
+    UpdateSubscription --> ClearPromoCode: 清除promoCode欄位（僅首次訂閱）
+    ClearPromoCode --> CalculateNextBillingDate: 計算下次扣款日
     CalculateNextBillingDate --> RecordSuccessLog: 記錄成功日誌
     RecordSuccessLog --> ReleaseLock: 釋放分布式鎖
     ReleaseLock --> TaskCompleted: 任務完成
@@ -826,8 +867,9 @@ stateDiagram-v2
     end note
     
     note right of ApplyDiscounts
-        使用規則引擎評估折扣規則
-        包含首次訂閱折扣、長期優惠等
+        使用規則引擎評估所有折扣規則
+        包含首次訂閱折扣、長期優惠（appliedDiscountId）、promoCode等
+        遵循單一優惠原則，只應用最高優先級的一個優惠
         替代硬編碼的折扣邏輯
     end note
 
@@ -887,8 +929,9 @@ sequenceDiagram
 3. 設置訂閱的 `appliedDiscountId` 為優惠碼對應的折扣ID
 4. 設置 `remainingDiscountPeriods` 為折扣的持續期數（預設3期，或根據業務規則設定）
 5. 在後續的billing週期中，系統會自動應用此折扣直到期數用完
+6. 訂閱創建時使用的 `promoCode` 會在第一次成功支付後被清除，確保優惠碼僅用於初始訂閱
 
-此設計確保優惠碼不僅能提供一次性折扣，還能為用戶提供持續的訂閱優惠，提升用戶黏性。
+此設計確保優惠碼不僅能提供一次性折扣，還能為用戶提供持續的訂閱優惠，提升用戶黏性。同時遵循單一優惠原則，避免優惠疊加。
 
 ### 6.6.2 規則引擎應用流程 (Sequence Diagram)
 規則引擎用於處理動態業務規則，如首次訂閱折扣。以下為規則引擎處理首次訂閱折扣的流程：
@@ -927,12 +970,21 @@ sequenceDiagram
     "subscriptionId": "sub_456",
     "isFirstTimeSubscription": true
   },
+  "promoCode": {
+    "code": "SAVE20"
+  },
+  "appliedDiscount": {
+    "discountId": "disc_789",
+    "type": "percentage",
+    "value": 10,
+    "remainingPeriods": 2
+  },
   "currentDate": "2025-10-22T10:00:00Z",
   "discountedPrice": 2000
 }
 ```
 
-**規則評估結果**：
+**規則評估結果**（遵循單一優惠原則）：
 ```json
 {
   "userId": "user_123",
@@ -946,9 +998,9 @@ sequenceDiagram
     "isFirstTimeSubscription": true
   },
   "currentDate": "2025-10-22T10:00:00Z",
-  "discountedPrice": 1000,
-  "appliedRules": ["first_time_yearly_discount"],
-  "discountReason": "First time yearly subscription discount"
+  "discountedPrice": 1800,
+  "appliedRules": ["promo_code_discount"],
+  "discountReason": "Applied highest priority discount: promo code SAVE20 (20% off)"
 }
 ```
 
@@ -956,9 +1008,9 @@ sequenceDiagram
 實現規則引擎後，需要重構ProductsService和BillingService中的硬編碼折扣邏輯：
 
 - **ProductsService.getDiscountedPrice()**：移除applyFirstTimeSubscriptionDiscount私有方法，改為調用rulesEngineService.evaluateRules()
-- **BillingService.processBilling()**：同樣移除硬編碼邏輯，使用規則引擎計算首次訂閱折扣
+- **BillingService.processBilling()**：使用規則引擎統一處理所有優惠（promoCode、appliedDiscountId、系統優惠等），遵循單一優惠原則，只應用最高優先級的一個優惠。第一次成功支付後清除promoCode欄位。
 
-這樣可以消除代碼重複，提高維護性和可擴展性。
+這樣可以消除代碼重複，提高維護性和可擴展性，同時確保優惠邏輯的一致性。
 
 ### 6.7 方案轉換流程 (Sequence Diagram)
 ```mermaid
@@ -1049,4 +1101,4 @@ sequenceDiagram
 - **風險**：優惠產品綁定邏輯複雜，導致用戶體驗不佳。
   - **緩解**：在API層提供清晰的錯誤訊息，說明優惠碼不適用於當前產品；在管理介面提供產品綁定的視覺化設定。
 - **風險**：優惠碼應用至訂閱的長期折扣邏輯複雜，可能導致重複應用或狀態不一致。
-  - **緩解**：在領域層實現嚴格的業務規則驗證，確保優惠碼只能應用到用戶擁有的訂閱；使用TDD確保狀態轉換的正確性；記錄所有優惠應用操作至日誌以便追蹤。
+  - **緩解**：在領域層實現嚴格的業務規則驗證，確保優惠碼只能應用到用戶擁有的訂閱；使用規則引擎統一處理所有優惠，遵循單一優惠原則；使用TDD確保狀態轉換的正確性；記錄所有優惠應用操作至日誌以便追蹤。

@@ -88,11 +88,13 @@ export class BillingService implements IBillingService {
       amount = await this.calculateFirstTimeSubscriptionDiscount(product, subscription);
     }
 
+    // Handle appliedDiscountId discount periods management (separate from rules engine)
+    // This applies to both first-time and renewal subscriptions
     if (subscription.remainingDiscountPeriods > 0 && subscription.appliedDiscountId) {
-      // Apply the stored discount for remaining discount periods
       const appliedDiscount = await this.discountRepository.findByDiscountId(subscription.appliedDiscountId);
       if (appliedDiscount && appliedDiscount.isApplicable(new Date())) {
-        amount = appliedDiscount.calculateDiscountedPrice(product.price);
+        // Apply applied discount - this takes precedence and is applied separately from rules engine
+        amount = appliedDiscount.calculateDiscountedPrice(amount);
         subscription.remainingDiscountPeriods -= 1;
 
         // Clear applied discount if no periods remaining
@@ -144,6 +146,11 @@ export class BillingService implements IBillingService {
         await this.paymentAttemptRepository.save(paymentAttempt);
 
         // Update subscription
+        // Clear promoCode after first successful billing since it should only apply to initial subscription
+        // This applies to both initial payment and retry payment success for first-time subscriptions
+        if (subscription.renewalCount === 0) {
+          subscription.clearPromoCode();
+        }
         if (!isRetry) {
           subscription.renew();
         }
@@ -349,6 +356,20 @@ export class BillingService implements IBillingService {
     const discountRules = await this.rulesRepository.findByType('discount');
     const applicableRules = this.rulesEngineService.filterApplicableRules(discountRules, 'discount');
 
+    // Get applied discount info if exists
+    let appliedDiscountInfo = null;
+    if (subscription.appliedDiscountId && subscription.remainingDiscountPeriods > 0) {
+      const appliedDiscount = await this.discountRepository.findByDiscountId(subscription.appliedDiscountId);
+      if (appliedDiscount && appliedDiscount.isApplicable(new Date())) {
+        appliedDiscountInfo = {
+          discountId: appliedDiscount.discountId,
+          type: appliedDiscount.type,
+          value: appliedDiscount.value,
+          remainingPeriods: subscription.remainingDiscountPeriods,
+        };
+      }
+    }
+
     // Create evaluation context
     const context: RuleEvaluationContext = {
       userId: subscription.userId,
@@ -363,6 +384,10 @@ export class BillingService implements IBillingService {
         subscriptionId: subscription.subscriptionId,
         isFirstTimeSubscription: subscription.renewalCount === 0,
       },
+      promoCode: subscription.promoCode ? {
+        code: subscription.promoCode,
+      } : undefined,
+      appliedDiscount: appliedDiscountInfo,
       currentDate: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD string
       originalPrice: product.price,
       discountedPrice: product.price,
