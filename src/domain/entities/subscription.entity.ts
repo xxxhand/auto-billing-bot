@@ -61,10 +61,11 @@ export class Subscription extends BaseEntity {
 
   /**
    * Calculate next billing date based on cycleType, handling leap years and month variations
+   * @param baseDate Optional base date to calculate from. If not provided, uses this.nextBillingDate
    * @returns Date - The calculated next billing date
    */
-  public calculateNextBillingDate(): Date {
-    const currentBillingDate = new Date(this.nextBillingDate);
+  public calculateNextBillingDate(baseDate?: Date): Date {
+    const currentBillingDate = baseDate || this.nextBillingDate;
 
     switch (this.cycleType) {
       case 'monthly':
@@ -207,7 +208,7 @@ export class Subscription extends BaseEntity {
 
     try {
       // Recalculate nextBillingDate based on the new cycle type
-      this.nextBillingDate = this.calculateNextBillingDate();
+      this.nextBillingDate = this.calculateNextBillingDate(); // Use current nextBillingDate as base
       // Clear the pending conversion
       this.pendingConversion = null;
     } catch (error) {
@@ -354,7 +355,7 @@ export class Subscription extends BaseEntity {
    */
   public renew(): { renewalCount: number; renewalDiscountEligible: boolean } {
     this.renewalCount += 1;
-    this.nextBillingDate = this.calculateNextBillingDate();
+    this.nextBillingDate = this.calculateNextBillingDate(new Date());
     return {
       renewalCount: this.renewalCount,
       renewalDiscountEligible: false, // Default behavior for basic renewal

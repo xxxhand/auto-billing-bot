@@ -16,7 +16,9 @@
 - 無
 
 ### 已完成任務 (最近)
+- ✅ **測試修復完成**：修復BillingService單元測試依賴注入問題，添加PromoCodeRepository mock並修復logger mock，確保所有322個測試通過（2025年10月26日）
 - ✅ **情境4 BDD測試完成**：實現並測試固定結帳金額優惠類型，完成scenario 4的完整驗證（2025年10月26日）
+- ✅ **情境5 BDD測試完成**：實現並測試續訂月付產品第二次扣款場景，驗證續訂邏輯與狀態更新（2025年10月26日）
 - ✅ **審閱完成**：API-001測試更新審閱通過，準備開始API-013（2025年10月26日）
 - ✅ **測試覆蓋完善**：為fixed_price折扣類型添加完整測試覆蓋，修復get-products.e2e-spec.ts中的動態日期問題，確保所有E2E測試通過（2025年10月26日）
 - ✅ **DDD-006**：定義Discount實體，實現isApplicable、isApplicableToProduct與calculateDiscountedPrice方法（支援固定折扣金額、百分比折扣與固定結帳金額，含TDD測試）（2025年10月26日）
@@ -91,6 +93,7 @@
 - **文件**：v0.7 實作指南完成，提供模組拆解與開發順序；系統設計文檔已更新，包含寬限期邏輯流程圖與GracePeriodCheckerJob描述
 
 ### 遇到的問題與解決方案
+- **測試依賴注入修復**：BillingService添加PromoCodeRepository依賴後，單元測試失敗。解決方案：為測試模塊添加PromoCodeRepository mock、修復logger mock中的warn方法，並為涉及promo code的測試添加findByCode mock返回undefined（2025年10月26日）
 - **BDD測試已完成**：POST /promoCodes/applyPromo的所有測試案例已通過，包含完整的輸入驗證邏輯（orderAmount > 0、productIds非空）和業務邏輯驗證（2025年10月23日）
 - **PaymentAttempt 缺少 amount 字段**：在實現 BDD 測試時發現 PaymentAttempt 實體缺少 amount 字段，無法記錄每次支付嘗試的金額。解決方案：為 PaymentAttempt 實體、模型接口和 repository 添加 amount 字段，並同步更新設計文件和相關測試（2025年10月21日）
 - **硬編碼的first-time subscription discount邏輯**：目前ProductsService中存在重複的硬編碼折扣邏輯（yearly產品$1000，截止到2026/12/31），難以維護和擴展。解決方案：實現Rules和Config模型，使用規則引擎來處理動態折扣邏輯，並重構現有服務以使用規則引擎替代硬編碼邏輯（DDD-016，2025年10月22日）
@@ -103,9 +106,9 @@
 
 ## 📊 進度指標
 - **總任務數**：61 項
-- **已完成**：50 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、DDD-018、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、TEST-002）
+- **已完成**：51 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、DDD-018、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、TEST-002、TEST-003）
 - **進行中**：0 項
-- **待處理**：11 項
+- **待處理**：10 項
 
 ## 🎯 下一步計劃
 1. **API-013**：實現JWT認證，包含userId與tenantId

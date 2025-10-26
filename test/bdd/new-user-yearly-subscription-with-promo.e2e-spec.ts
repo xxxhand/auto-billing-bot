@@ -90,8 +90,8 @@ describe('BDD: 新用戶訂閱年付產品（有優惠碼）', () => {
     _id: dbHelper.newObjectId(),
     discountId: 'promo-discount-001',
     name: 'New Year Promo Discount',
-    type: 'fixed',
-    value: 1990, // 2490 - 500 = 500 discount
+    type: 'fixed_price',
+    value: 1990, // Fixed price $1990 (2490 - 500 discount)
     valid: true,
   };
 

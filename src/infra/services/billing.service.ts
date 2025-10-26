@@ -9,6 +9,7 @@ import { PaymentAttemptRepository } from '../repositories/payment-attempt.reposi
 import { ProductRepository } from '../repositories/product.repository';
 import { DiscountRepository } from '../repositories/discount.repository';
 import { RulesRepository } from '../repositories/rules.repository';
+import { PromoCodeRepository } from '../repositories/promoCode.repository';
 import { RulesEngineService, RuleEvaluationContext } from '../../domain/services/rules-engine.service';
 import { Discount } from '../../domain/entities/discount.entity';
 import { PaymentAttempt, PaymentAttemptStatus } from '../../domain/entities/payment-attempt.entity';
@@ -26,6 +27,7 @@ export class BillingService implements IBillingService {
     private readonly productRepository: ProductRepository,
     private readonly discountRepository: DiscountRepository,
     private readonly rulesRepository: RulesRepository,
+    private readonly promoCodeRepository: PromoCodeRepository,
     private readonly rulesEngineService: RulesEngineService,
   ) {
     this._Logger = this.commonService.getDefaultLogger(BillingService.name);
@@ -83,9 +85,18 @@ export class BillingService implements IBillingService {
     // Calculate amount with discounts
     let amount = product.price;
 
+    // Apply promo code discount for initial billing (renewalCount === 0)
+    let appliedPromoCodeDiscount: Discount | null = null;
+    if (subscription.renewalCount === 0 && subscription.promoCode) {
+      const result = await this.calculatePromoCodeDiscount(product, subscription, amount);
+      amount = result.amount;
+      appliedPromoCodeDiscount = result.discount;
+    }
+
     // Apply first-time subscription discount for initial billing (renewalCount === 0)
-    if (subscription.renewalCount === 0) {
-      amount = await this.calculateFirstTimeSubscriptionDiscount(product, subscription);
+    // Skip rules engine discount if we have a fixed_price promo code (highest priority)
+    if (subscription.renewalCount === 0 && (!appliedPromoCodeDiscount || appliedPromoCodeDiscount.type !== 'fixed_price')) {
+      amount = await this.calculateFirstTimeSubscriptionDiscount(product, subscription, amount);
     }
 
     // Handle appliedDiscountId discount periods management (separate from rules engine)
@@ -155,7 +166,6 @@ export class BillingService implements IBillingService {
           subscription.renew();
         }
         subscription.status = 'active';
-        subscription.nextBillingDate = subscription.calculateNextBillingDate();
         await this.subscriptionRepository.save(subscription);
 
         this._Logger.log(`Payment successful for subscription ${subscriptionId}, transaction: ${paymentResponse.transactionId}`);
@@ -351,7 +361,9 @@ export class BillingService implements IBillingService {
   /**
    * Calculate first-time subscription discount using rules engine
    */
-  private async calculateFirstTimeSubscriptionDiscount(product: any, subscription: any): Promise<number> {
+  private async calculateFirstTimeSubscriptionDiscount(product: any, subscription: any, currentAmount: number = 0): Promise<number> {
+    const amount = currentAmount || product.price;
+
     // Get discount rules from repository
     const discountRules = await this.rulesRepository.findByType('discount');
     const applicableRules = this.rulesEngineService.filterApplicableRules(discountRules, 'discount');
@@ -389,18 +401,53 @@ export class BillingService implements IBillingService {
       } : undefined,
       appliedDiscount: appliedDiscountInfo,
       currentDate: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD string
-      originalPrice: product.price,
-      discountedPrice: product.price,
+      originalPrice: amount,
+      discountedPrice: amount,
     };
 
     // Evaluate rules
     const result = this.rulesEngineService.evaluateRules(applicableRules, context);
 
     if (result.success && result.totalDiscount > 0) {
-      return Math.max(0, product.price - result.totalDiscount);
+      return Math.max(0, amount - result.totalDiscount);
     }
 
-    // Return original price if no rules apply
-    return product.price;
+    // Return current amount if no rules apply
+    return amount;
+  }
+
+  /**
+   * Calculate promo code discount for initial billing
+   */
+  private async calculatePromoCodeDiscount(product: any, subscription: any, currentAmount: number): Promise<{ amount: number; discount: Discount | null }> {
+    if (!subscription.promoCode) {
+      return { amount: currentAmount, discount: null };
+    }
+
+    // Find promo code entity
+    const promoCodeEntity = await this.promoCodeRepository.findByCode(subscription.promoCode);
+    if (!promoCodeEntity) {
+      this._Logger.warn(`Promo code ${subscription.promoCode} not found for subscription ${subscription.subscriptionId}`);
+      return { amount: currentAmount, discount: null };
+    }
+
+    // Find associated discount
+    const discount = await this.discountRepository.findByDiscountId(promoCodeEntity.discountId);
+    if (!discount) {
+      this._Logger.warn(`Discount ${promoCodeEntity.discountId} not found for promo code ${subscription.promoCode}`);
+      return { amount: currentAmount, discount: null };
+    }
+
+    // Check if discount is applicable to the product
+    if (!discount.isApplicableToProduct(product.productId)) {
+      this._Logger.warn(`Discount ${promoCodeEntity.discountId} not applicable to product ${product.productId}`);
+      return { amount: currentAmount, discount: null };
+    }
+
+    // Apply discount
+    const discountedAmount = discount.calculateDiscountedPrice(currentAmount);
+    this._Logger.log(`Applied promo code ${subscription.promoCode} discount: ${currentAmount} -> ${discountedAmount}`);
+
+    return { amount: discountedAmount, discount };
   }
 }

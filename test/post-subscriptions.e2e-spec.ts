@@ -329,7 +329,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
       const dbPromoUsages = (await db.getCollection(promoCodeUsagesCol).find({ promoCode: mockPromoCode.code }).toArray()) as IPromoCodeUsageDocument[];
       expect(dbPromoUsages).toHaveLength(1);
       expect(dbPromoUsages[0].userId.toHexString()).toBe(newUser.userId.toHexString());
-      expect(dbPromoUsages[0].orderAmount).toBe(50); // after product.price - promoCode.minimumAmount
+      expect(dbPromoUsages[0].orderAmount).toBe(80); // product.price (100) - discount.value (20)
     });
 
     it('[0] should create yearly subscription with rules engine discount for first-time subscription', async () => {
@@ -412,7 +412,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
       // Create a single-use promo code for fixed price
       const fixedPricePromoCode: IPromoCodeDocument = {
         _id: dbHelper.newObjectId(),
-        code: 'FIXED1500',
+        code: 'FIXED1500_SINGLE',
         discountId: fixedPriceDiscount.discountId,
         usageLimit: 1,
         isSingleUse: true, // Single use promo code
@@ -528,7 +528,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
 
       const fixedPricePromoCode: IPromoCodeDocument = {
         _id: dbHelper.newObjectId(),
-        code: 'FIXED1500',
+        code: 'FIXED1500_PRIORITY',
         discountId: fixedPriceDiscount.discountId,
         usageLimit: 1,
         isSingleUse: true,

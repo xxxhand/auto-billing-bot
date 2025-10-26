@@ -8,6 +8,7 @@ import { PaymentAttemptRepository } from '../repositories/payment-attempt.reposi
 import { ProductRepository } from '../repositories/product.repository';
 import { DiscountRepository } from '../repositories/discount.repository';
 import { RulesRepository } from '../repositories/rules.repository';
+import { PromoCodeRepository } from '../repositories/promoCode.repository';
 import { RulesEngineService } from '../../domain/services/rules-engine.service';
 import { Subscription } from '../../domain/entities/subscription.entity';
 import { ProductEntity } from '../../domain/entities/product.entity';
@@ -23,6 +24,7 @@ describe('BillingService', () => {
   let commonService: jest.Mocked<CommonService>;
   let discountRepository: jest.Mocked<DiscountRepository>;
   let rulesRepository: jest.Mocked<RulesRepository>;
+  let promoCodeRepository: jest.Mocked<PromoCodeRepository>;
   let rulesEngineService: jest.Mocked<RulesEngineService>;
 
   beforeEach(async () => {
@@ -79,10 +81,21 @@ describe('BillingService', () => {
       validateRules: jest.fn(),
     };
 
+    const mockPromoCodeRepository = {
+      findByCode: jest.fn(),
+      findAll: jest.fn(),
+      findByDiscountId: jest.fn(),
+      findApplicablePromoCodes: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      incrementUsageCount: jest.fn(),
+    };
+
     const mockCommonService = {
       getDefaultLogger: jest.fn().mockReturnValue({
         log: jest.fn(),
         error: jest.fn(),
+        warn: jest.fn(),
       }),
     };
 
@@ -118,6 +131,10 @@ describe('BillingService', () => {
           useValue: mockRulesRepository,
         },
         {
+          provide: PromoCodeRepository,
+          useValue: mockPromoCodeRepository,
+        },
+        {
           provide: RulesEngineService,
           useValue: mockRulesEngineService,
         },
@@ -137,6 +154,7 @@ describe('BillingService', () => {
     commonService = module.get(CommonService);
     discountRepository = module.get(DiscountRepository);
     rulesRepository = module.get(RulesRepository);
+    promoCodeRepository = module.get(PromoCodeRepository);
     rulesEngineService = module.get(RulesEngineService);
   });
 
@@ -385,6 +403,7 @@ describe('BillingService', () => {
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
       discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
+      promoCodeRepository.findByCode.mockResolvedValue(undefined); // No promo code entity found
       rulesRepository.findByType.mockResolvedValue([]); // No discount rules
       rulesEngineService.filterApplicableRules.mockReturnValue([]);
       rulesEngineService.evaluateRules.mockReturnValue({
@@ -422,6 +441,7 @@ describe('BillingService', () => {
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
       discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
+      promoCodeRepository.findByCode.mockResolvedValue(undefined); // No promo code entity found
       rulesRepository.findByType.mockResolvedValue([]); // No discount rules
       rulesEngineService.filterApplicableRules.mockReturnValue([]);
       rulesEngineService.evaluateRules.mockReturnValue({

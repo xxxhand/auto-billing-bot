@@ -48,6 +48,13 @@ export class AppHelper {
       this._app = undefined;
     }
   }
+
+  public static get currentApp(): INestApplication {
+    if (!this._app) {
+      throw new Error('App is not initialized yet. Call getAgent() or getAgentWithMockers() first.');
+    }
+    return this._app;
+  }
 }
 
 export function getNewMockContainer(): Map<InjectionToken, any> {
