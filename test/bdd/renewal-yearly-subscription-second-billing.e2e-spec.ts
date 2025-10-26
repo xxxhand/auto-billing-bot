@@ -53,7 +53,7 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
     _id: dbHelper.newObjectId(),
     discountId: 'yearly-renewal-discount-001',
     type: 'fixed_price',
-    value: 1000, // 續訂時固定價格$1000
+    value: 1990, // 續訂時固定價格$1990
     priority: 10,
     startDate: new Date(2020, 0, 1), // 長期有效
     endDate: new Date(2030, 11, 31),
@@ -193,7 +193,7 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
               expect(billingResult.transactionId).toBe('txn-yearly-second-12345');
             });
 
-            // Then 應該從我的支付方式扣款 $1000
+            // Then 應該從我的支付方式扣款 $1990
             // And 扣款記錄應該被正確保存
             // And 訂閱的續訂次數應該更新為 1
             // And 下次扣款日期應該更新為從現在開始的 1 年後
@@ -203,7 +203,7 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
               // 驗證扣款金額為1000（年付續訂特殊價格）
               expect(mockPaymentGateway.charge).toHaveBeenCalledWith(
                 expect.objectContaining({
-                  amount: 1000,
+                  amount: 1990,
                   description: expect.stringContaining('Subscription billing'),
                 })
               );
@@ -216,7 +216,7 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
               expect(paymentAttempts.length).toBe(2); // 第一次 + 第二次
 
               // 找到第二次扣款記錄
-              const secondPayment = paymentAttempts.find((p: any) => p.status === 'success' && p.amount === 1000 && p.attemptId !== paymentAttempts[0].attemptId);
+              const secondPayment = paymentAttempts.find((p: any) => p.status === 'success' && p.amount === 1990 && p.attemptId !== paymentAttempts[0].attemptId);
               expect(secondPayment).toBeTruthy();
 
               // 驗證訂閱更新
