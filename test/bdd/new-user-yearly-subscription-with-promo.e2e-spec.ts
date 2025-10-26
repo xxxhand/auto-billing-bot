@@ -13,6 +13,9 @@ describe('BDD: 新用戶訂閱年付產品（有優惠碼）', () => {
   const db = dbHelper.mongo;
   const userCol = 'Users';
   const productCol = 'Products';
+  const ruleCol = 'Rules';
+  const discountCol = 'Discounts';
+  const promoCodeCol = 'PromoCodes';
 
   // Background: 系統前提設定
   const mockUser: IUserDocument = {
@@ -120,10 +123,10 @@ describe('BDD: 新用戶訂閱年付產品（有優惠碼）', () => {
       db.getCollection(userCol).insertOne(mockUser),
       db.getCollection(productCol).insertOne(mockMonthlyProduct),
       db.getCollection(productCol).insertOne(mockYearlyProduct),
-      db.getCollection('Rules').insertOne(firstTimeYearlyDiscountRule),
-      db.getCollection('Rules').insertOne(promoCodeDiscountRule),
-      db.getCollection('Discounts').insertOne(mockPromoDiscount),
-      db.getCollection('PromoCodes').insertOne(mockPromoCode),
+      db.getCollection(ruleCol).insertOne(firstTimeYearlyDiscountRule),
+      db.getCollection(ruleCol).insertOne(promoCodeDiscountRule),
+      db.getCollection(discountCol).insertOne(mockPromoDiscount),
+      db.getCollection(promoCodeCol).insertOne(mockPromoCode),
     ]);
   });
 

@@ -114,6 +114,16 @@ export class PromoCodeService {
       throw ErrException.newFromCodeName(errConstants.ERR_USER_NOT_FOUND);
     }
 
+    // Validate order amount
+    if (orderDetails.amount <= 0) {
+      throw ErrException.newFromCodeName(errConstants.ERR_ORDER_AMOUNT_INVALID);
+    }
+
+    // Validate product IDs
+    if (!orderDetails.products || orderDetails.products.length === 0) {
+      throw ErrException.newFromCodeName(errConstants.ERR_PRODUCT_IDS_REQUIRED);
+    }
+
     // Get the promo code entity
     const promoCodeEntity = await this.promoCodeRepository.findByCode(promoCode);
     if (!promoCodeEntity) {
