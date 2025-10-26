@@ -57,16 +57,18 @@ describe('DiscountPriorityService', () => {
       expect(result).toEqual(discount2);
     });
 
-    it('should handle mixed discount types correctly', () => {
+    it('should handle mixed discount types including fixed_price correctly', () => {
       const percentageDiscount = new Discount('disc1', 'percentage', 30, 1, new Date('2025-01-01'), new Date('2025-12-31'));
       const fixedDiscount = new Discount('disc2', 'fixed', 20, 1, new Date('2025-01-01'), new Date('2025-12-31'));
+      const fixedPriceDiscount = new Discount('disc3', 'fixed_price', 50, 1, new Date('2025-01-01'), new Date('2025-12-31'));
 
       // percentageDiscount: 100 * (1 - 0.30) = 70 (saves 30)
       // fixedDiscount: 100 - 20 = 80 (saves 20)
-      // percentageDiscount saves more, so should be selected
+      // fixedPriceDiscount: returns 50 (saves 50)
+      // fixedPriceDiscount saves the most, so should be selected
 
-      const result = service.selectBestDiscount([percentageDiscount, fixedDiscount], 100);
-      expect(result).toEqual(percentageDiscount);
+      const result = service.selectBestDiscount([percentageDiscount, fixedDiscount, fixedPriceDiscount], 100);
+      expect(result).toEqual(fixedPriceDiscount);
     });
 
     it('should prioritize higher priority over higher discount amount', () => {
@@ -190,15 +192,16 @@ describe('DiscountPriorityService', () => {
       expect(result).toEqual([]);
     });
 
-    it('should return applicable discounts sorted by priority and savings', () => {
+    it('should return applicable discounts sorted by priority and savings including fixed_price', () => {
       const discount1 = new Discount('disc1', 'percentage', 10, 1, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']); // saves 10
       const discount2 = new Discount('disc2', 'percentage', 20, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']); // saves 20
       const discount3 = new Discount('disc3', 'fixed', 15, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']); // saves 15
+      const discount4 = new Discount('disc4', 'fixed_price', 25, 2, new Date('2025-01-01'), new Date('2025-12-31'), ['prod1']); // saves 75
 
-      const result = service.getApplicableDiscounts([discount1, discount2, discount3], 'prod1', 100);
+      const result = service.getApplicableDiscounts([discount1, discount2, discount3, discount4], 'prod1', 100);
 
-      // Should be sorted: discount2 (priority 2, saves 20), discount3 (priority 2, saves 15), discount1 (priority 1, saves 10)
-      expect(result).toEqual([discount2, discount3, discount1]);
+      // Should be sorted: discount4 (priority 2, saves 75), discount2 (priority 2, saves 20), discount3 (priority 2, saves 15), discount1 (priority 1, saves 10)
+      expect(result).toEqual([discount4, discount2, discount3, discount1]);
     });
 
     it('should filter out non-applicable discounts', () => {

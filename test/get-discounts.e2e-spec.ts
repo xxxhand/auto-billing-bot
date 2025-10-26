@@ -42,6 +42,17 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/discounts`, () => {
     },
     {
       _id: dbHelper.newObjectId(),
+      discountId: 'fixed-price-discount-25',
+      type: 'fixed_price',
+      value: 25,
+      priority: 3,
+      startDate: yesterday, // Started yesterday
+      endDate: nextMonth, // Valid for next month
+      applicableProducts: ['ProductId-3'], // Specific product
+      valid: true,
+    },
+    {
+      _id: dbHelper.newObjectId(),
       discountId: 'expired-discount',
       type: 'percentage',
       value: 15,
@@ -85,12 +96,13 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/discounts`, () => {
       expect(res.body.code).toBe(0);
       expect(res.body.message).toBe('');
       expect(res.body.result).toBeInstanceOf(Array);
-      // Should return only 2 discounts (expired and future should be filtered out)
-      expect(res.body.result).toHaveLength(2);
+      // Should return only 3 discounts (expired and future should be filtered out)
+      expect(res.body.result).toHaveLength(3);
 
       const discountIds = res.body.result.map((d: any) => d.discountId);
       expect(discountIds).toContain('global-discount-10');
       expect(discountIds).toContain('product-specific-discount-20');
+      expect(discountIds).toContain('fixed-price-discount-25');
       expect(discountIds).not.toContain('expired-discount');
       expect(discountIds).not.toContain('future-discount');
     });
@@ -114,6 +126,13 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/discounts`, () => {
       expect(specificDiscount.value).toBe(5);
       expect(specificDiscount.priority).toBe(2);
       expect(specificDiscount.applicableProducts).toEqual(['ProductId-1', 'ProductId-2']);
+
+      const fixedPriceDiscount = res.body.result.find((d: any) => d.discountId === 'fixed-price-discount-25');
+      expect(fixedPriceDiscount).toBeDefined();
+      expect(fixedPriceDiscount.type).toBe('fixed_price');
+      expect(fixedPriceDiscount.value).toBe(25);
+      expect(fixedPriceDiscount.priority).toBe(3);
+      expect(fixedPriceDiscount.applicableProducts).toEqual(['ProductId-3']);
     });
 
     it('should return empty array when no applicable discounts', async () => {
@@ -121,7 +140,7 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/discounts`, () => {
       await db.getCollection(discountCol).deleteMany({});
 
       // Insert only expired discount
-      await db.getCollection(discountCol).insertOne(mockDiscounts[2]); // expired-discount
+      await db.getCollection(discountCol).insertOne(mockDiscounts[3]); // expired-discount
 
       const res = await agent.get(endpoint);
 

@@ -1,7 +1,7 @@
 # 自動扣款機器人開發狀態總結
 
 **最後更新**：2025年10月26日
-**當前階段**：需求變更階段，正在添加「固定結帳金額」優惠類型
+**當前階段**：DDD-006與DDD-018已完成，準備開始API實現階段
 **負責人**：GitHub Copilot
 
 ## 工作指南
@@ -16,6 +16,9 @@
 - 無
 
 ### 已完成任務 (最近)
+- ✅ **測試覆蓋完善**：為fixed_price折扣類型添加完整測試覆蓋，修復get-products.e2e-spec.ts中的動態日期問題，確保所有E2E測試通過（2025年10月26日）
+- ✅ **DDD-006**：定義Discount實體，實現isApplicable、isApplicableToProduct與calculateDiscountedPrice方法（支援固定折扣金額、百分比折扣與固定結帳金額，含TDD測試）（2025年10月26日）
+- ✅ **DDD-018**：實現固定結帳金額優惠類型，更新Discount實體與規則引擎支援（含TDD測試）（2025年10月26日）
 - ✅ **需求變更**：添加「固定結帳金額」優惠類型，更新需求文件、系統設計文件與任務清單（2025年10月26日）
 - ✅ **TEST-002**：完成所有API端點的BDD測試，特別是POST /promoCodes/applyPromo的完整驗證邏輯（2025年10月23日）
 - ✅ **DDD-017**：重構 BillingService 使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（2025年10月22日）
@@ -71,17 +74,17 @@
 
 
 ### 待處理任務 (優先順序)
-1. **DDD-006**：定義Discount實體，實現isApplicable、isApplicableToProduct與calculateDiscountedPrice方法（支援固定折扣金額、百分比折扣與固定結帳金額）
-2. **DDD-018**：實現固定結帳金額優惠類型，更新Discount實體與規則引擎支援
-3. **API-015~API-018**：實現配置與規則管理API
-4. 實作剩餘API端點（API-009~API-013）
-5. 實作整合測試與文件（TEST-001~TEST-004, DOC-001~DOC-002）
-6. 實現JWT認證機制
+1. **API-013**：實現JWT認證，包含userId與tenantId
+2. **API-009**：實現GET /admin/promoCodes/{code}/usage，後台查詢優惠碼使用狀態與歷史
+3. **API-011**：實現GET /subscriptions/{id}/history，查詢訂閱與扣款歷史
+4. **API-012**：實現GET /admin/logs/export，導出CSV日誌
+5. **API-015~API-018**：實現配置與規則管理API
+6. 實作整合測試與文件（TEST-001~TEST-004, DOC-001~DOC-002）
 
 ## 🔧 技術狀態
 
 ### 當前架構
-- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根（含 calculateNextBillingDate、applyDiscount、convertToNewCycle、handlePaymentFailure、renew、isGracePeriodExpired、expireGracePeriod 方法）、Discount 實體（isApplicable、isApplicableToProduct、calculateDiscountedPrice）、PromoCode 值物件（canBeUsed、incrementUsage、isApplicableToProduct）、PaymentAttempt 實體（shouldRetry，含 amount 字段記錄支付金額）、promoCodeDomainService 領域服務（優惠碼業務邏輯）、billingService 領域服務（扣款流程整合支付網關與任務隊列）、discountPriorityService 領域服務（多重優惠優先級選擇與產品適用性檢查）、paymentGateway 抽象層接口（支付網關契約）、taskQueue 抽象層接口（訊息隊列契約），並通過 TDD 測試驗證。Repository層已優化，PromoCodeUsageRepository.create方法現接收完整的PromoCodeUsage value object，符合DDD原則。**新增Config實體**：實現Config實體（處理全域與產品級設定，含寬限期管理、退款政策配置、產品適用性檢查與有效配置合併邏輯），通過TDD測試驗證。**新增Rules實體**：實現Rules實體（處理動態業務規則，含條件評估、動作執行、規則驗證、描述生成與複製功能），支援複雜的業務邏輯表達式，通過TDD測試驗證。**新增rulesEngineService**：實現rulesEngineService領域服務（處理規則評估與執行，含規則載入篩選、優先級排序、條件評估、動作執行與規則驗證），支援嵌套屬性訪問和複雜運算子，通過TDD測試驗證。**新增configService**：實現configService應用服務（處理配置管理與優先級查詢，含架構優化），通過TDD測試驗證。**完成DDD-016**：重構ProductsService使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（年費產品$1000折扣，截止2026/12/31），現通過RulesRepository和RulesEngineService動態管理，符合DDD原則。**完成DDD-017**：重構BillingService使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（年費產品$1000折扣，截止2026/12/31），現通過RulesRepository和RulesEngineService動態管理，符合DDD原則。**完善BDD測試**：啟用並完善新用戶訂閱年付產品的BDD測試，驗證從產品展示、訂閱創建到扣款的完整業務流程，確保規則引擎在各環節正確應用折扣邏輯。
+- **DDD 分層**：`domain/`、`application/`、`infra/` 架構已存在，正在依 v0.7 任務逐步補齊。已實現 Subscription 聚合根（含 calculateNextBillingDate、applyDiscount、convertToNewCycle、handlePaymentFailure、renew、isGracePeriodExpired、expireGracePeriod 方法）、Discount 實體（isApplicable、isApplicableToProduct、calculateDiscountedPrice，支援固定折扣金額、百分比折扣與固定結帳金額）、PromoCode 值物件（canBeUsed、incrementUsage、isApplicableToProduct）、PaymentAttempt 實體（shouldRetry，含 amount 字段記錄支付金額）、promoCodeDomainService 領域服務（優惠碼業務邏輯）、billingService 領域服務（扣款流程整合支付網關與任務隊列）、discountPriorityService 領域服務（多重優惠優先級選擇與產品適用性檢查）、paymentGateway 抽象層接口（支付網關契約）、taskQueue 抽象層接口（訊息隊列契約），並通過 TDD 測試驗證。Repository層已優化，PromoCodeUsageRepository.create方法現接收完整的PromoCodeUsage value object，符合DDD原則。**新增Config實體**：實現Config實體（處理全域與產品級設定，含寬限期管理、退款政策配置、產品適用性檢查與有效配置合併邏輯），通過TDD測試驗證。**新增Rules實體**：實現Rules實體（處理動態業務規則，含條件評估、動作執行、規則驗證、描述生成與複製功能），支援複雜的業務邏輯表達式，通過TDD測試驗證。**新增rulesEngineService**：實現rulesEngineService領域服務（處理規則評估與執行，含規則載入篩選、優先級排序、條件評估、動作執行與規則驗證），支援嵌套屬性訪問和複雜運算子，通過TDD測試驗證。**新增configService**：實現configService應用服務（處理配置管理與優先級查詢，含架構優化），通過TDD測試驗證。**完成DDD-016**：重構ProductsService使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（年費產品$1000折扣，截止2026/12/31），現通過RulesRepository和RulesEngineService動態管理，符合DDD原則。**完成DDD-017**：重構BillingService使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（年費產品$1000折扣，截止2026/12/31），現通過RulesRepository和RulesEngineService動態管理，符合DDD原則。**完善BDD測試**：啟用並完善新用戶訂閱年付產品的BDD測試，驗證從產品展示、訂閱創建到扣款的完整業務流程，確保規則引擎在各環節正確應用折扣邏輯。**完成DDD-006**：實現Discount實體支援三種折扣類型（固定折扣金額、百分比折扣、固定結帳金額），通過TDD測試驗證。**完成DDD-018**：實現固定結帳金額優惠類型，更新Discount實體與規則引擎支援，通過TDD測試驗證。
 - **資料模型**：新增 `users` 模型（userId／tenantId／encryptedData）、`products` 模型（productId／name／price／cycleType／cycleValue／gracePeriodDays）、`subscriptions` 模型（subscriptionId／userId／productId／status／cycleType／startDate／nextBillingDate／renewalCount／remainingDiscountPeriods／appliedDiscountId／pendingConversion／gracePeriodEndDate）、`discounts` 模型（discountId／type／value／priority／startDate／endDate）、`promoCodes` 模型（code／discountId／usageLimit／isSingleUse／usedCount）、`promoCodeUsages` 模型（usageId／promoCode／userId／usedAt／orderAmount）、`paymentAttempts` 模型（attemptId／subscriptionId／status／failureReason／retryCount／amount）、`refunds` 模型（refundId／subscriptionId／amount／status）、`billingLogs` 模型（logId／subscriptionId／eventType／details）、`config` 模型（configId／type／productId／gracePeriodDays／refundPolicy）、`rules` 模型（ruleId／type／conditions／actions），並完成所有集合的索引優化（nextBillingDate、status、subscriptionId 等關鍵欄位）
 - **文件**：v0.7 實作指南完成，提供模組拆解與開發順序；系統設計文檔已更新，包含寬限期邏輯流程圖與GracePeriodCheckerJob描述
 
@@ -98,12 +101,13 @@
 
 ## 📊 進度指標
 - **總任務數**：61 項
-- **已完成**：48 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、TEST-002）
+- **已完成**：50 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、DDD-018、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、TEST-002）
 - **進行中**：0 項
-- **待處理**：13 項
+- **待處理**：11 項
 
 ## 🎯 下一步計劃
-1. **DDD-006**：定義Discount實體，實現isApplicable、isApplicableToProduct與calculateDiscountedPrice方法（支援固定折扣金額、百分比折扣與固定結帳金額）
-2. **DDD-018**：實現固定結帳金額優惠類型，更新Discount實體與規則引擎支援
-3. **API-015~API-018**：實現配置和規則管理API
-   - 提供規則和配置的CRUD操作介面
+1. **API-013**：實現JWT認證，包含userId與tenantId
+2. **API-009**：實現GET /admin/promoCodes/{code}/usage，後台查詢優惠碼使用狀態與歷史
+3. **API-011**：實現GET /subscriptions/{id}/history，查詢訂閱與扣款歷史
+4. **API-012**：實現GET /admin/logs/export，導出CSV日誌
+5. **API-015~API-018**：實現配置和規則管理API

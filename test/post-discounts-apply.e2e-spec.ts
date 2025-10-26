@@ -39,6 +39,18 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/discounts/:id/apply`,
     valid: true,
   };
 
+  const mockFixedPriceDiscount: IDiscountDocument = {
+    _id: dbHelper.newObjectId(),
+    discountId: 'fixed-price-discount-50',
+    type: 'fixed_price',
+    value: 50,
+    priority: 2,
+    startDate: yesterday,
+    endDate: nextMonth,
+    applicableProducts: ['Product-001'],
+    valid: true,
+  };
+
   const mockSubscription: ISubscriptionDocument = {
     _id: dbHelper.newObjectId(),
     subscriptionId: 'Sub-001',
@@ -74,6 +86,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/discounts/:id/apply`,
     await Promise.all([
       db.getCollection(productCol).insertOne(mockProduct),
       db.getCollection(discountCol).insertOne(mockDiscount),
+      db.getCollection(discountCol).insertOne(mockFixedPriceDiscount),
       db.getCollection(subscriptionCol).insertOne(mockSubscription),
       db.getCollection(subscriptionCol).insertOne(mockSubscription2),
     ]);
@@ -134,6 +147,37 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/discounts/:id/apply`,
       const updatedSubscription = await db.getCollection(subscriptionCol).findOne({ subscriptionId: 'Sub-002' });
       expect(updatedSubscription).toBeTruthy();
       expect(updatedSubscription.remainingDiscountPeriods).toBe(0); // Should remain unchanged
+      expect(updatedSubscription.status).toBe('active'); // Should remain active
+    });
+
+    it('should successfully apply fixed_price discount to subscription', async () => {
+      const requestBody = {
+        subscriptionId: 'Sub-001',
+        discountPeriods: 2,
+      };
+
+      const res = await agent
+        .post(`${endpoint}/${mockFixedPriceDiscount.discountId}/apply`)
+        .send(requestBody);
+
+      expect(res.status).toBe(201);
+      expect(res.body.code).toBe(0);
+      expect(res.body.message).toBe('');
+      expect(res.body.result).toBeDefined();
+
+      const result = res.body.result;
+      expect(result.subscriptionId).toBe('Sub-001');
+      expect(result.discountId).toBe('fixed-price-discount-50');
+      expect(result.originalPrice).toBe(100);
+      expect(result.discountedPrice).toBe(50); // Fixed price discount should return the fixed value
+      expect(result.discountPeriods).toBe(2);
+      expect(result.appliedAt).toBeDefined();
+
+      // Database state verification - check subscription was updated
+      const updatedSubscription = await db.getCollection(subscriptionCol).findOne({ subscriptionId: 'Sub-001' });
+      expect(updatedSubscription).toBeTruthy();
+      expect(updatedSubscription.remainingDiscountPeriods).toBe(2);
+      expect(updatedSubscription.appliedDiscountId).toBe('fixed-price-discount-50');
       expect(updatedSubscription.status).toBe('active'); // Should remain active
     });
 

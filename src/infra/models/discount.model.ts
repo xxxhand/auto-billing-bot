@@ -3,7 +3,7 @@ import { IBaseModel } from './base-model.interface';
 /**
  * Discount type enums as defined in the system design v0.7.1
  */
-export type DiscountType = 'fixed' | 'percentage';
+export type DiscountType = 'fixed' | 'percentage' | 'fixed_price';
 
 export interface IDiscountModel extends IBaseModel {
   /** Discount unique identifier (PK) */
