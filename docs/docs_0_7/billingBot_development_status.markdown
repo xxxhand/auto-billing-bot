@@ -1,7 +1,7 @@
 # 自動扣款機器人開發狀態總結
 
 **最後更新**：2025年10月26日
-**當前階段**：TEST-006已完成，準備開始API實現階段（JWT認證）
+**當前階段**：TEST-006已完成，準備開始API實現階段（JWT認證與優惠碼配置化）
 **負責人**：GitHub Copilot
 
 ## 工作指南
@@ -16,6 +16,7 @@
 - 無
 
 ### 已完成任務 (最近)
+- ✅ **情境8 BDD測試完成**：實現並測試年付產品第二次扣款同時有週年慶折扣$2000和優惠碼固定結帳金額$300的場景，驗證優惠碼最高優先級覆蓋檔期優惠，最終扣款$300（2025年10月26日）
 - ✅ **情境7 BDD測試完成**：實現並測試年付產品第二次扣款週年慶折扣$2000場景，驗證高優先級優惠覆蓋續訂折扣，收費$490，使用動態日期確保測試穩定性（2025年10月26日）
 - ✅ **情境6 BDD測試完成**：實現並測試年付產品第二次扣款$1000場景，使用現有discount機制而非硬編碼邏輯，驗證續訂邏輯與狀態更新（2025年10月26日）
 - ✅ **測試修復完成**：修復BillingService單元測試依賴注入問題，添加PromoCodeRepository mock並修復logger mock，確保所有322個測試通過（2025年10月26日）
@@ -81,7 +82,8 @@
 
 ### 待處理任務 (優先順序)
 1. **API-013**：實現JWT認證，包含userId與tenantId
-2. **API-009**：實現GET /admin/promoCodes/{code}/usage，後台查詢優惠碼使用狀態與歷史
+2. **API-019**：將優惠碼的discountPeriods配置化，使其可通過配置管理而非硬編碼
+3. **API-009**：實現GET /admin/promoCodes/{code}/usage，後台查詢優惠碼使用狀態與歷史
 3. **API-011**：實現GET /subscriptions/{id}/history，查詢訂閱與扣款歷史
 4. **API-012**：實現GET /admin/logs/export，導出CSV日誌
 5. **API-015~API-018**：實現配置與規則管理API
@@ -108,14 +110,15 @@
 - **MongoDB / RabbitMQ / Redis**：尚需依 `docker-compose.yml` 或環境設定啟動並驗證，未執行
 
 ## 📊 進度指標
-- **總任務數**：63 項
-- **已完成**：54 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、DDD-018、DDD-019、DDD-020、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、TEST-002、TEST-003、TEST-005、TEST-006）
+- **總任務數**：64 項
+- **已完成**：55 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、DDD-018、DDD-019、DDD-020、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、TEST-002、TEST-003、TEST-005、TEST-006、TEST-007）
 - **進行中**：0 項
 - **待處理**：9 項
 
 ## 🎯 下一步計劃
 1. **API-013**：實現JWT認證，包含userId與tenantId
-2. **API-009**：實現GET /admin/promoCodes/{code}/usage，後台查詢優惠碼使用狀態與歷史
+2. **API-019**：將優惠碼的discountPeriods配置化，使其可通過配置管理而非硬編碼
+3. **API-009**：實現GET /admin/promoCodes/{code}/usage，後台查詢優惠碼使用狀態與歷史
 2. **API-011**：實現GET /subscriptions/{id}/history，查詢訂閱與扣款歷史
 3. **API-012**：實現GET /admin/logs/export，導出CSV日誌
 4. **API-015~API-018**：實現配置和規則管理API
