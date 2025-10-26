@@ -124,6 +124,7 @@ export class BillingService implements IBillingService {
 
     // Apply renewal discount for second and subsequent renewals
     if (subscription.renewalCount >= 1) {
+      // Apply renewal discounts for all renewal cases
       const renewalDiscounts = await this.discountRepository.findRenewalDiscounts(subscription.productId);
       if (renewalDiscounts.length > 0) {
         // Apply the highest priority renewal discount

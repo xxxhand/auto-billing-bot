@@ -75,23 +75,23 @@ export class DiscountRepository {
     const col = this.defMongoClient.getCollection(modelNames.DISCOUNTS);
     const now = new Date();
 
-    // Query for renewal discounts that are currently valid
+    // Query for discounts that are currently valid and can be used for renewals
+    // For renewals, we look for discounts that apply to the specific product
     const baseQuery = {
       valid: true,
       startDate: { $lte: now },
       endDate: { $gte: now },
-      type: 'renewal', // Assuming a 'renewal' type for renewal discounts
     };
 
     let query: any;
     if (CustomValidator.nonEmptyString(productId)) {
-      // Find renewal discounts that either apply to all products or include the specific product
+      // Find discounts that apply to the specific product (renewal discounts are product-specific)
       query = {
         ...baseQuery,
-        $or: [{ applicableProducts: { $size: 0 } }, { applicableProducts: productId }],
+        applicableProducts: productId,
       };
     } else {
-      // If no productId specified, only return global renewal discounts
+      // If no productId specified, only return global discounts
       query = {
         ...baseQuery,
         applicableProducts: { $size: 0 },

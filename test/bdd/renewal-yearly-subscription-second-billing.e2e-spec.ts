@@ -6,18 +6,20 @@ import {
   IUserDocument,
   ISubscriptionDocument,
   IPaymentAttemptDocument,
+  IDiscountDocument,
 } from '../__helpers__/shcema-interface.helper';
 import { BillingService } from '../../src/infra/services/billing.service';
 import { IBillingServiceToken } from '../../src/domain/services/billing.service.interface';
 
-describe('BDD: 續訂月付產品第二次扣款(無優惠碼)', () => {
+describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
   let agent: superTest.SuperAgentTest;
-  const dbHelper = new MongoHelper('bdd_renewal_monthly_second_billing');
+  const dbHelper = new MongoHelper('bdd_renewal_yearly_second_billing');
   const db = dbHelper.mongo;
   const userCol = 'Users';
   const productCol = 'Products';
   const subscriptionCol = 'Subscriptions';
   const paymentAttemptCol = 'PaymentAttempts';
+  const discountCol = 'Discounts';
 
   // Background: 系統前提設定
   const mockUser: IUserDocument = {
@@ -46,6 +48,19 @@ describe('BDD: 續訂月付產品第二次扣款(無優惠碼)', () => {
     valid: true,
   };
 
+  // 續訂discount for yearly product
+  const mockYearlyRenewalDiscount: IDiscountDocument = {
+    _id: dbHelper.newObjectId(),
+    discountId: 'yearly-renewal-discount-001',
+    type: 'fixed_price',
+    value: 1000, // 續訂時固定價格$1000
+    priority: 10,
+    startDate: new Date(2020, 0, 1), // 長期有效
+    endDate: new Date(2030, 11, 31),
+    applicableProducts: ['yearly-product-001'], // 只適用於yearly產品
+    valid: true,
+  };
+
   // mock payment gateway
   const mockPaymentGateway = {
     charge: jest.fn(),
@@ -62,24 +77,10 @@ describe('BDD: 續訂月付產品第二次扣款(無優惠碼)', () => {
   let billingService: BillingService;
 
   beforeAll(async () => {
-    // Create testing module with mocks for payment gateway and task queue
-    // const moduleFixture: TestingModule = await Test.createTestingModule({
-    //   imports: [AppModule],
-    // })
-    //   .overrideProvider('IPaymentGateway')
-    //   .useValue(mockPaymentGateway)
-    //   .overrideProvider('ITaskQueue')
-    //   .useValue(mockTaskQueue)
-    //   .compile();
-
-    // const app = moduleFixture.createNestApplication();
-    // billingService = app.get(IBillingServiceToken);
-
     agent = await AppHelper.getAgentWithMockers(getNewMockContainer()
       .set('IPaymentGateway', mockPaymentGateway)
       .set('ITaskQueue', mockTaskQueue));
 
-    // const app = AppHelper.app;
     billingService = AppHelper.currentApp.get(IBillingServiceToken);
 
     await db.tryConnect();
@@ -89,6 +90,7 @@ describe('BDD: 續訂月付產品第二次扣款(無優惠碼)', () => {
       db.getCollection(userCol).insertOne(mockUser),
       db.getCollection(productCol).insertOne(mockMonthlyProduct),
       db.getCollection(productCol).insertOne(mockYearlyProduct),
+      db.getCollection(discountCol).insertOne(mockYearlyRenewalDiscount),
     ]);
   });
 
@@ -101,23 +103,24 @@ describe('BDD: 續訂月付產品第二次扣款(無優惠碼)', () => {
 
   describe('Feature: 訂閱續訂', () => {
     describe('As a 現有訂閱用戶', () => {
-      describe('I want to 系統自動續訂月付產品', () => {
+      describe('I want to 系統自動續訂年付產品', () => {
         describe('So that 服務不中斷', () => {
 
-          describe('Scenario: 第二次扣款成功（無優惠碼）', () => {
+          describe('Scenario: 第二次扣款成功（年付產品續訂，無優惠碼）', () => {
             let existingSubscription: ISubscriptionDocument;
             let billingResult: any;
 
-            // Given 我已經訂閱月付產品（價格：每月 $240）
+            // Given 我已經訂閱年付產品（價格：每年 $2490）
             // And 訂閱狀態為 "active"
             // And 續訂次數為 0
-            // And 已經進行過第一次扣款（扣款 $240 成功）
-            // And 下次扣款日期已到（從訂閱開始日後 1 個月）
+            // And 已經進行過第一次扣款（扣款 $1000 成功，第一年優惠）
+            // And 下次扣款日期已到（從訂閱開始日後 1 年）
             // And 我沒有使用任何優惠碼
-            it('Given: 用戶已有月付訂閱且第一次扣款成功，下次扣款日期已到', async () => {
+            it('Given: 用戶已有年付訂閱且第一次扣款成功，下次扣款日期已到', async () => {
               // 創建現有訂閱記錄
               const startDate = new Date();
-              startDate.setDate(startDate.getDate() - 35); // 訂閱開始日為35天前
+              startDate.setFullYear(startDate.getFullYear() - 1); // 訂閱開始日為1年前
+              startDate.setDate(startDate.getDate() - 5); // 再減5天
 
               const nextBillingDate = new Date();
               nextBillingDate.setDate(nextBillingDate.getDate() - 5); // 下次扣款日期為5天前（已到期）
@@ -126,12 +129,12 @@ describe('BDD: 續訂月付產品第二次扣款(無優惠碼)', () => {
                 _id: dbHelper.newObjectId(),
                 subscriptionId: dbHelper.newObjectId().toHexString(),
                 userId: mockUser.userId,
-                productId: mockMonthlyProduct.productId,
+                productId: mockYearlyProduct.productId,
                 status: 'active',
-                cycleType: 'monthly',
+                cycleType: 'yearly',
                 startDate,
                 nextBillingDate,
-                renewalCount: 0, // 第一次扣款後續訂次數仍為0
+                renewalCount: 1, // 已經續訂過1次，這是第二次扣款（第一次續訂）
                 remainingDiscountPeriods: 0,
                 appliedDiscountId: null,
                 pendingConversion: null,
@@ -149,7 +152,7 @@ describe('BDD: 續訂月付產品第二次扣款(無優惠碼)', () => {
                 status: 'success',
                 failureReason: '',
                 retryCount: 0,
-                amount: 240, // 第一次扣款金額（無折扣）
+                amount: 1000, // 第一次扣款金額（第一年優惠）
                 createdAt: startDate,
                 updatedAt: startDate,
                 valid: true,
@@ -163,8 +166,8 @@ describe('BDD: 續訂月付產品第二次扣款(無優惠碼)', () => {
               });
               expect(dbSubscription).toBeTruthy();
               expect(dbSubscription.status).toBe('active');
-              expect(dbSubscription.renewalCount).toBe(0);
-              expect(dbSubscription.productId).toBe(mockMonthlyProduct.productId);
+              expect(dbSubscription.renewalCount).toBe(1); // 已經進行過第一次續訂，這是第二次扣款
+              expect(dbSubscription.productId).toBe(mockYearlyProduct.productId);
 
               // 驗證第一次扣款記錄存在
               const paymentAttempts = await db.getCollection(paymentAttemptCol).find({
@@ -172,7 +175,7 @@ describe('BDD: 續訂月付產品第二次扣款(無優惠碼)', () => {
               }).toArray();
               expect(paymentAttempts.length).toBe(1);
               expect(paymentAttempts[0].status).toBe('success');
-              expect(paymentAttempts[0].amount).toBe(240);
+              expect(paymentAttempts[0].amount).toBe(1000);
             });
 
             // When 系統進行第二次扣款
@@ -180,27 +183,27 @@ describe('BDD: 續訂月付產品第二次扣款(無優惠碼)', () => {
               // Mock payment gateway to succeed for second billing
               jest.spyOn(mockPaymentGateway, 'charge').mockResolvedValue({
                 success: true,
-                transactionId: 'txn-second-12345',
+                transactionId: 'txn-yearly-second-12345',
               });
 
               // Process second billing using real billing service
               billingResult = await billingService.processBilling(existingSubscription.subscriptionId);
 
               expect(billingResult.success).toBe(true);
-              expect(billingResult.transactionId).toBe('txn-second-12345');
+              expect(billingResult.transactionId).toBe('txn-yearly-second-12345');
             });
 
-            // Then 應該從我的支付方式扣款 $240（原價，無折扣）
+            // Then 應該從我的支付方式扣款 $1000
             // And 扣款記錄應該被正確保存
             // And 訂閱的續訂次數應該更新為 1
-            // And 下次扣款日期應該更新為從現在開始的 1 個月後
+            // And 下次扣款日期應該更新為從現在開始的 1 年後
             // And 訂閱狀態應該保持 "active"
             // And 系統應該記錄續訂成功的事件
             it('Then: 驗證第二次扣款成功並更新訂閱狀態', async () => {
-              // 驗證扣款金額為240（原價，無折扣）
+              // 驗證扣款金額為1000（年付續訂特殊價格）
               expect(mockPaymentGateway.charge).toHaveBeenCalledWith(
                 expect.objectContaining({
-                  amount: 240,
+                  amount: 1000,
                   description: expect.stringContaining('Subscription billing'),
                 })
               );
@@ -213,7 +216,7 @@ describe('BDD: 續訂月付產品第二次扣款(無優惠碼)', () => {
               expect(paymentAttempts.length).toBe(2); // 第一次 + 第二次
 
               // 找到第二次扣款記錄
-              const secondPayment = paymentAttempts.find((p: any) => p.status === 'success' && p.amount === 240 && p.attemptId !== paymentAttempts[0].attemptId);
+              const secondPayment = paymentAttempts.find((p: any) => p.status === 'success' && p.amount === 1000 && p.attemptId !== paymentAttempts[0].attemptId);
               expect(secondPayment).toBeTruthy();
 
               // 驗證訂閱更新
@@ -221,18 +224,18 @@ describe('BDD: 續訂月付產品第二次扣款(無優惠碼)', () => {
                 subscriptionId: existingSubscription.subscriptionId
               });
 
-              expect(updatedSubscription.renewalCount).toBe(1); // 續訂次數更新為1
+              expect(updatedSubscription.renewalCount).toBe(2); // 續訂次數從1更新為2
               expect(updatedSubscription.status).toBe('active'); // 狀態保持active
 
-              // 驗證下次扣款日期更新為一個月後
+              // 驗證下次扣款日期更新為一年後
               const nextBillingDate = new Date(updatedSubscription.nextBillingDate);
               const now = new Date();
-              const expectedNextMonth = new Date(now);
-              expectedNextMonth.setMonth(now.getMonth() + 1);
+              const expectedNextYear = new Date(now);
+              expectedNextYear.setFullYear(now.getFullYear() + 1);
 
-              expect(nextBillingDate.getFullYear()).toBe(expectedNextMonth.getFullYear());
-              expect(nextBillingDate.getMonth()).toBe(expectedNextMonth.getMonth());
-              expect(nextBillingDate.getDate()).toBe(expectedNextMonth.getDate());
+              expect(nextBillingDate.getFullYear()).toBe(expectedNextYear.getFullYear());
+              expect(nextBillingDate.getMonth()).toBe(expectedNextYear.getMonth());
+              expect(nextBillingDate.getDate()).toBe(expectedNextYear.getDate());
             });
           });
         });
