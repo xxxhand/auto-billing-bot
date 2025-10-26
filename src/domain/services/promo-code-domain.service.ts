@@ -1,5 +1,5 @@
 import { PromoCode } from '../entities/promoCode.entity';
-import { Discount } from '../entities/discount.entity';
+import { Discount, DiscountType } from '../entities/discount.entity';
 
 /**
  * Validation result for promo code usage
@@ -8,7 +8,7 @@ export interface PromoCodeValidationResult {
   isValid: boolean;
   errorMessage?: string;
   discountAmount?: number;
-  discountType?: 'fixed' | 'percentage';
+  discountType?: DiscountType;
   discountValue?: number;
 }
 

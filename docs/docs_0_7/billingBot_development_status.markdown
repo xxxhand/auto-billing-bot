@@ -1,7 +1,7 @@
 # 自動扣款機器人開發狀態總結
 
-**最後更新**：2025年10月23日
-**當前階段**：BDD測試完善階段，正在修復和完善端到端測試
+**最後更新**：2025年10月26日
+**當前階段**：需求變更階段，正在添加「固定結帳金額」優惠類型
 **負責人**：GitHub Copilot
 
 ## 工作指南
@@ -16,6 +16,7 @@
 - 無
 
 ### 已完成任務 (最近)
+- ✅ **需求變更**：添加「固定結帳金額」優惠類型，更新需求文件、系統設計文件與任務清單（2025年10月26日）
 - ✅ **TEST-002**：完成所有API端點的BDD測試，特別是POST /promoCodes/applyPromo的完整驗證邏輯（2025年10月23日）
 - ✅ **DDD-017**：重構 BillingService 使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（2025年10月22日）
 - ✅ **DDD-016**：重構 ProductsService 使用規則引擎，消除硬編碼的首次訂閱折扣邏輯（2025年10月22日）
@@ -70,10 +71,12 @@
 
 
 ### 待處理任務 (優先順序)
-1. **API-015~API-018**：實現配置與規則管理API
-2. 實作剩餘API端點（API-009~API-013）
-3. 實作整合測試與文件（TEST-001~TEST-004, DOC-001~DOC-002）
-4. 實現JWT認證機制
+1. **DDD-006**：定義Discount實體，實現isApplicable、isApplicableToProduct與calculateDiscountedPrice方法（支援固定折扣金額、百分比折扣與固定結帳金額）
+2. **DDD-018**：實現固定結帳金額優惠類型，更新Discount實體與規則引擎支援
+3. **API-015~API-018**：實現配置與規則管理API
+4. 實作剩餘API端點（API-009~API-013）
+5. 實作整合測試與文件（TEST-001~TEST-004, DOC-001~DOC-002）
+6. 實現JWT認證機制
 
 ## 🔧 技術狀態
 
@@ -94,11 +97,13 @@
 - **MongoDB / RabbitMQ / Redis**：尚需依 `docker-compose.yml` 或環境設定啟動並驗證，未執行
 
 ## 📊 進度指標
-- **總任務數**：60 項
-- **已完成**：49 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、TEST-002）
+- **總任務數**：61 項
+- **已完成**：48 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、TEST-002）
 - **進行中**：0 項
-- **待處理**：11 項
+- **待處理**：13 項
 
 ## 🎯 下一步計劃
-1. **API-015~API-018**：實現配置和規則管理API
+1. **DDD-006**：定義Discount實體，實現isApplicable、isApplicableToProduct與calculateDiscountedPrice方法（支援固定折扣金額、百分比折扣與固定結帳金額）
+2. **DDD-018**：實現固定結帳金額優惠類型，更新Discount實體與規則引擎支援
+3. **API-015~API-018**：實現配置和規則管理API
    - 提供規則和配置的CRUD操作介面

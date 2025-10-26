@@ -131,12 +131,12 @@ describe('Discount Entity', () => {
       expect(result).toBe(0); // Math.max(0, 100 - 150) = 0
     });
 
-    it('should return original price for unknown discount type', () => {
+    it('should calculate fixed price discount correctly', () => {
       // Arrange
       const discount = new Discount(
         'disc_123',
-        'unknown' as any, // Force unknown type
-        10,
+        'fixed_price',
+        50, // Fixed price of $50
         1,
         new Date('2024-01-01'),
         new Date('2024-12-31'),
@@ -147,7 +147,7 @@ describe('Discount Entity', () => {
       const result = discount.calculateDiscountedPrice(originalPrice);
 
       // Assert
-      expect(result).toBe(100); // Should return original price
+      expect(result).toBe(50); // Should return the fixed price regardless of original price
     });
   });
 

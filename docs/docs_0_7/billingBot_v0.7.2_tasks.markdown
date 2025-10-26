@@ -33,7 +33,7 @@
 | DDD-003 | 實現Subscription.convertToNewCycle方法（等到下個週期生效，處理費用差額，含TDD測試） | DDD-001 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-004 | 實現Subscription.handlePaymentFailure方法（含TDD測試） | DDD-001, DB-006 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-005 | 實現Subscription.renew方法（含TDD測試） | DDD-001 | 已完成 | 4.3 核心領域模型設計與方法 |
-| DDD-006 | 定義Discount實體，實現isApplicable、isApplicableToProduct與calculateDiscountedPrice方法（含TDD測試） | DB-004 | 已完成 | 4.3 核心領域模型設計與方法 |
+| DDD-006 | 定義Discount實體，實現isApplicable、isApplicableToProduct與calculateDiscountedPrice方法（支援固定折扣金額、百分比折扣與固定結帳金額，含TDD測試） | DB-004 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-007 | 定義PromoCode值物件，實現canBeUsed、incrementUsage、isApplicableToProduct方法（加入minimumAmount欄位，含TDD測試） | DB-005 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-008 | 定義PaymentAttempt實體，實現shouldRetry方法（含TDD測試） | DB-006 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-009 | 實現promoCodeDomainService領域服務，處理優惠碼業務邏輯（用戶重複使用檢查、消費門檻驗證、專屬優惠碼用戶綁定驗證及產品適用性檢查，含TDD測試） | DB-005, DB-011, DDD-007 | 已完成 | 4.3 核心領域模型設計與方法, 6.6 優惠碼應用流程 |
@@ -45,6 +45,7 @@
 | DDD-015 | 實現configService應用服務，處理配置管理與優先級查詢（含架構優化） | DDD-012 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-016 | 重構ProductsService，使用規則引擎替代硬編碼的first-time discount邏輯（含TDD測試） | DDD-014, API-001 | 已完成 | 4.3 核心領域模型設計與方法 |
 | DDD-017 | 重構BillingService，使用規則引擎替代硬編碼的first-time discount邏輯（含TDD測試） | DDD-014, DDD-010 | 已完成 | 4.3 核心領域模型設計與方法 |
+| DDD-018 | 實現固定結帳金額優惠類型，更新Discount實體與規則引擎支援（含TDD測試） | DDD-006, DDD-014 | 已完成 | 4.3 核心領域模型設計與方法 |
 
 ---
 
@@ -110,9 +111,9 @@
 ---
 
 ## 7. 總計
-- **總任務數**：60
+- **總任務數**：61
 - **狀態分布**：
-  - 已完成：49個任務
+  - 已完成：50個任務
   - 進行中：0個任務
   - 待處理：11個任務
 - **額外實現**：

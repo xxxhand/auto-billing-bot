@@ -5,7 +5,7 @@ import { DiscountRepository } from '../../infra/repositories/discount.repository
 import { UserRepository } from '../../infra/repositories/user.repository';
 import { SubscriptionRepository } from '../../infra/repositories/subscription.repository';
 import { PromoCodeDomainService } from '../../domain/services/promo-code-domain.service';
-import { PromoCode } from '../../domain/entities/promoCode.entity';
+import { DiscountType } from '../../domain/entities/discount.entity';
 import { PromoCodeUsage } from '../../domain/value-objects/promoCodeUsage.value-object';
 import { ErrException, errConstants } from '@myapp/common';
 
@@ -21,7 +21,7 @@ export interface AvailablePromoCode {
 export interface AppliedPromoCodeResult {
   code: string;
   discountId: string;
-  discountType: 'fixed' | 'percentage';
+  discountType: DiscountType;
   discountValue: number;
   originalAmount: number;
   discountedAmount: number;

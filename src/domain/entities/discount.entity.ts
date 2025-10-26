@@ -3,7 +3,7 @@ import { BaseEntity } from './base-entity.abstract';
 /**
  * Discount type enums as defined in the system design v0.7.1
  */
-export type DiscountType = 'fixed' | 'percentage';
+export type DiscountType = 'fixed' | 'percentage' | 'fixed_price';
 
 /**
  * Discount entity - represents a discount that can be applied to subscriptions
@@ -53,12 +53,14 @@ export class Discount extends BaseEntity {
    * @param originalPrice The original price before discount
    * @returns The discounted price
    */
-  public calculateDiscountedPrice(originalPrice: number): number {
+  calculateDiscountedPrice(originalPrice: number): number {
     switch (this.type) {
       case 'percentage':
         return originalPrice * (1 - this.value / 100);
       case 'fixed':
         return Math.max(0, originalPrice - this.value);
+      case 'fixed_price':
+        return this.value;
       default:
         return originalPrice;
     }

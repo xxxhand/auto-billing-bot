@@ -114,8 +114,9 @@ graph TD
 | Name | Type | Required | Default Value | Description |
 |------|------|----------|---------------|-------------|
 | discountId | string | Yes | - | 優惠唯一識別碼，主鍵 |
-| type | enum["fixed", "percentage"] | Yes | - | 優惠類型（固定金額或百分比） |
-| value | number | Yes | - | 優惠值（如100元或30%） |
+| type | enum["fixed", "percentage", "fixed_price"] | Yes | - | 優惠類型（固定金額、百分比或固定結帳金額） |
+| value | number | Yes | - | 優惠值（如100元、30%或固定結帳金額） |
+| fixedPrice | number | No | null | 固定結帳金額（僅type為fixed_price時有效） |
 | priority | number | Yes | 0 | 優惠優先級，數字越大優先 |
 | startDate | date | Yes | - | 優惠開始日期 |
 | endDate | date | Yes | - | 優惠結束日期 |
@@ -267,6 +268,7 @@ erDiagram
         string discountId PK
         enum type
         number value
+        number fixedPrice
         number priority
         date startDate
         date endDate
@@ -372,11 +374,11 @@ erDiagram
     - `clearPromoCode()`: 清除promoCode欄位，確保優惠碼僅用於初始訂閱。
 
 - **Discount (實體)**：
-  - 屬性：discountId, type, value, priority, startDate, endDate, applicableProducts
+  - 屬性：discountId, type, value, fixedPrice, priority, startDate, endDate, applicableProducts
   - 方法：
     - `isApplicable(now: Date)`: 檢查優惠是否在有效期內。
     - `isApplicableToProduct(productId: string)`: 檢查優惠是否適用於指定產品。
-    - `calculateDiscountedPrice(originalPrice: number)`: 計算折扣後價格（固定或百分比）。
+    - `calculateDiscountedPrice(originalPrice: number)`: 計算折扣後價格（固定金額、百分比或固定結帳金額）。
 
 - **PromoCode (值物件)**：
   - 屬性：code, discountId, usageLimit, isSingleUse, usedCount, minimumAmount, assignedUserId, applicableProducts
@@ -418,6 +420,7 @@ erDiagram
 - `setDiscountPrice`: 設定折扣價格
 - `applyPercentageDiscount`: 應用百分比折扣
 - `setFixedDiscount`: 設定固定金額折扣
+- `setFixedPrice`: 設定固定結帳金額
 - `skipProcessing`: 跳過處理
 - `logEvent`: 記錄事件
 
@@ -1001,6 +1004,26 @@ sequenceDiagram
   "discountedPrice": 1800,
   "appliedRules": ["promo_code_discount"],
   "discountReason": "Applied highest priority discount: promo code SAVE20 (20% off)"
+}
+```
+
+**固定結帳金額規則示例**：
+```json
+{
+  "ruleId": "special_offer_fixed_price",
+  "type": "discount",
+  "conditions": {
+    "and": [
+      {"eq": ["$context.product.productId", "special_plan"]},
+      {"lte": ["$context.currentDate", "2025-12-31T23:59:59Z"]}
+    ]
+  },
+  "actions": {
+    "setFixedPrice": {
+      "amount": 999,
+      "reason": "Special fixed price offer"
+    }
+  }
 }
 ```
 
