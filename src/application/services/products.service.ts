@@ -15,6 +15,11 @@ export interface ProductWithDiscount {
   discountedPrice: number;
   cycleType: string;
   applicableDiscounts: Discount[];
+  appliedDiscount?: {
+    type: string;
+    value: number;
+    promoCode?: string;
+  };
 }
 
 @Injectable()
@@ -47,7 +52,7 @@ export class ProductsService {
     const productsWithDiscounts: ProductWithDiscount[] = [];
 
     for (const product of availableProducts) {
-      const discountedPrice = await this.calculateDiscountedPrice(product, userId, promoCode);
+      const { discountedPrice, appliedDiscount } = await this.calculateDiscountedPriceAndDetails(product, userId, promoCode);
       const applicableDiscounts = await this.getApplicableDiscounts(product);
 
       productsWithDiscounts.push({
@@ -57,13 +62,14 @@ export class ProductsService {
         discountedPrice,
         cycleType: product.cycleType,
         applicableDiscounts,
+        appliedDiscount,
       });
     }
 
     return productsWithDiscounts;
   }
 
-  private async calculateDiscountedPrice(product: ProductEntity, userId: string, promoCode?: string): Promise<number> {
+  private async calculateDiscountedPriceAndDetails(product: ProductEntity, userId: string, promoCode?: string): Promise<{ discountedPrice: number; appliedDiscount?: { type: string; value: number; promoCode?: string } }> {
     // First, check if this is a first-time subscription for the user
     const isFirstTimeSubscription = await this.isFirstTimeSubscription(userId);
 
@@ -93,24 +99,55 @@ export class ProductsService {
     const result = this.rulesEngineService.evaluateRules(applicableRules, context);
 
     if (result.success && result.totalDiscount > 0) {
-      return Math.max(0, product.price - result.totalDiscount);
+      let finalPrice: number;
+      let appliedDiscount: { type: string; value: number; promoCode?: string } | undefined;
+
+      // Check if finalPrice was set directly (for fixed_price discounts)
+      if (result.context.finalPrice !== undefined) {
+        finalPrice = Math.max(0, result.context.finalPrice);
+
+        // Extract applied discount details from the rule that was applied
+        const appliedRuleId = result.appliedRules[0];
+        if (appliedRuleId) {
+          const appliedRule = discountRules.find(rule => rule.ruleId === appliedRuleId);
+          if (appliedRule && appliedRule.actions.discount) {
+            const discountAction = appliedRule.actions.discount as any;
+            appliedDiscount = {
+              type: discountAction.type,
+              value: discountAction.value,
+              promoCode: promoCode,
+            };
+          }
+        }
+      } else {
+        // Otherwise use the calculated discount
+        finalPrice = Math.max(0, product.price - result.totalDiscount);
+      }
+
+      return { discountedPrice: finalPrice, appliedDiscount };
     }
 
     // Get all applicable discounts for this product
     const applicableDiscounts = await this.getApplicableDiscounts(product);
 
     if (applicableDiscounts.length === 0) {
-      return product.price;
+      return { discountedPrice: product.price };
     }
 
     // Use discount priority service to select the best discount
     const bestDiscount = this.discountPriorityService.selectBestDiscount(applicableDiscounts, product.price);
 
     if (!bestDiscount) {
-      return product.price;
+      return { discountedPrice: product.price };
     }
 
-    return bestDiscount.calculateDiscountedPrice(product.price);
+    return {
+      discountedPrice: bestDiscount.calculateDiscountedPrice(product.price),
+      appliedDiscount: {
+        type: bestDiscount.type,
+        value: bestDiscount.value,
+      }
+    };
   }
 
   /**

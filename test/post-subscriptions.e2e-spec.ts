@@ -378,5 +378,192 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
       expect(dbAttempts.failureReason).toBe('');
       expect(dbAttempts.retryCount).toBe(0);
     });
+
+    it('[0] should create yearly subscription with fixed checkout amount promo code (single use)', async () => {
+      jest.spyOn(mockPaymentGateway, 'charge').mockResolvedValue({
+        success: true,
+        transactionId: 'txn-fixed-price',
+      });
+
+      // Create a new user for fixed price subscription
+      const fixedPriceUser: IUserDocument = {
+        _id: dbHelper.newObjectId(),
+        userId: dbHelper.newObjectId(),
+        tenantId: 'tenant-fixed-price',
+        encryptedData: 'encrypted-data-fixed-price',
+        valid: true,
+      };
+      await db.getCollection(userCol).insertOne(fixedPriceUser);
+
+      // Create a fixed price discount
+      const fixedPriceDiscount: IDiscountDocument = {
+        _id: dbHelper.newObjectId(),
+        discountId: 'fixed-price-discount-001',
+        type: 'fixed_price',
+        value: 1500, // Fixed checkout amount $1500
+        priority: 10, // Higher priority than system discount
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2026-12-31'),
+        applicableProducts: [mockYearlyProduct.productId],
+        valid: true,
+      };
+      await db.getCollection(discountCol).insertOne(fixedPriceDiscount);
+
+      // Create a single-use promo code for fixed price
+      const fixedPricePromoCode: IPromoCodeDocument = {
+        _id: dbHelper.newObjectId(),
+        code: 'FIXED1500',
+        discountId: fixedPriceDiscount.discountId,
+        usageLimit: 1,
+        isSingleUse: true, // Single use promo code
+        usedCount: 0,
+        minimumAmount: 0, // No minimum amount for fixed price
+        assignedUserId: null,
+        applicableProducts: [mockYearlyProduct.productId],
+        valid: true,
+      };
+      await db.getCollection(promoCodeCol).insertOne(fixedPricePromoCode);
+
+      const requestBody = {
+        userId: fixedPriceUser.userId.toHexString(),
+        productId: mockYearlyProduct.productId,
+        promoCode: fixedPricePromoCode.code,
+      };
+
+      const res = await agent.post(endpoint).send(requestBody);
+
+      expect(res.status).toBe(201);
+      expect(res.body.code).toBe(0);
+      expect(res.body.result).toBeDefined();
+      expect(res.body.result.subscriptionId).toBeTruthy();
+      expect(res.body.result.status).toBe('active');
+      expect(res.body.result.productId).toBe(mockYearlyProduct.productId);
+
+      // Check database
+      const dbSub = (await db.getCollection(subscriptionCol).findOne({ subscriptionId: res.body.result.subscriptionId })) as ISubscriptionDocument;
+      expect(dbSub).toBeTruthy();
+      expect(dbSub.userId.toHexString()).toBe(fixedPriceUser.userId.toHexString());
+      expect(dbSub.productId).toBe(mockYearlyProduct.productId);
+      expect(dbSub.status).toBe('active');
+      expect(dbSub.cycleType).toBe('yearly');
+
+      // Check payment attempt - should be charged with fixed price $1500 (overrides system discount)
+      const dbAttempts = (await db.getCollection(paymentAttemptCol).findOne({ subscriptionId: dbSub.subscriptionId })) as IPaymentAttemptDocument;
+      expect(dbAttempts).toBeTruthy();
+      expect(dbAttempts.status).toBe('success');
+      expect(dbAttempts.amount).toBe(1500); // Fixed checkout amount $1500
+      expect(dbAttempts.failureReason).toBe('');
+      expect(dbAttempts.retryCount).toBe(0);
+
+      // Check promo code - should be marked as used for single-use code
+      const dbPromo = (await db.getCollection(promoCodeCol).findOne({ code: fixedPricePromoCode.code })) as IPromoCodeDocument;
+      expect(dbPromo).toBeTruthy();
+      expect(dbPromo.usedCount).toBe(1);
+
+      // Check PromoCodeUsages
+      const dbPromoUsages = (await db.getCollection(promoCodeUsagesCol).find({ promoCode: fixedPricePromoCode.code }).toArray()) as IPromoCodeUsageDocument[];
+      expect(dbPromoUsages).toHaveLength(1);
+      expect(dbPromoUsages[0].userId.toHexString()).toBe(fixedPriceUser.userId.toHexString());
+      expect(dbPromoUsages[0].orderAmount).toBe(1500); // Fixed checkout amount
+    });
+
+    it('[0] should handle fixed checkout amount promo code priority over other discounts', async () => {
+      jest.spyOn(mockPaymentGateway, 'charge').mockResolvedValue({
+        success: true,
+        transactionId: 'txn-fixed-price-priority',
+      });
+
+      // Create a new user for priority test
+      const priorityUser: IUserDocument = {
+        _id: dbHelper.newObjectId(),
+        userId: dbHelper.newObjectId(),
+        tenantId: 'tenant-priority',
+        encryptedData: 'encrypted-data-priority',
+        valid: true,
+      };
+      await db.getCollection(userCol).insertOne(priorityUser);
+
+      // Create a fixed discount (lower priority)
+      const fixedDiscount: IDiscountDocument = {
+        _id: dbHelper.newObjectId(),
+        discountId: 'fixed-discount-002',
+        type: 'fixed',
+        value: 200, // Fixed discount $200
+        priority: 5, // Lower priority
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2026-12-31'),
+        applicableProducts: [mockYearlyProduct.productId],
+        valid: true,
+      };
+      await db.getCollection(discountCol).insertOne(fixedDiscount);
+
+      // Create a fixed price discount (higher priority)
+      const fixedPriceDiscount: IDiscountDocument = {
+        _id: dbHelper.newObjectId(),
+        discountId: 'fixed-price-discount-002',
+        type: 'fixed_price',
+        value: 1500, // Fixed checkout amount $1500
+        priority: 10, // Higher priority
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2026-12-31'),
+        applicableProducts: [mockYearlyProduct.productId],
+        valid: true,
+      };
+      await db.getCollection(discountCol).insertOne(fixedPriceDiscount);
+
+      // Create promo codes for both discounts
+      const fixedDiscountPromoCode: IPromoCodeDocument = {
+        _id: dbHelper.newObjectId(),
+        code: 'DISCOUNT200',
+        discountId: fixedDiscount.discountId,
+        usageLimit: 1,
+        isSingleUse: true,
+        usedCount: 0,
+        minimumAmount: 0,
+        assignedUserId: null,
+        applicableProducts: [mockYearlyProduct.productId],
+        valid: true,
+      };
+      await db.getCollection(promoCodeCol).insertOne(fixedDiscountPromoCode);
+
+      const fixedPricePromoCode: IPromoCodeDocument = {
+        _id: dbHelper.newObjectId(),
+        code: 'FIXED1500',
+        discountId: fixedPriceDiscount.discountId,
+        usageLimit: 1,
+        isSingleUse: true,
+        usedCount: 0,
+        minimumAmount: 0,
+        assignedUserId: null,
+        applicableProducts: [mockYearlyProduct.productId],
+        valid: true,
+      };
+      await db.getCollection(promoCodeCol).insertOne(fixedPricePromoCode);
+
+      // Test with fixed checkout amount promo code (higher priority)
+      const requestBody = {
+        userId: priorityUser.userId.toHexString(),
+        productId: mockYearlyProduct.productId,
+        promoCode: fixedPricePromoCode.code,
+      };
+
+      const res = await agent.post(endpoint).send(requestBody);
+
+      expect(res.status).toBe(201);
+      expect(res.body.code).toBe(0);
+
+      // Check payment attempt - should use fixed price $1500 (highest priority)
+      const dbSub = (await db.getCollection(subscriptionCol).findOne({ subscriptionId: res.body.result.subscriptionId })) as ISubscriptionDocument;
+      const dbAttempts = (await db.getCollection(paymentAttemptCol).findOne({ subscriptionId: dbSub.subscriptionId })) as IPaymentAttemptDocument;
+      expect(dbAttempts.amount).toBe(1500); // Fixed checkout amount takes priority
+
+      // Check fixed price promo code is used
+      const dbFixedPricePromo = (await db.getCollection(promoCodeCol).findOne({ code: fixedPricePromoCode.code })) as IPromoCodeDocument;
+      expect(dbFixedPricePromo.usedCount).toBe(1);
+
+      // Check fixed discount promo code remains unused
+      const dbFixedDiscountPromo = (await db.getCollection(promoCodeCol).findOne({ code: fixedDiscountPromoCode.code })) as IPromoCodeDocument;
+      expect(dbFixedDiscountPromo.usedCount).toBe(0);
+    });
   });
 });

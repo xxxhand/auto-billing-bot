@@ -8,7 +8,7 @@ export type ConditionOperator = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in
 /**
  * Supported discount types
  */
-export type DiscountType = 'percentage' | 'fixed';
+export type DiscountType = 'percentage' | 'fixed' | 'fixed_price';
 
 /**
  * Condition with operator
@@ -178,6 +178,10 @@ export class Rules extends BaseEntity {
       discountAmount = Math.round((originalPrice * value) / 100);
     } else if (type === 'fixed') {
       discountAmount = Math.min(value, originalPrice); // Don't discount more than the price
+    } else if (type === 'fixed_price') {
+      // Fixed price sets the final price directly, not a discount amount
+      discountAmount = originalPrice - value; // Calculate discount needed to reach fixed price
+      discountAmount = Math.max(0, discountAmount); // Ensure non-negative discount
     }
 
     context.discountApplied = true;
@@ -254,7 +258,7 @@ export class Rules extends BaseEntity {
   private validateDiscountAction(discountAction: DiscountAction): void {
     const { type, value } = discountAction;
 
-    if (type !== 'percentage' && type !== 'fixed') {
+    if (type !== 'percentage' && type !== 'fixed' && type !== 'fixed_price') {
       throw new Error(`Invalid discount type: ${type}`);
     }
 
@@ -300,6 +304,8 @@ export class Rules extends BaseEntity {
           const discount = actionValue as DiscountAction;
           if (discount.type === 'percentage') {
             actionParts.push(`${discount.value}% discount`);
+          } else if (discount.type === 'fixed_price') {
+            actionParts.push(`fixed price $${discount.value}`);
           } else {
             actionParts.push(`$${discount.value} discount`);
           }

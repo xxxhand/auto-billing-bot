@@ -174,6 +174,12 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/products`, () => {
       expect(monthlyProduct.discountedPrice).toBe(10); // No discount
       expect(yearlyProduct.discountedPrice).toBe(24); // 20% discount applied
 
+      // Verify applied discounts
+      expect(monthlyProduct.appliedDiscount).toBeUndefined(); // No discount applied
+      expect(yearlyProduct.appliedDiscount).toBeDefined();
+      expect(yearlyProduct.appliedDiscount.type).toBe('percentage');
+      expect(yearlyProduct.appliedDiscount.value).toBe(20);
+
       // Verify applicable discounts
       expect(monthlyProduct.applicableDiscounts).toHaveLength(0);
       expect(yearlyProduct.applicableDiscounts).toHaveLength(1);
@@ -209,6 +215,15 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/products`, () => {
       expect(monthlyProduct.discountedPrice).toBe(10); // No discount
       expect(quarterlyProduct.discountedPrice).toBe(15); // Fixed price discount applied
       expect(yearlyProduct.discountedPrice).toBe(0); // First-time discount applied (30 - 1000 = 0)
+
+      // Verify applied discounts
+      expect(monthlyProduct.appliedDiscount).toBeUndefined(); // No discount applied
+      expect(quarterlyProduct.appliedDiscount).toBeDefined();
+      expect(quarterlyProduct.appliedDiscount.type).toBe('fixed_price');
+      expect(quarterlyProduct.appliedDiscount.value).toBe(15);
+      expect(yearlyProduct.appliedDiscount).toBeDefined();
+      expect(yearlyProduct.appliedDiscount.type).toBe('fixed');
+      expect(yearlyProduct.appliedDiscount.value).toBe(1000);
 
       // Verify applicable discounts (regular discount still shown)
       expect(monthlyProduct.applicableDiscounts).toHaveLength(0);
@@ -253,6 +268,14 @@ describe(`GET ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/products`, () => {
       // Quarterly product should have fixed price discount (always $15 regardless of original price)
       expect(quarterlyProduct.discountedPrice).toBe(15); // Fixed price discount applied
       expect(yearlyProduct.discountedPrice).toBe(24); // 20% discount applied
+
+      // Verify applied discounts
+      expect(quarterlyProduct.appliedDiscount).toBeDefined();
+      expect(quarterlyProduct.appliedDiscount.type).toBe('fixed_price');
+      expect(quarterlyProduct.appliedDiscount.value).toBe(15);
+      expect(yearlyProduct.appliedDiscount).toBeDefined();
+      expect(yearlyProduct.appliedDiscount.type).toBe('percentage');
+      expect(yearlyProduct.appliedDiscount.value).toBe(20);
 
       // Verify applicable discounts
       expect(quarterlyProduct.applicableDiscounts).toHaveLength(1);

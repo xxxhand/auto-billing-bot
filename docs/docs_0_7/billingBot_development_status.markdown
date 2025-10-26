@@ -16,6 +16,8 @@
 - 無
 
 ### 已完成任務 (最近)
+- ✅ **情境4 BDD測試完成**：實現並測試固定結帳金額優惠類型，完成scenario 4的完整驗證（2025年10月26日）
+- ✅ **審閱完成**：API-001測試更新審閱通過，準備開始API-013（2025年10月26日）
 - ✅ **測試覆蓋完善**：為fixed_price折扣類型添加完整測試覆蓋，修復get-products.e2e-spec.ts中的動態日期問題，確保所有E2E測試通過（2025年10月26日）
 - ✅ **DDD-006**：定義Discount實體，實現isApplicable、isApplicableToProduct與calculateDiscountedPrice方法（支援固定折扣金額、百分比折扣與固定結帳金額，含TDD測試）（2025年10月26日）
 - ✅ **DDD-018**：實現固定結帳金額優惠類型，更新Discount實體與規則引擎支援（含TDD測試）（2025年10月26日）
@@ -76,10 +78,10 @@
 ### 待處理任務 (優先順序)
 1. **API-013**：實現JWT認證，包含userId與tenantId
 2. **API-009**：實現GET /admin/promoCodes/{code}/usage，後台查詢優惠碼使用狀態與歷史
-3. **API-011**：實現GET /subscriptions/{id}/history，查詢訂閱與扣款歷史
-4. **API-012**：實現GET /admin/logs/export，導出CSV日誌
-5. **API-015~API-018**：實現配置與規則管理API
-6. 實作整合測試與文件（TEST-001~TEST-004, DOC-001~DOC-002）
+2. **API-011**：實現GET /subscriptions/{id}/history，查詢訂閱與扣款歷史
+3. **API-012**：實現GET /admin/logs/export，導出CSV日誌
+4. **API-015~API-018**：實現配置與規則管理API
+5. 實作整合測試與文件（TEST-001~TEST-004, DOC-001~DOC-002）
 
 ## 🔧 技術狀態
 
@@ -108,6 +110,6 @@
 ## 🎯 下一步計劃
 1. **API-013**：實現JWT認證，包含userId與tenantId
 2. **API-009**：實現GET /admin/promoCodes/{code}/usage，後台查詢優惠碼使用狀態與歷史
-3. **API-011**：實現GET /subscriptions/{id}/history，查詢訂閱與扣款歷史
-4. **API-012**：實現GET /admin/logs/export，導出CSV日誌
-5. **API-015~API-018**：實現配置和規則管理API
+2. **API-011**：實現GET /subscriptions/{id}/history，查詢訂閱與扣款歷史
+3. **API-012**：實現GET /admin/logs/export，導出CSV日誌
+4. **API-015~API-018**：實現配置和規則管理API

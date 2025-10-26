@@ -8,6 +8,7 @@ import { PromoCodeRepository } from '../../infra/repositories/promoCode.reposito
 import { PromoCodeUsageRepository } from '../../infra/repositories/promoCodeUsage.repository';
 import { DiscountRepository } from '../../infra/repositories/discount.repository';
 import { UserRepository } from '../../infra/repositories/user.repository';
+import { PaymentAttemptRepository } from '../../infra/repositories/payment-attempt.repository';
 import { BillingService } from '../../infra/services/billing.service';
 import { IBillingService, IBillingServiceToken } from '../../domain/services/billing.service.interface';
 import { RefundRepository } from '../../infra/repositories/refund.repository';
@@ -36,6 +37,7 @@ export class SubscriptionsService {
     private readonly promoCodeUsageRepository: PromoCodeUsageRepository,
     private readonly discountRepository: DiscountRepository,
     private readonly userRepository: UserRepository,
+    private readonly paymentAttemptRepository: PaymentAttemptRepository,
     private readonly refundRepository: RefundRepository,
     private readonly promoCodeDomainService: PromoCodeDomainService,
     @Inject(IBillingServiceToken) private readonly billingService: IBillingService,
@@ -144,8 +146,12 @@ export class SubscriptionsService {
       promoCodeEntity.incrementUsage();
       await this.promoCodeRepository.update(promoCodeEntity);
 
+      // Get the actual payment amount from the payment attempt
+      const paymentAttempts = await this.paymentAttemptRepository.findBySubscriptionId(savedSubscription.subscriptionId);
+      const successfulPayment = paymentAttempts.find(attempt => attempt.status === 'success');
+      const orderAmount = successfulPayment ? successfulPayment.amount : product.price;
+
       // Create usage record
-      const orderAmount = product.price - promoCodeEntity.minimumAmount; // As per test expectation
       const promoCodeUsage = PromoCodeUsage.create(promoCodeEntity.code, userId, orderAmount);
       await this.promoCodeUsageRepository.create(promoCodeUsage);
     }
