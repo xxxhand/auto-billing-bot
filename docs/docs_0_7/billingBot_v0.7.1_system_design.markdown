@@ -121,6 +121,7 @@ graph TD
 | startDate | date | Yes | - | 優惠開始日期 |
 | endDate | date | Yes | - | 優惠結束日期 |
 | applicableProducts | array[string] | No | [] | 適用產品ID列表，為空表示全域適用 |
+| discountPeriods | number | No | 1 | 優惠期數（適用於長期折扣） |
 | createdAt | date | Yes | - | 創建時間 |
 | updatedAt | date | Yes | - | 變更時間 |
 | valid | boolean | Yes | - | 有效否 |
@@ -273,6 +274,7 @@ erDiagram
         date startDate
         date endDate
         array applicableProducts
+        number discountPeriods
         date createdAt
         date updatedAt
         boolean valid 
@@ -374,7 +376,7 @@ erDiagram
     - `clearPromoCode()`: 清除promoCode欄位，確保優惠碼僅用於初始訂閱。
 
 - **Discount (實體)**：
-  - 屬性：discountId, type, value, fixedPrice, priority, startDate, endDate, applicableProducts
+  - 屬性：discountId, type, value, fixedPrice, priority, startDate, endDate, applicableProducts, discountPeriods
   - 方法：
     - `isApplicable(now: Date)`: 檢查優惠是否在有效期內。
     - `isApplicableToProduct(productId: string)`: 檢查優惠是否適用於指定產品。
