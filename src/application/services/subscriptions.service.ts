@@ -106,8 +106,8 @@ export class SubscriptionsService {
         throw ErrException.newFromCodeName(errConstants.ERR_INVALID_DISCOUNT);
       }
 
-      // TODO: For now, we'll handle discount application after payment
-      // appliedDiscount = ... (would need to get discount from promo code)
+      // Apply promo code discount to subscription for long-term use
+      appliedDiscount = discount;
     }
 
     // Generate subscription ID
@@ -116,6 +116,11 @@ export class SubscriptionsService {
     // Create subscription entity
     const startDate = new Date();
     const subscription = new Subscription(subscriptionId, userId, productId, product.cycleType, startDate, this.calculateNextBillingDate(startDate, product.cycleType), 'pending', 0, 0, null, promoCode);
+
+    // Apply promo code discount if provided
+    if (appliedDiscount) {
+      subscription.applyPromoCodeDiscount(appliedDiscount.discountId, appliedDiscount.discountPeriods);
+    }
 
     // Save subscription
     const savedSubscription = await this.subscriptionRepository.save(subscription);

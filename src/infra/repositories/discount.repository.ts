@@ -1,13 +1,66 @@
 import { DEFAULT_MONGO } from '@myapp/common';
 import { Inject, Injectable } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { CustomDefinition, CustomValidator, CustomMongoClient } from '@xxxhand/app-common';
+import { CustomDefinition, CustomValidator, CustomMongoClient, CustomUtils } from '@xxxhand/app-common';
 import { Discount } from '../../domain/entities/discount.entity';
 import { modelNames, IDiscountDocument } from '../models/models.definition';
 
 @Injectable()
 export class DiscountRepository {
   constructor(@Inject(DEFAULT_MONGO) private readonly defMongoClient: CustomMongoClient) {}
+
+  /**
+   * Save a discount entity to the database
+   * @param entity The discount entity to save
+   * @returns The saved discount entity with ID, or undefined if invalid
+   */
+  public async save(entity: Discount): Promise<CustomDefinition.TNullable<Discount>> {
+    if (!entity) {
+      return undefined;
+    }
+    const now = new Date();
+
+    if (!CustomValidator.nonEmptyString(entity.id)) {
+      // Create new document
+      const doc = <IDiscountDocument>{
+        discountId: entity.discountId,
+        type: entity.type,
+        value: entity.value,
+        priority: entity.priority,
+        startDate: entity.startDate,
+        endDate: entity.endDate,
+        applicableProducts: entity.applicableProducts,
+        discountPeriods: entity.discountPeriods,
+        createdAt: now,
+        updatedAt: now,
+        valid: true,
+      };
+      const col = this.defMongoClient.getCollection(modelNames.DISCOUNTS);
+      const docRes = await col.insertOne(doc);
+      entity.id = docRes.insertedId.toHexString();
+      return entity;
+    }
+
+    // Update existing document
+    const filter = { _id: CustomUtils.stringToObjectId(entity.id) };
+    const updateDoc = {
+      $set: {
+        discountId: entity.discountId,
+        type: entity.type,
+        value: entity.value,
+        priority: entity.priority,
+        startDate: entity.startDate,
+        endDate: entity.endDate,
+        applicableProducts: entity.applicableProducts,
+        discountPeriods: entity.discountPeriods,
+        updatedAt: now,
+        valid: entity.valid
+      },
+    };
+    const col = this.defMongoClient.getCollection(modelNames.DISCOUNTS);
+    await col.updateOne(filter, updateDoc);
+    return entity;
+  }
 
   public async findAll(): Promise<Discount[]> {
     const col = this.defMongoClient.getCollection(modelNames.DISCOUNTS);

@@ -20,4 +20,6 @@ export interface IDiscountModel extends IBaseModel {
   endDate: Date;
   /** Applicable product IDs, empty array means global applicable */
   applicableProducts: string[];
+  /** Number of periods this discount applies to (for long-term discounts) */
+  discountPeriods?: number;
 }

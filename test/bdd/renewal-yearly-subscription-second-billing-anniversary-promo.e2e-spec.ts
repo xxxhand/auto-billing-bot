@@ -100,6 +100,7 @@ describe('BDD: 續訂年付產品第二次扣款(週年慶折扣2000，專屬優
     startDate: new Date(2020, 0, 1), // 長期有效
     endDate: new Date(2030, 11, 31),
     applicableProducts: ['yearly-product-001'], // 只適用於yearly產品
+    discountPeriods: 3,
     valid: true,
   };
 

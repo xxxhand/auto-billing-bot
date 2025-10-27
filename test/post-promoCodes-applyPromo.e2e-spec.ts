@@ -49,6 +49,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/promoCodes/applyPromo
     startDate: new Date('2024-01-01'),
     endDate: new Date('2025-12-31'),
     applicableProducts: [],
+    discountPeriods: 3,
     valid: true,
   };
 

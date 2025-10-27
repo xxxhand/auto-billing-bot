@@ -178,7 +178,7 @@ export class PromoCodeService {
       }
 
       // Apply discount to subscription
-      const discountPeriods = 3; // Default to 3 periods, can be made configurable
+      const discountPeriods = discountEntity.discountPeriods || 3; // Use discount's discountPeriods or default to 3
       subscription.applyPromoCodeDiscount(discountEntity.discountId, discountPeriods);
       await this.subscriptionRepository.save(subscription);
 

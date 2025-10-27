@@ -16,8 +16,10 @@ export class Discount extends BaseEntity {
   public startDate: Date;
   public endDate: Date;
   public applicableProducts: string[];
+  public discountPeriods: number;
+  public valid: boolean = true;
 
-  constructor(discountId: string, type: DiscountType, value: number, priority: number, startDate: Date, endDate: Date, applicableProducts: string[] = []) {
+  constructor(discountId: string, type: DiscountType, value: number, priority: number, startDate: Date, endDate: Date, applicableProducts: string[] = [], discountPeriods: number = 1) {
     super();
     this.id = discountId; // Use discountId as the entity ID
     this.discountId = discountId;
@@ -27,6 +29,7 @@ export class Discount extends BaseEntity {
     this.startDate = startDate;
     this.endDate = endDate;
     this.applicableProducts = applicableProducts;
+    this.discountPeriods = discountPeriods;
   }
 
   /**

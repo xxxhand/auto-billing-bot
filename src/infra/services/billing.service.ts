@@ -425,6 +425,13 @@ export class BillingService implements IBillingService {
       return { amount: currentAmount, discount: null };
     }
 
+    // If subscription already has an applied discount, don't apply promo code discount again
+    // This prevents double-discounting when promo code is applied to subscription
+    if (subscription.appliedDiscountId && subscription.remainingDiscountPeriods > 0) {
+      this._Logger.log(`Subscription ${subscription.subscriptionId} already has applied discount ${subscription.appliedDiscountId}, skipping promo code discount`);
+      return { amount: currentAmount, discount: null };
+    }
+
     // Find promo code entity
     const promoCodeEntity = await this.promoCodeRepository.findByCode(subscription.promoCode);
     if (!promoCodeEntity) {
