@@ -13,7 +13,7 @@
 ## 📋 當前任務狀態
 
 ### 進行中任務
-- 無
+- 🔄 **測試調整進行中**：因billingService添加防止雙重折扣邏輯（檢查appliedDiscountId與remainingDiscountPeriods），準備調整billing.service.spec.ts測試文件，添加新測試用例以驗證邏輯正確性（2025年10月27日）
 
 ### 已完成任務 (最近)
 - ✅ **所有e2e測試通過**：修復discountPeriods配置問題，更新測試數據並防止雙重折扣應用，所有121個e2e測試通過（2025年10月27日）
