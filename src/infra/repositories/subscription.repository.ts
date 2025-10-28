@@ -102,6 +102,7 @@ export class SubscriptionRepository {
       promoCode: entity.promoCode,
       pendingConversion: entity.pendingConversion,
       gracePeriodEndDate: entity.gracePeriodEndDate,
+      extraPeriods: entity.extraPeriods,
     };
 
     const col = this.defMongoClient.getCollection(modelNames.SUBSCRIPTIONS);

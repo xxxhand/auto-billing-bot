@@ -180,6 +180,12 @@ export class PromoCodeService {
       // Apply discount to subscription
       const discountPeriods = discountEntity.discountPeriods || 3; // Use discount's discountPeriods or default to 3
       subscription.applyPromoCodeDiscount(discountEntity.discountId, discountPeriods);
+
+      // Apply extra periods if the discount provides them
+      if (discountEntity.hasExtraPeriods()) {
+        subscription.applyExtraPeriods(discountEntity.getExtraPeriods());
+      }
+
       await this.subscriptionRepository.save(subscription);
 
       // Record the promo code usage

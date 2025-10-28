@@ -17,9 +17,10 @@ export class Discount extends BaseEntity {
   public endDate: Date;
   public applicableProducts: string[];
   public discountPeriods: number;
+  public extraPeriods: number;
   public valid: boolean = true;
 
-  constructor(discountId: string, type: DiscountType, value: number, priority: number, startDate: Date, endDate: Date, applicableProducts: string[] = [], discountPeriods: number = 1) {
+  constructor(discountId: string, type: DiscountType, value: number, priority: number, startDate: Date, endDate: Date, applicableProducts: string[] = [], discountPeriods: number = 1, extraPeriods: number = 0) {
     super();
     this.id = discountId; // Use discountId as the entity ID
     this.discountId = discountId;
@@ -30,6 +31,7 @@ export class Discount extends BaseEntity {
     this.endDate = endDate;
     this.applicableProducts = applicableProducts;
     this.discountPeriods = discountPeriods;
+    this.extraPeriods = extraPeriods;
   }
 
   /**
@@ -67,5 +69,21 @@ export class Discount extends BaseEntity {
       default:
         return originalPrice;
     }
+  }
+
+  /**
+   * Check if the discount contains extra service periods
+   * @returns true if the discount provides extra periods
+   */
+  public hasExtraPeriods(): boolean {
+    return this.extraPeriods > 0;
+  }
+
+  /**
+   * Get the number of extra service periods provided by this discount
+   * @returns The number of extra periods
+   */
+  public getExtraPeriods(): number {
+    return this.extraPeriods;
   }
 }

@@ -36,4 +36,6 @@ export interface ISubscriptionModel extends IBaseModel {
   } | null;
   /** Grace period end date, set when entering grace status */
   gracePeriodEndDate?: Date | null;
+  /** Number of extra service periods added to this subscription */
+  extraPeriods?: number;
 }

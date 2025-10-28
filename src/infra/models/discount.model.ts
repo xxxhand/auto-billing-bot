@@ -22,4 +22,6 @@ export interface IDiscountModel extends IBaseModel {
   applicableProducts: string[];
   /** Number of periods this discount applies to (for long-term discounts) */
   discountPeriods?: number;
+  /** Number of extra service periods provided by this discount */
+  extraPeriods?: number;
 }

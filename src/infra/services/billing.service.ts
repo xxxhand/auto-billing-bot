@@ -62,6 +62,21 @@ export class BillingService implements IBillingService {
       };
     }
 
+    // Check if subscription should expire based on total periods
+    // For subscriptions with extra periods, check against total periods (original + extra)
+    if (subscription.shouldExpire()) {
+      this._Logger.log(`Subscription ${subscriptionId} has reached maximum periods and should expire`);
+      subscription.status = 'cancelled';
+      await this.subscriptionRepository.save(subscription);
+      // TODO: Record expiry log to billingLogs
+      // await this.billingLogRepository.save({ eventType: 'subscription_expired', subscriptionId, details: { reason: 'max_periods_reached' } });
+      return {
+        success: false,
+        errorMessage: 'Subscription has expired due to reaching maximum periods',
+        errorCode: 'SUBSCRIPTION_EXPIRED',
+      };
+    }
+
     // Check and apply pending conversion if applicable
     if (subscription.pendingConversion) {
       this._Logger.log(`Applying pending conversion for subscription ${subscriptionId}`);

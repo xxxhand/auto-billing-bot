@@ -27,6 +27,7 @@ export class Subscription extends BaseEntity {
     requestedAt: Date;
   } | null;
   public gracePeriodEndDate?: Date | null;
+  public extraPeriods: number;
 
   constructor(
     subscriptionId: string,
@@ -42,6 +43,7 @@ export class Subscription extends BaseEntity {
     promoCode: string | null = null,
     pendingConversion: { newCycleType: string; requestedAt: Date } | null = null,
     gracePeriodEndDate: Date | null = null,
+    extraPeriods: number = 0,
   ) {
     super();
     this.subscriptionId = subscriptionId;
@@ -57,6 +59,7 @@ export class Subscription extends BaseEntity {
     this.promoCode = promoCode;
     this.pendingConversion = pendingConversion;
     this.gracePeriodEndDate = gracePeriodEndDate;
+    this.extraPeriods = extraPeriods;
   }
 
   /**
@@ -360,5 +363,40 @@ export class Subscription extends BaseEntity {
       renewalCount: this.renewalCount,
       renewalDiscountEligible: false, // Default behavior for basic renewal
     };
+  }
+
+  /**
+   * Apply extra service periods to extend the subscription duration
+   * @param extraPeriods The number of extra periods to add
+   */
+  public applyExtraPeriods(extraPeriods: number): void {
+    if (extraPeriods < 0) {
+      throw new Error('Extra periods cannot be negative');
+    }
+    this.extraPeriods += extraPeriods;
+  }
+
+  /**
+   * Get the total number of periods for this subscription (original + extra)
+   * @returns The total number of periods
+   */
+  public getTotalPeriods(): number {
+    // For now, we assume the original periods are based on renewalCount + 1 (current period)
+    // In a real implementation, this might be calculated differently based on product configuration
+    const originalPeriods = this.renewalCount + 1;
+    return originalPeriods + this.extraPeriods;
+  }
+
+  /**
+   * Check if the subscription should expire based on total periods
+   * @param maxPeriods Optional maximum periods allowed for this subscription type
+   * @returns true if the subscription has reached its maximum periods and should expire
+   */
+  public shouldExpire(maxPeriods?: number): boolean {
+    if (!maxPeriods) {
+      // If no max periods specified, subscription doesn't expire based on periods
+      return false;
+    }
+    return this.getTotalPeriods() >= maxPeriods;
   }
 }

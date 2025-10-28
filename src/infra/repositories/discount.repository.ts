@@ -31,6 +31,7 @@ export class DiscountRepository {
         endDate: entity.endDate,
         applicableProducts: entity.applicableProducts,
         discountPeriods: entity.discountPeriods,
+        extraPeriods: entity.extraPeriods,
         createdAt: now,
         updatedAt: now,
         valid: true,
@@ -53,6 +54,7 @@ export class DiscountRepository {
         endDate: entity.endDate,
         applicableProducts: entity.applicableProducts,
         discountPeriods: entity.discountPeriods,
+        extraPeriods: entity.extraPeriods,
         updatedAt: now,
         valid: entity.valid
       },

@@ -100,13 +100,14 @@ graph TD
 | status | enum["pending", "active", "grace", "cancelled", "refunding", "aborted"] | Yes | "pending" | 訂閱狀態 |
 | cycleType | string | Yes | - | 扣款週期類型，與產品一致 |
 | startDate | date | Yes | - | 訂閱開始日期 |
-| nextBillingDate | date | Yes | - | 下次扣款日期 |
+| nextBillingDate | date | Yes | - | 下次扣款日期（初始訂閱時考慮extraPeriods延長） |
 | renewalCount | number | Yes | 0 | 續訂次數 |
 | remainingDiscountPeriods | number | Yes | 0 | 剩餘優惠期數 |
 | appliedDiscountId | string | No | null | 應用折扣的ID，用於長期折扣應用(續訂) |
 | promoCode | string | No | null | 創建時使用的優惠碼，第一次成功支付後清除(首訂) |
 | pendingConversion | object | No | null | 待生效的轉換請求（包含newCycleType, requestedAt） |
 | gracePeriodEndDate | date | No | null | 寬限期結束日期（當status為grace時有效） |
+| extraPeriods | number | Yes | 0 | 額外服務期數（用於延長訂閱服務時間） |
 | createdAt | date | Yes | - | 創建時間 |
 | updatedAt | date | Yes | - | 變更時間 |
 
@@ -122,6 +123,7 @@ graph TD
 | endDate | date | Yes | - | 優惠結束日期 |
 | applicableProducts | array[string] | No | [] | 適用產品ID列表，為空表示全域適用 |
 | discountPeriods | number | No | 1 | 優惠期數（適用於長期折扣） |
+| extraPeriods | number | No | 0 | 額外服務期數（用於延長訂閱服務時間） |
 | createdAt | date | Yes | - | 創建時間 |
 | updatedAt | date | Yes | - | 變更時間 |
 | valid | boolean | Yes | - | 有效否 |
@@ -260,6 +262,7 @@ erDiagram
         string appliedDiscountId
         object pendingConversion
         date gracePeriodEndDate
+        number extraPeriods
         date createdAt
         date updatedAt
         boolean valid 
@@ -275,6 +278,7 @@ erDiagram
         date endDate
         array applicableProducts
         number discountPeriods
+        number extraPeriods
         date createdAt
         date updatedAt
         boolean valid 
@@ -363,24 +367,28 @@ erDiagram
 基於DDD，定義核心聚合根（Subscription為主要聚合根），並提供領域方法。以下為TypeScript-like偽碼示例，TDD將先測試這些方法。
 
 - **Subscription (聚合根)**：
-  - 屬性：subscriptionId, userId, productId, status, cycleType, startDate, nextBillingDate, renewalCount, remainingDiscountPeriods, appliedDiscountId, promoCode, pendingConversion, gracePeriodEndDate
+  - 屬性：subscriptionId, userId, productId, status, cycleType, startDate, nextBillingDate, renewalCount, remainingDiscountPeriods, appliedDiscountId, promoCode, pendingConversion, gracePeriodEndDate, extraPeriods
   - 方法：
     - `calculateNextBillingDate()`: 基於cycleType計算下次扣款日，處理大小月/閏年。
     - `applyDiscount(discount: Discount)`: 應用優惠，更新remainingDiscountPeriods並計算折扣價。
     - `applyPromoCodeDiscount(discountId: string, discountPeriods: number)`: 應用優惠碼折扣至訂閱，設置appliedDiscountId和remainingDiscountPeriods。
+    - `applyExtraPeriods(extraPeriods: number)`: 應用額外服務期數，延長訂閱總期數，用於調整初始下次扣款日（下次扣款日 = 開始日 + 原始週期 + 額外期數）。系統仍會繼續自動續訂，不會因為達到總期數而停止。
     - `convertToNewCycle(newCycleType: string)`: 方案轉換，記錄新週期類型並等到當前週期結束後的下個週期開始時生效。若新方案價格較高（升級），立即補收剩餘期間的費用差額；若較低（降級），下個週期生效無退款。承接剩餘優惠期數。
     - `handlePaymentFailure(failureReason: string)`: 根據原因決定重試或進入寬限期，更新status。
     - `isGracePeriodExpired()`: 檢查寬限期是否已過期（當前時間是否超過gracePeriodEndDate）。
     - `expireGracePeriod()`: 將寬限期訂閱狀態從grace更改為cancelled。
     - `renew()`: 增加renewalCount，檢查是否適用續訂優惠。第一次成功支付後清除promoCode欄位。
     - `clearPromoCode()`: 清除promoCode欄位，確保優惠碼僅用於初始訂閱。
+    - `getTotalPeriods()`: 返回訂閱總期數（原始期數 + 額外期數），用於參考資訊。
 
 - **Discount (實體)**：
-  - 屬性：discountId, type, value, fixedPrice, priority, startDate, endDate, applicableProducts, discountPeriods
+  - 屬性：discountId, type, value, fixedPrice, priority, startDate, endDate, applicableProducts, discountPeriods, extraPeriods
   - 方法：
     - `isApplicable(now: Date)`: 檢查優惠是否在有效期內。
     - `isApplicableToProduct(productId: string)`: 檢查優惠是否適用於指定產品。
     - `calculateDiscountedPrice(originalPrice: number)`: 計算折扣後價格（固定金額、百分比或固定結帳金額）。
+    - `hasExtraPeriods()`: 檢查優惠是否包含額外服務期數。
+    - `getExtraPeriods()`: 返回額外服務期數。
 
 - **PromoCode (值物件)**：
   - 屬性：code, discountId, usageLimit, isSingleUse, usedCount, minimumAmount, assignedUserId, applicableProducts
@@ -834,7 +842,7 @@ stateDiagram-v2
     PaymentSuccess --> UpdateSubscription: 更新訂閱狀態與續訂計數
     UpdateSubscription --> ClearPromoCode: 清除promoCode欄位（僅首次訂閱）
     ClearPromoCode --> CalculateNextBillingDate: 計算下次扣款日
-    CalculateNextBillingDate --> RecordSuccessLog: 記錄成功日誌
+    CalculateNextBillingDate --> RecordSuccessLog: 計算下次扣款日（續訂時使用原始週期，不考慮extraPeriods）
     RecordSuccessLog --> ReleaseLock: 釋放分布式鎖
     ReleaseLock --> TaskCompleted: 任務完成
     
