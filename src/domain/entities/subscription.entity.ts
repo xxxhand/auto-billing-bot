@@ -37,7 +37,7 @@ export class Subscription extends BaseEntity {
     startDate: Date,
     nextBillingDate: Date,
     status: SubscriptionStatus = 'pending',
-    renewalCount: number = 0,
+    renewalCount: number = -1,
     remainingDiscountPeriods: number = 0,
     appliedDiscountId: string | null = null,
     promoCode: string | null = null,
@@ -110,6 +110,7 @@ export class Subscription extends BaseEntity {
           }
         }
         nextYear.setFullYear(nextYear.getFullYear() + 1);
+        nextYear.setMonth(nextYear.getMonth() + this.extraPeriods);
         return nextYear;
 
       case 'weekly':
@@ -385,18 +386,5 @@ export class Subscription extends BaseEntity {
     // In a real implementation, this might be calculated differently based on product configuration
     const originalPeriods = this.renewalCount + 1;
     return originalPeriods + this.extraPeriods;
-  }
-
-  /**
-   * Check if the subscription should expire based on total periods
-   * @param maxPeriods Optional maximum periods allowed for this subscription type
-   * @returns true if the subscription has reached its maximum periods and should expire
-   */
-  public shouldExpire(maxPeriods?: number): boolean {
-    if (!maxPeriods) {
-      // If no max periods specified, subscription doesn't expire based on periods
-      return false;
-    }
-    return this.getTotalPeriods() >= maxPeriods;
   }
 }

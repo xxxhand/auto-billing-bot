@@ -20,6 +20,7 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
   const subscriptionCol = 'Subscriptions';
   const paymentAttemptCol = 'PaymentAttempts';
   const discountCol = 'Discounts';
+  const ruleCol = 'Rules';
 
   // Background: 系統前提設定
   const mockUser: IUserDocument = {
@@ -61,6 +62,25 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
     valid: true,
   };
 
+  // Renewal discount rule for yearly product (second billing onwards)
+  const renewalYearlyDiscountRule = {
+    _id: dbHelper.newObjectId(),
+    ruleId: 'renewal-yearly-discount-basic',
+    type: 'discount',
+    priority: 10,
+    conditions: {
+      'product.cycleType': 'yearly',
+      'subscription.renewalCount': { operator: 'gte', value: 0 }
+    },
+    actions: {
+      discount: {
+        type: 'fixed',
+        value: 500 // 2490 - 1990 = 500 discount
+      }
+    },
+    valid: true,
+  };
+
   // mock payment gateway
   const mockPaymentGateway = {
     charge: jest.fn(),
@@ -91,6 +111,7 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
       db.getCollection(productCol).insertOne(mockMonthlyProduct),
       db.getCollection(productCol).insertOne(mockYearlyProduct),
       db.getCollection(discountCol).insertOne(mockYearlyRenewalDiscount),
+      db.getCollection(ruleCol).insertOne(renewalYearlyDiscountRule),
     ]);
   });
 
@@ -106,14 +127,14 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
       describe('I want to 系統自動續訂年付產品', () => {
         describe('So that 服務不中斷', () => {
 
-          describe('Scenario: 第二次扣款成功（年付產品續訂，無優惠碼）', () => {
+          describe('Scenario: 第一次續訂扣款成功（年付產品續訂，無優惠碼）', () => {
             let existingSubscription: ISubscriptionDocument;
             let billingResult: any;
 
             // Given 我已經訂閱年付產品（價格：每年 $2490）
             // And 訂閱狀態為 "active"
             // And 續訂次數為 0
-            // And 已經進行過第一次扣款（扣款 $1000 成功，第一年優惠）
+            // And 已經進行過第一次扣款（扣款 $2490 成功，無優惠）
             // And 下次扣款日期已到（從訂閱開始日後 1 年）
             // And 我沒有使用任何優惠碼
             it('Given: 用戶已有年付訂閱且第一次扣款成功，下次扣款日期已到', async () => {
@@ -134,7 +155,7 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
                 cycleType: 'yearly',
                 startDate,
                 nextBillingDate,
-                renewalCount: 1, // 已經續訂過1次，這是第二次扣款（第一次續訂）
+                renewalCount: 0, // 已經續訂過0次，這是第一次續訂
                 remainingDiscountPeriods: 0,
                 appliedDiscountId: null,
                 pendingConversion: null,
@@ -152,7 +173,7 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
                 status: 'success',
                 failureReason: '',
                 retryCount: 0,
-                amount: 1000, // 第一次扣款金額（第一年優惠）
+                amount: 2490, // 第一次扣款金額（無優惠）
                 createdAt: startDate,
                 updatedAt: startDate,
                 valid: true,
@@ -166,7 +187,7 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
               });
               expect(dbSubscription).toBeTruthy();
               expect(dbSubscription.status).toBe('active');
-              expect(dbSubscription.renewalCount).toBe(1); // 已經進行過第一次續訂，這是第二次扣款
+              expect(dbSubscription.renewalCount).toBe(0); // 已經進行過0次續訂，這是第一次續訂
               expect(dbSubscription.productId).toBe(mockYearlyProduct.productId);
 
               // 驗證第一次扣款記錄存在
@@ -175,7 +196,7 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
               }).toArray();
               expect(paymentAttempts.length).toBe(1);
               expect(paymentAttempts[0].status).toBe('success');
-              expect(paymentAttempts[0].amount).toBe(1000);
+              expect(paymentAttempts[0].amount).toBe(2490);
             });
 
             // When 系統進行第二次扣款
@@ -200,7 +221,7 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
             // And 訂閱狀態應該保持 "active"
             // And 系統應該記錄續訂成功的事件
             it('Then: 驗證第二次扣款成功並更新訂閱狀態', async () => {
-              // 驗證扣款金額為1000（年付續訂特殊價格）
+              // 驗證扣款金額為1990（年付續訂特殊價格）
               expect(mockPaymentGateway.charge).toHaveBeenCalledWith(
                 expect.objectContaining({
                   amount: 1990,
@@ -224,7 +245,7 @@ describe('BDD: 續訂年付產品第二次扣款(無優惠碼)', () => {
                 subscriptionId: existingSubscription.subscriptionId
               });
 
-              expect(updatedSubscription.renewalCount).toBe(2); // 續訂次數從1更新為2
+              expect(updatedSubscription.renewalCount).toBe(1); // 續訂次數從0更新為1
               expect(updatedSubscription.status).toBe('active'); // 狀態保持active
 
               // 驗證下次扣款日期更新為一年後

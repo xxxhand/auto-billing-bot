@@ -15,6 +15,7 @@ export interface RuleEvaluationContext {
   subscription?: {
     subscriptionId?: string;
     isFirstTimeSubscription?: boolean;
+    renewalCount?: number;
   };
   promoCode?: {
     code?: string;

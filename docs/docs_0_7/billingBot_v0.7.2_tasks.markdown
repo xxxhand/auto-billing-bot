@@ -111,7 +111,7 @@
 | TEST-005 | 實現情境5 BDD測試：續訂月付產品第二次扣款場景 | API-002, DDD-010 | 已完成 | 5.1 RESTful API |
 | TEST-006 | 實現情境6 BDD測試：續訂年付產品第二次扣款(無優惠碼) | API-002, DDD-010 | 已完成 | 5.1 RESTful API |
 | TEST-007 | 實現情境7 BDD測試：續訂年付產品第二次扣款(週年慶折扣2000) | API-002, DDD-010 | 已完成 | 5.1 RESTful API |
-| TEST-008 | 添加extraPeriods功能的BDD測試（promo codes提供額外服務期數） | SVC-001, API-014 | 待處理 | 4.3 核心領域模型設計與方法, 6.6 優惠碼應用流程 |
+| TEST-008 | 添加extraPeriods功能的BDD測試（promo codes提供額外服務期數） | SVC-001, API-014 | 已完成 | 4.3 核心領域模型設計與方法, 6.6 優惠碼應用流程 |
 | DOC-001 | 撰寫Markdown格式API文件，遵循OpenAPI 3.0 | API-001~API-014 | 待處理 | 5.1 RESTful API, 5.2 API 資料格式示例 |
 | DOC-002 | 撰寫開發指南，包含領域模型與Cron實現細節 | DDD-001~DDD-010, CRON-001 | 待處理 | 4.3 核心領域模型設計與方法, 6.1 訂閱與扣款流程 |
 
@@ -127,7 +127,7 @@
 
 | 任務ID | 描述 | 依賴關係 | 狀態 | 設計書 |
 |--------|------|----------|------|--------|
-| SVC-001 | 更新services以處理extraPeriods邏輯（promoCodeDomainService與billingService） | REP-001, DDD-019, DDD-020 | 進行中 | 4.3 核心領域模型設計與方法, 6.6 優惠碼應用流程 |
+| SVC-001 | 更新services以處理extraPeriods邏輯（promoCodeDomainService與billingService） | REP-001, DDD-019, DDD-020 | 已完成 | 4.3 核心領域模型設計與方法, 6.6 優惠碼應用流程 |
 - **狀態分布**：
   - 已完成：55個任務
   - 進行中：0個任務
@@ -153,9 +153,9 @@
 ## 7. 總計
 - **總任務數**：68
 - **狀態分布**：
-  - 已完成：57個任務
+  - 已完成：58個任務
   - 進行中：1個任務
-  - 待處理：10個任務
+  - 待處理：9個任務
 - **額外實現**：
   - 實現寬限期邏輯（GracePeriodCheckerJob每小時檢查過期寬限期訂閱並自動取消）
   - 添加gracePeriodEndDate字段到Subscription實體和模型

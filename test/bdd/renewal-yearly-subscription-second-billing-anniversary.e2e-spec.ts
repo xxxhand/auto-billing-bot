@@ -20,6 +20,7 @@ describe('BDD: 續訂年付產品第二次扣款(週年慶折扣2000)', () => {
   const subscriptionCol = 'Subscriptions';
   const paymentAttemptCol = 'PaymentAttempts';
   const discountCol = 'Discounts';
+  const ruleCol = 'Rules';
 
   // Background: 系統前提設定
   const mockUser: IUserDocument = {
@@ -74,6 +75,43 @@ describe('BDD: 續訂年付產品第二次扣款(週年慶折扣2000)', () => {
     valid: true,
   };
 
+  // Renewal discount rule for yearly product (second billing onwards)
+  const renewalYearlyDiscountRule = {
+    _id: dbHelper.newObjectId(),
+    ruleId: 'renewal-yearly-discount-anniversary',
+    type: 'discount',
+    priority: 10,
+    conditions: {
+      'product.cycleType': 'yearly',
+      'subscription.renewalCount': { operator: 'gte', value: 0 }
+    },
+    actions: {
+      discount: {
+        type: 'fixed',
+        value: 500 // 2490 - 1990 = 500 discount
+      }
+    },
+    valid: true,
+  };
+
+  // Anniversary discount rule for yearly product - higher priority
+  const anniversaryDiscountRule = {
+    _id: dbHelper.newObjectId(),
+    ruleId: 'anniversary-discount-rule',
+    type: 'discount',
+    priority: 20, // Higher priority than renewal discount
+    conditions: {
+      'product.cycleType': 'yearly'
+    },
+    actions: {
+      discount: {
+        type: 'fixed',
+        value: 2000 // 2490 - 490 = 2000 discount
+      }
+    },
+    valid: true,
+  };
+
   // mock payment gateway
   const mockPaymentGateway = {
     charge: jest.fn(),
@@ -105,6 +143,7 @@ describe('BDD: 續訂年付產品第二次扣款(週年慶折扣2000)', () => {
       db.getCollection(productCol).insertOne(mockYearlyProduct),
       db.getCollection(discountCol).insertOne(mockYearlyRenewalDiscount),
       db.getCollection(discountCol).insertOne(mockAnniversaryDiscount),
+      db.getCollection(ruleCol).insertMany([renewalYearlyDiscountRule, anniversaryDiscountRule]),
     ]);
   });
 

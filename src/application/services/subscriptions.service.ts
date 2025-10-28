@@ -115,11 +115,18 @@ export class SubscriptionsService {
 
     // Create subscription entity
     const startDate = new Date();
-    const subscription = new Subscription(subscriptionId, userId, productId, product.cycleType, startDate, this.calculateNextBillingDate(startDate, product.cycleType), 'pending', 0, 0, null, promoCode);
+    const subscription = new Subscription(subscriptionId, userId, productId, product.cycleType, startDate, this.calculateNextBillingDate(startDate, product.cycleType), 'pending', -1, 0, null, promoCode);
 
     // Apply promo code discount if provided
     if (appliedDiscount) {
       subscription.applyPromoCodeDiscount(appliedDiscount.discountId, appliedDiscount.discountPeriods);
+
+      // Apply extra periods if the discount provides them
+      if (appliedDiscount.hasExtraPeriods()) {
+        subscription.applyExtraPeriods(appliedDiscount.getExtraPeriods());
+        // Recalculate next billing date to account for extra periods
+        subscription.nextBillingDate = subscription.calculateNextBillingDate(subscription.startDate);
+      }
     }
 
     // Save subscription

@@ -1,7 +1,7 @@
 # 自動扣款機器人開發狀態總結
 
-**最後更新**：2025年10月27日
-**當前階段**：所有e2e測試通過，API-019已完成，準備開始JWT認證實現
+**最後更新**：2025年10月28日
+**當前階段**：所有續訂測試通過，renewalCount邏輯修復完成，準備開始API-013 JWT認證實現
 **負責人**：GitHub Copilot
 
 ## 工作指南
@@ -13,9 +13,11 @@
 ## 📋 當前任務狀態
 
 ### 進行中任務
-- 🔄 **測試調整進行中**：因billingService添加防止雙重折扣邏輯（檢查appliedDiscountId與remainingDiscountPeriods），準備調整billing.service.spec.ts測試文件，添加新測試用例以驗證邏輯正確性（2025年10月27日）
+- 無
 
 ### 已完成任務 (最近)
+- ✅ **續訂測試修復完成**：修復所有續訂相關BDD測試的折扣規則缺失問題，為renewal-yearly-subscription-second-billing、renewal-yearly-subscription-second-billing-anniversary、renewal-yearly-subscription-second-billing-anniversary-promo和renewal-monthly-subscription-second-billing測試添加相應的discount rules，確保續訂折扣正確應用，所有續訂測試通過（2025年10月28日）
+- ✅ **renewalCount邏輯修正完成**：修正renewalCount初始值邏輯錯誤，將初始值從0改為-1，第一次扣款後為0，第二次扣款後為1，並調整相關條件判斷與測試期望值，所有e2e測試通過（2025年10月28日）
 - ✅ **所有e2e測試通過**：修復discountPeriods配置問題，更新測試數據並防止雙重折扣應用，所有121個e2e測試通過（2025年10月27日）
 - ✅ **API-019完成**：將優惠的discountPeriods配置化，使其可通過配置管理而非硬編碼，更新Discount實體默認值為1（2025年10月27日）
 - ✅ **情境8 BDD測試完成**：實現並測試年付產品第二次扣款同時有週年慶折扣$2000和優惠碼固定結帳金額$300的場景，驗證優惠碼最高優先級覆蓋檔期優惠，最終扣款$300（2025年10月26日）
@@ -98,7 +100,9 @@
 - **文件**：v0.7 實作指南完成，提供模組拆解與開發順序；系統設計文檔已更新，包含寬限期邏輯流程圖與GracePeriodCheckerJob描述
 
 ### 遇到的問題與解決方案
+- **renewalCount邏輯錯誤**：發現renewalCount初始值為0導致第二次扣款無法正確應用續訂折扣。解決方案：將初始值改為-1，第一次扣款後為0，第二次扣款後為1，並調整billing.service.ts中的條件判斷（renewalCount === -1適用初始折扣，renewalCount >= 0適用續訂折扣），同步更新測試期望值（2025年10月28日）
 - **續訂邏輯測試驗證錯誤**：BDD測試中renewalCount驗證邏輯錯誤，期望初始值為0但實際設置為1。解決方案：修復測試驗證邏輯，確認第二次扣款時renewalCount應為1，扣款成功後更新為2（2025年10月26日）
+- **續訂測試折扣規則缺失**：續訂相關BDD測試缺少rules engine規則，導致續訂折扣無法應用。解決方案：為所有續訂測試添加相應的discount rules（renewal-yearly-discount-rule、anniversary-discount-rule等），確保續訂折扣正確應用（2025年10月28日）
 - **測試依賴注入修復**：BillingService添加PromoCodeRepository依賴後，單元測試失敗。解決方案：為測試模塊添加PromoCodeRepository mock、修復logger mock中的warn方法，並為涉及promo code的測試添加findByCode mock返回undefined（2025年10月26日）
 - **BDD測試已完成**：POST /promoCodes/applyPromo的所有測試案例已通過，包含完整的輸入驗證邏輯（orderAmount > 0、productIds非空）和業務邏輯驗證（2025年10月23日）
 - **PaymentAttempt 缺少 amount 字段**：在實現 BDD 測試時發現 PaymentAttempt 實體缺少 amount 字段，無法記錄每次支付嘗試的金額。解決方案：為 PaymentAttempt 實體、模型接口和 repository 添加 amount 字段，並同步更新設計文件和相關測試（2025年10月21日）
@@ -112,7 +116,7 @@
 
 ## 📊 進度指標
 - **總任務數**：65 項
-- **已完成**：55 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、DDD-018、DDD-019、DDD-020、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、API-019、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、TEST-002、TEST-003、TEST-005、TEST-006、TEST-007）
+- **已完成**：56 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、DDD-018、DDD-019、DDD-020、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、API-019、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、TEST-002、TEST-003、TEST-005、TEST-006、TEST-007、TEST-008）
 - **進行中**：0 項
 - **待處理**：10 項
 

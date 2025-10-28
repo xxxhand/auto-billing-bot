@@ -62,21 +62,6 @@ export class BillingService implements IBillingService {
       };
     }
 
-    // Check if subscription should expire based on total periods
-    // For subscriptions with extra periods, check against total periods (original + extra)
-    if (subscription.shouldExpire()) {
-      this._Logger.log(`Subscription ${subscriptionId} has reached maximum periods and should expire`);
-      subscription.status = 'cancelled';
-      await this.subscriptionRepository.save(subscription);
-      // TODO: Record expiry log to billingLogs
-      // await this.billingLogRepository.save({ eventType: 'subscription_expired', subscriptionId, details: { reason: 'max_periods_reached' } });
-      return {
-        success: false,
-        errorMessage: 'Subscription has expired due to reaching maximum periods',
-        errorCode: 'SUBSCRIPTION_EXPIRED',
-      };
-    }
-
     // Check and apply pending conversion if applicable
     if (subscription.pendingConversion) {
       this._Logger.log(`Applying pending conversion for subscription ${subscriptionId}`);
@@ -100,17 +85,18 @@ export class BillingService implements IBillingService {
     // Calculate amount with discounts
     let amount = product.price;
 
-    // Apply promo code discount for initial billing (renewalCount === 0)
+    // 嚴重的邏輯錯誤，初始的renewalCount應該是-1，第一次扣款時才會變成0
+    // Apply promo code discount for initial billing (renewalCount === -1)
     let appliedPromoCodeDiscount: Discount | null = null;
-    if (subscription.renewalCount === 0 && subscription.promoCode) {
+    if (subscription.renewalCount === -1 && subscription.promoCode) {
       const result = await this.calculatePromoCodeDiscount(product, subscription, amount);
       amount = result.amount;
       appliedPromoCodeDiscount = result.discount;
     }
 
-    // Apply first-time subscription discount for initial billing (renewalCount === 0)
+    // Apply first-time subscription discount for initial billing (renewalCount === -1)
     // Skip rules engine discount if we have a fixed_price promo code (highest priority)
-    if (subscription.renewalCount === 0 && (!appliedPromoCodeDiscount || appliedPromoCodeDiscount.type !== 'fixed_price')) {
+    if (subscription.renewalCount === -1 && (!appliedPromoCodeDiscount || appliedPromoCodeDiscount.type !== 'fixed_price')) {
       amount = await this.calculateFirstTimeSubscriptionDiscount(product, subscription, amount);
     }
 
@@ -138,14 +124,8 @@ export class BillingService implements IBillingService {
     }
 
     // Apply renewal discount for second and subsequent renewals
-    if (subscription.renewalCount >= 1) {
-      // Apply renewal discounts for all renewal cases
-      const renewalDiscounts = await this.discountRepository.findRenewalDiscounts(subscription.productId);
-      if (renewalDiscounts.length > 0) {
-        // Apply the highest priority renewal discount
-        const highestPriorityDiscount = renewalDiscounts[0];
-        amount = subscription.applyDiscount(highestPriorityDiscount, amount);
-      }
+    if (subscription.renewalCount >= 0) {
+      amount = await this.calculateRenewalDiscount(product, subscription, amount);
     }
 
     // Create payment attempt
@@ -175,7 +155,7 @@ export class BillingService implements IBillingService {
         // Update subscription
         // Clear promoCode after first successful billing since it should only apply to initial subscription
         // This applies to both initial payment and retry payment success for first-time subscriptions
-        if (subscription.renewalCount === 0) {
+        if (subscription.renewalCount === -1) {
           subscription.clearPromoCode();
         }
         if (!isRetry) {
@@ -410,7 +390,66 @@ export class BillingService implements IBillingService {
       },
       subscription: {
         subscriptionId: subscription.subscriptionId,
-        isFirstTimeSubscription: subscription.renewalCount === 0,
+        isFirstTimeSubscription: subscription.renewalCount === -1,
+      },
+      promoCode: subscription.promoCode ? {
+        code: subscription.promoCode,
+      } : undefined,
+      appliedDiscount: appliedDiscountInfo,
+      currentDate: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD string
+      originalPrice: amount,
+      discountedPrice: amount,
+    };
+
+    // Evaluate rules
+    const result = this.rulesEngineService.evaluateRules(applicableRules, context);
+
+    if (result.success && result.totalDiscount > 0) {
+      return Math.max(0, amount - result.totalDiscount);
+    }
+
+    // Return current amount if no rules apply
+    return amount;
+  }
+
+  /**
+   * Calculate renewal discount using rules engine
+   */
+  private async calculateRenewalDiscount(product: any, subscription: any, currentAmount: number = 0): Promise<number> {
+    const amount = currentAmount || product.price;
+
+    // Get discount rules from repository
+    const discountRules = await this.rulesRepository.findByType('discount');
+    const applicableRules = this.rulesEngineService.filterApplicableRules(discountRules, 'discount');
+
+    // Get applied discount info if exists
+    let appliedDiscountInfo = null;
+    if (subscription.appliedDiscountId && subscription.remainingDiscountPeriods > 0) {
+      const appliedDiscount = await this.discountRepository.findByDiscountId(subscription.appliedDiscountId);
+      if (appliedDiscount && appliedDiscount.isApplicable(new Date())) {
+        appliedDiscountInfo = {
+          discountId: appliedDiscount.discountId,
+          type: appliedDiscount.type,
+          value: appliedDiscount.value,
+          remainingPeriods: subscription.remainingDiscountPeriods,
+        };
+      }
+    }
+
+    // Create evaluation context for renewal
+    const context: RuleEvaluationContext = {
+      userId: subscription.userId,
+      productId: product.productId,
+      product: {
+        productId: product.productId,
+        name: product.name,
+        price: product.price,
+        cycleType: product.cycleType,
+      },
+      subscription: {
+        subscriptionId: subscription.subscriptionId,
+        isFirstTimeSubscription: false, // For renewal
+        renewalCount: subscription.renewalCount,
       },
       promoCode: subscription.promoCode ? {
         code: subscription.promoCode,
