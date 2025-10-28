@@ -310,10 +310,10 @@ describe('BDD: 新用戶使用「固定結帳金額」訂閱年付產品', () =>
               });
               expect(dbSubscription).toBeTruthy();
               expect(dbSubscription.status).toBe('active');
-              expect(dbSubscription.renewalCount).toBe(0);
+              expect(dbSubscription.renewalCount).toBe(0); // After successful initial billing during subscription creation
               expect(dbSubscription.userId.toHexString()).toBe(mockUser.userId.toHexString());
               expect(dbSubscription.productId).toBe(mockYearlyProduct.productId);
-              expect(dbSubscription.promoCode).toBe('FIXED1500');
+              expect(dbSubscription.promoCode).toBeNull(); // Promo code is cleared after successful initial billing
             });
 
             // When 系統進行首次扣款
@@ -333,9 +333,9 @@ describe('BDD: 新用戶使用「固定結帳金額」訂閱年付產品', () =>
             // Then 應該從我的支付方式扣款 $1500
             // And 扣款記錄應該被正確保存
             // And 優惠碼應該標記為已使用狀態
-            // And 訂閱的續訂次數應該保持為 0
-            it('Then: 驗證扣款成功、優惠碼狀態並保持續訂次數為 0', async () => {
-              // 驗證訂閱的續訂次數保持為0（初始訂閱創建時的第一次扣款不增加續訂次數）
+            // And 訂閱的續訂次數應該變為 0
+            it('Then: 驗證扣款成功、優惠碼狀態並更新續訂次數為 0', async () => {
+              // 驗證訂閱的續訂次數變為0（首次扣款成功後會調用renew()方法）
               const updatedSubscription = await db.getCollection('Subscriptions').findOne({
                 subscriptionId: subscriptionResponse.subscriptionId
               });

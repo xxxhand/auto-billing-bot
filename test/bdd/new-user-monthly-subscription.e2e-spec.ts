@@ -177,7 +177,7 @@ describe('BDD: 新用戶訂閱月付產品（無優惠碼）', () => {
               });
               expect(dbSubscription).toBeTruthy();
               expect(dbSubscription.status).toBe('active');
-              expect(dbSubscription.renewalCount).toBe(0);
+              expect(dbSubscription.renewalCount).toBe(0); // After successful initial billing during subscription creation
               expect(dbSubscription.userId.toHexString()).toBe(mockUser.userId.toHexString());
               expect(dbSubscription.productId).toBe(mockMonthlyProduct.productId);
             });
@@ -198,9 +198,9 @@ describe('BDD: 新用戶訂閱月付產品（無優惠碼）', () => {
 
             // Then 應該從我的支付方式扣款 $240
             // And 扣款記錄應該被正確保存
-            // And 訂閱的續訂次數應該保持為 0（初始訂閱不計入續訂次數）
-            it('Then: 驗證扣款成功並保持續訂次數為 0', async () => {
-              // 驗證訂閱的續訂次數保持為0（初始訂閱創建時的第一次扣款不增加續訂次數）
+            // And 訂閱的續訂次數應該變為 0（首次扣款成功後）
+            it('Then: 驗證扣款成功並更新續訂次數為 0', async () => {
+              // 驗證訂閱的續訂次數變為0（首次扣款成功後會調用renew()方法）
               const updatedSubscription = await db.getCollection('Subscriptions').findOne({
                 subscriptionId: subscriptionResponse.subscriptionId
               });

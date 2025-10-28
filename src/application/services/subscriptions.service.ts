@@ -146,11 +146,8 @@ export class SubscriptionsService {
       throw new BadRequestException('Payment processing failed');
     }
 
-    // Update subscription status to active after successful payment
-    savedSubscription.status = 'active';
-    // For initial billing, next billing date is already set correctly during creation
-    // No need to recalculate it here
-    await this.subscriptionRepository.save(savedSubscription);
+    // Re-fetch the subscription to get updated state from billing service (including renewalCount changes)
+    const updatedSubscription = await this.subscriptionRepository.findById(savedSubscription.subscriptionId);
 
     // Track promo code usage if promo code was used
     if (promoCodeEntity) {
@@ -159,7 +156,7 @@ export class SubscriptionsService {
       await this.promoCodeRepository.update(promoCodeEntity);
 
       // Get the actual payment amount from the payment attempt
-      const paymentAttempts = await this.paymentAttemptRepository.findBySubscriptionId(savedSubscription.subscriptionId);
+      const paymentAttempts = await this.paymentAttemptRepository.findBySubscriptionId(updatedSubscription.subscriptionId);
       const successfulPayment = paymentAttempts.find(attempt => attempt.status === 'success');
       const orderAmount = successfulPayment ? successfulPayment.amount : product.price;
 
@@ -169,13 +166,13 @@ export class SubscriptionsService {
     }
 
     return {
-      subscriptionId: savedSubscription.subscriptionId,
-      userId: savedSubscription.userId,
-      productId: savedSubscription.productId,
-      status: savedSubscription.status,
-      cycleType: savedSubscription.cycleType,
-      startDate: savedSubscription.startDate,
-      nextBillingDate: savedSubscription.nextBillingDate,
+      subscriptionId: updatedSubscription.subscriptionId,
+      userId: updatedSubscription.userId,
+      productId: updatedSubscription.productId,
+      status: updatedSubscription.status,
+      cycleType: updatedSubscription.cycleType,
+      startDate: updatedSubscription.startDate,
+      nextBillingDate: updatedSubscription.nextBillingDate,
       // TODO: Add discount information when discount system is implemented
     };
   }

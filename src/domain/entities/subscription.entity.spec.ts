@@ -129,7 +129,7 @@ describe('Subscription Entity', () => {
       expect(subscription.cycleType).toBe('monthly');
       expect(subscription.startDate).toBe(startDate);
       expect(subscription.nextBillingDate).toBe(nextBillingDate);
-      expect(subscription.renewalCount).toBe(0);
+      expect(subscription.renewalCount).toBe(-1);
       expect(subscription.remainingDiscountPeriods).toBe(0);
     });
 

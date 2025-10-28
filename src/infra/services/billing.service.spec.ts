@@ -261,8 +261,6 @@ describe('BillingService', () => {
       product.productId = 'prod_123';
       product.price = 200;
 
-      const renewalDiscount = new Discount('renewal_123', 'fixed', 100, 1, new Date(0), new Date(9999, 11, 31), ['prod_123']);
-
       const paymentResponse: PaymentResponse = {
         success: true,
         transactionId: 'txn_123',
@@ -271,13 +269,12 @@ describe('BillingService', () => {
       subscriptionRepository.findById.mockResolvedValue(subscription);
       productRepository.findByProductId.mockResolvedValue(product);
       discountRepository.findByDiscountId.mockResolvedValue(undefined); // No applied discount
-      discountRepository.findRenewalDiscounts.mockResolvedValue([renewalDiscount]);
-      rulesRepository.findByType.mockResolvedValue([]); // No discount rules for first-time
+      rulesRepository.findByType.mockResolvedValue([]); // No discount rules
       rulesEngineService.filterApplicableRules.mockReturnValue([]);
       rulesEngineService.evaluateRules.mockReturnValue({
         context: {},
         appliedRules: [],
-        totalDiscount: 0,
+        totalDiscount: 100, // 100 discount applied
         totalBonus: 0,
         success: true,
       });
@@ -289,7 +286,7 @@ describe('BillingService', () => {
 
       expect(result.success).toBe(true);
       expect(result.transactionId).toBe('txn_123');
-      expect(discountRepository.findRenewalDiscounts).toHaveBeenCalledWith('prod_123');
+      expect(rulesRepository.findByType).toHaveBeenCalledWith('discount');
       expect(paymentGateway.charge).toHaveBeenCalledWith({
         attemptId: expect.any(String),
         userId: 'user_123',

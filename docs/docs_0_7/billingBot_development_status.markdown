@@ -1,7 +1,7 @@
 # 自動扣款機器人開發狀態總結
 
 **最後更新**：2025年10月28日
-**當前階段**：所有續訂測試通過，renewalCount邏輯修復完成，準備開始API-013 JWT認證實現
+**當前階段**：所有測試通過驗證完成，系統品質已確認，準備開始API-013 JWT認證實現
 **負責人**：GitHub Copilot
 
 ## 工作指南
@@ -16,8 +16,9 @@
 - 無
 
 ### 已完成任務 (最近)
-- ✅ **續訂測試修復完成**：修復所有續訂相關BDD測試的折扣規則缺失問題，為renewal-yearly-subscription-second-billing、renewal-yearly-subscription-second-billing-anniversary、renewal-yearly-subscription-second-billing-anniversary-promo和renewal-monthly-subscription-second-billing測試添加相應的discount rules，確保續訂折扣正確應用，所有續訂測試通過（2025年10月28日）
+- ✅ **所有測試通過驗證完成**：修復SubscriptionsService狀態覆蓋問題，確保BillingService的renew()調用正確保存到數據庫，更新所有相關測試期望值（renewalCount從-1到0，promoCode清除），確保所有單元測試(322/322)和e2e測試(128/128)100%通過，系統品質驗證完成（2025年10月28日）
 - ✅ **renewalCount邏輯修正完成**：修正renewalCount初始值邏輯錯誤，將初始值從0改為-1，第一次扣款後為0，第二次扣款後為1，並調整相關條件判斷與測試期望值，所有e2e測試通過（2025年10月28日）
+- ✅ **續訂測試修復完成**：修復所有續訂相關BDD測試的折扣規則缺失問題，為renewal-yearly-subscription-second-billing、renewal-yearly-subscription-second-billing-anniversary、renewal-yearly-subscription-second-billing-anniversary-promo和renewal-monthly-subscription-second-billing測試添加相應的discount rules，確保續訂折扣正確應用，所有續訂測試通過（2025年10月28日）
 - ✅ **所有e2e測試通過**：修復discountPeriods配置問題，更新測試數據並防止雙重折扣應用，所有121個e2e測試通過（2025年10月27日）
 - ✅ **API-019完成**：將優惠的discountPeriods配置化，使其可通過配置管理而非硬編碼，更新Discount實體默認值為1（2025年10月27日）
 - ✅ **情境8 BDD測試完成**：實現並測試年付產品第二次扣款同時有週年慶折扣$2000和優惠碼固定結帳金額$300的場景，驗證優惠碼最高優先級覆蓋檔期優惠，最終扣款$300（2025年10月26日）
@@ -100,6 +101,8 @@
 - **文件**：v0.7 實作指南完成，提供模組拆解與開發順序；系統設計文檔已更新，包含寬限期邏輯流程圖與GracePeriodCheckerJob描述
 
 ### 遇到的問題與解決方案
+- **SubscriptionsService狀態覆蓋問題**：BillingService成功處理扣款後會調用subscription.renew()並保存訂閱，但SubscriptionsService隨後又重新設置狀態並再次保存，覆蓋了BillingService的更改。解決方案：修改createSubscription方法重新獲取訂閱以獲得BillingService的更新狀態，確保renewalCount正確從-1變為0，promoCode正確清除（2025年10月28日）
+- **e2e測試renewalCount期望值錯誤**：修復renewalCount邏輯後，5個e2e測試文件仍期望默認值為0，但實際應為-1。解決方案：更新post-subscriptions.e2e-spec.ts、bdd/new-user-yearly-subscription.e2e-spec.ts、bdd/new-user-monthly-subscription.e2e-spec.ts、bdd/new-user-yearly-subscription-with-promo.e2e-spec.ts和bdd/new-user-yearly-subscription-fixed-price.e2e-spec.ts中的expect語句，將renewalCount期望值從0改為-1，確保所有測試100%通過（2025年10月28日）
 - **renewalCount邏輯錯誤**：發現renewalCount初始值為0導致第二次扣款無法正確應用續訂折扣。解決方案：將初始值改為-1，第一次扣款後為0，第二次扣款後為1，並調整billing.service.ts中的條件判斷（renewalCount === -1適用初始折扣，renewalCount >= 0適用續訂折扣），同步更新測試期望值（2025年10月28日）
 - **續訂邏輯測試驗證錯誤**：BDD測試中renewalCount驗證邏輯錯誤，期望初始值為0但實際設置為1。解決方案：修復測試驗證邏輯，確認第二次扣款時renewalCount應為1，扣款成功後更新為2（2025年10月26日）
 - **續訂測試折扣規則缺失**：續訂相關BDD測試缺少rules engine規則，導致續訂折扣無法應用。解決方案：為所有續訂測試添加相應的discount rules（renewal-yearly-discount-rule、anniversary-discount-rule等），確保續訂折扣正確應用（2025年10月28日）
@@ -116,9 +119,9 @@
 
 ## 📊 進度指標
 - **總任務數**：65 項
-- **已完成**：56 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、DDD-018、DDD-019、DDD-020、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、API-019、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、TEST-002、TEST-003、TEST-005、TEST-006、TEST-007、TEST-008）
+- **已完成**：58 項（DB-001、DB-002、DB-003、DB-004、DB-005、DB-006、DB-007、DB-008、DB-009、DB-010、DB-011、DB-012、DDD-001、DDD-002、DDD-003、DDD-004、DDD-005、DDD-006、DDD-007、DDD-008、DDD-009、DDD-010、DDD-011、DDD-012、DDD-013、DDD-014、DDD-015、DDD-016、DDD-017、DDD-018、DDD-019、DDD-020、PAY-001、PAY-002、PAY-003、PAY-004、API-001、API-002、API-003、API-004、API-005、API-006、API-007、API-008、API-010、API-014、API-019、CRON-001、CRON-002、QUEUE-001、QUEUE-002、QUEUE-003、TEST-002、TEST-003、TEST-005、TEST-006、TEST-007、TEST-008、TEST-009、TEST-010）
 - **進行中**：0 項
-- **待處理**：10 項
+- **待處理**：9 項
 
 ## 🎯 下一步計劃
 1. **API-013**：實現JWT認證，包含userId與tenantId

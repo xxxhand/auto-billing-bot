@@ -223,7 +223,7 @@ describe('BDD: 用戶使用優惠碼訂閱年付產品（含額外服務期數�
                 subscriptionId: subscriptionResponse.subscriptionId,
               });
               expect(dbSubscription.status).toBe('active');
-              expect(dbSubscription.renewalCount).toBe(-1);
+              expect(dbSubscription.renewalCount).toBe(0); // After successful initial billing during subscription creation
 
               // extraPeriods 不會阻止續訂，系統會繼續扣款
               // 這是通過移除 shouldExpire() 檢查來實現的
@@ -234,7 +234,7 @@ describe('BDD: 用戶使用優惠碼訂閱年付產品（含額外服務期數�
               const pastDate = new Date();
               pastDate.setDate(pastDate.getDate() - 1); // 設為昨天
 
-              await db.getCollection('Subscriptions').updateOne({ subscriptionId: subscriptionResponse.subscriptionId }, { $set: { nextBillingDate: pastDate, renewalCount: 0 } });
+              await db.getCollection('Subscriptions').updateOne({ subscriptionId: subscriptionResponse.subscriptionId }, { $set: { nextBillingDate: pastDate } }); // renewalCount is already 0 from initial billing
 
               // Mock payment gateway for renewal
               jest.spyOn(mockPaymentGateway, 'charge').mockResolvedValue({

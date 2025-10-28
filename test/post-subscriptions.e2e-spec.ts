@@ -272,7 +272,7 @@ describe(`POST ${process.env.DEFAULT_API_ROUTER_PREFIX}/v1/subscriptions`, () =>
       expect(dbSub.cycleType).toBe(mockProduct.cycleType);
       expect(dbSub.startDate).toBeInstanceOf(Date);
       expect(dbSub.nextBillingDate).toBeInstanceOf(Date);
-      expect(dbSub.renewalCount).toBe(0);
+      expect(dbSub.renewalCount).toBe(0); // After successful initial billing, renewalCount becomes 0
       expect(dbSub.remainingDiscountPeriods).toBe(0);
       expect(dbSub.pendingConversion).toBeNull();
       // payment attempt
